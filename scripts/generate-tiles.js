@@ -11,6 +11,7 @@ const __dirname = dirname(__filename);
  * Generate optimized DZI tiles for smooth zooming
  * Following Deji's performance requirements from spec
  */
+
 async function generateDZI(inputPath, outputName) {
     const outputDir = path.join('public/images/tiles', outputName);
 
@@ -26,58 +27,71 @@ async function generateDZI(inputPath, outputName) {
     await fs.mkdir(outputDir, { recursive: true });
 
     try {
-        console.log('🔄 Starting optimized tile generation...');
+        console.log('🔄 Starting tile generation...');
         console.log(`📄 Input: ${inputPath}`);
 
         // Get metadata
         const metadata = await sharp(inputPath).metadata();
         console.log(`📐 Image size: ${metadata.width}x${metadata.height}`);
 
-        // IMPORTANT: Generate DZI with correct format
-        const outputFile = path.join(outputDir, `${outputName}_output`);
-
-        await sharp(inputPath)
+        // Generate tiles using Sharp's built-in DZI support
+        await sharp(inputPath, { limitInputPixels: false })
             .tile({
                 size: 512,
                 overlap: 2,
+                depth: 'onepixel',
+                skipBlanks: -1,
                 container: 'fs',
                 layout: 'dz'
             })
-            .jpeg({
-                quality: 90,
-                progressive: true,
-                mozjpeg: false,
-                chromaSubsampling: '4:4:4'
-            })
-            .toFile(outputFile);
+            .toFile(path.join(outputDir, 'zebra_output.dz'));
 
-        // Rename the generated files to match OpenSeadragon's expectations
-        const filesDir = path.join(outputDir, `${outputName}_files`);
-        const outputFilesDir = path.join(outputDir, `${outputName}_output_files`);
+        // Rename the generated folder to match our naming convention
+        const generatedDir = path.join(outputDir, 'zebra_output_files');
+        const targetDir = path.join(outputDir, `${outputName}_output_files`);
 
         // Check if renaming is needed
-        if (await fs.access(filesDir).then(() => true).catch(() => false)) {
-            await fs.rename(filesDir, outputFilesDir);
-            console.log('📁 Renamed tiles directory to match OpenSeadragon format');
+        try {
+            await fs.access(generatedDir);
+            if (generatedDir !== targetDir) {
+                // Remove target if it exists
+                try {
+                    await fs.rm(targetDir, { recursive: true, force: true });
+                } catch (e) { }
+                // Rename
+                await fs.rename(generatedDir, targetDir);
+            }
+        } catch (e) {
+            console.log('Directory already has correct name');
         }
 
-        // Create the .dzi file that OpenSeadragon expects
-        const dziContent = await fs.readFile(outputFile + '.dzi', 'utf8');
-        await fs.writeFile(path.join(outputDir, `${outputName}_output.dzi`), dziContent);
+        // Rename the .dzi file
+        const generatedDzi = path.join(outputDir, 'zebra_output.dzi');
+        const targetDzi = path.join(outputDir, `${outputName}_output.dzi`);
 
-        // Clean up the original .dzi file
-        await fs.unlink(outputFile + '.dzi').catch(() => { });
+        try {
+            await fs.access(generatedDzi);
+            if (generatedDzi !== targetDzi) {
+                await fs.rename(generatedDzi, targetDzi);
+            }
+        } catch (e) {
+            console.log('DZI file already has correct name');
+        }
 
         console.log(`✅ Tiles generated successfully!`);
 
-        // Verify output
+        // Verify what was created
         const files = await fs.readdir(outputDir);
-        console.log('📁 Files created:', files);
+        console.log('📁 Files in output directory:', files);
 
-        // Generate multiple resolution versions for smoother transitions
-        console.log('🔄 Generating preview levels...');
+        // Check tile structure
+        const tilesDir = path.join(outputDir, `${outputName}_output_files`);
+        const levels = await fs.readdir(tilesDir);
+        console.log('📊 Zoom levels created:', levels.sort((a, b) => parseInt(a) - parseInt(b)));
 
-        // Create low-res preview for instant loading
+        // Generate preview
+        console.log('🔄 Generating preview image...');
+
         const previewPath = path.join(outputDir, 'preview.jpg');
         await sharp(inputPath)
             .resize(1024, null, {
@@ -90,18 +104,16 @@ async function generateDZI(inputPath, outputName) {
             })
             .toFile(previewPath);
 
-        console.log('✨ Process complete with optimizations!');
-        console.log(`📍 Tiles location: public/images/tiles/${outputName}/`);
-        console.log('⚡ Optimizations applied:');
-        console.log('   - 512x512 tiles for fewer HTTP requests');
-        console.log('   - 2px overlap for seamless edges');
-        console.log('   - Progressive JPEG for smooth loading');
-        console.log('   - Preview image for instant display');
+        console.log('✨ Process complete!');
+        console.log(`📍 Tiles location: ${tilesDir}`);
 
     } catch (error) {
         console.error('❌ Error generating tiles:', error);
+        console.error('Stack trace:', error.stack);
     }
 }
+
+
 
 // Execute conversion with performance monitoring
 const startTime = performance.now();

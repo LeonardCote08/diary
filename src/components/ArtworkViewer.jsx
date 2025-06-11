@@ -47,19 +47,7 @@ function ArtworkViewer(props) {
 
         viewer = OpenSeadragon({
             element: viewerRef,
-            tileSources: {
-                Image: {
-                    xmlns: "http://schemas.microsoft.com/deepzoom/2008",
-                    Url: `/images/tiles/${props.artworkId}/${props.artworkId}_output_files/`,
-                    Format: "jpg",
-                    Overlap: "2",
-                    TileSize: "512",
-                    Size: {
-                        Width: "11244",
-                        Height: "6543"
-                    }
-                }
-            },
+            tileSources: `/images/tiles/${props.artworkId}/${props.artworkId}_output.dzi`,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
             // Performance settings from config
@@ -119,7 +107,7 @@ function ArtworkViewer(props) {
             // Additional performance
             debugMode: performanceConfig.debug.showMetrics,
             timeout: performanceConfig.network.timeout,
-            useCanvas: true,
+            drawer: 'canvas', // Utiliser 'canvas' au lieu de useCanvas
             crossOriginPolicy: 'Anonymous',
             ajaxWithCredentials: false,
 
@@ -128,7 +116,6 @@ function ArtworkViewer(props) {
                 OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS :
                 OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.NEVER
         });
-
         // Initialize spatial index
         spatialIndex = new SpatialIndex();
         spatialIndex.loadHotspots(hotspotData);
@@ -181,7 +168,7 @@ function ArtworkViewer(props) {
 
         // Handle resize
         const resizeObserver = new ResizeObserver(() => {
-            if (viewer) {
+            if (viewer && viewer.viewport) {
                 viewer.viewport.resize();
                 viewer.viewport.applyConstraints();
             }

@@ -25,6 +25,8 @@ class AudioEngine {
      * Preload audio for a set of hotspots
      */
     async preloadHotspots(hotspots) {
+        return;
+
         const audioUrls = hotspots
             .filter(h => h.audioUrl)
             .map(h => ({ id: h.id, url: h.audioUrl }));
