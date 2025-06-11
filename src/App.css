@@ -43,7 +43,8 @@
     height: 100%;
     position: relative;
     background: #000;
-    overflow: hidden; /* Prevent overflow */
+    overflow: hidden;
+    touch-action: none; /* Prevent browser touch gestures */
 }
 
 /* OpenSeadragon viewer */
@@ -53,6 +54,10 @@
     left: 0;
     width: 100%;
     height: 100%;
+    cursor: grab;
+    /* Force GPU acceleration */
+    transform: translateZ(0);
+    will-change: transform;
 }
 
 /* Hotspot canvas overlay */
@@ -60,19 +65,37 @@
     position: absolute;
     top: 0;
     left: 0;
-    pointer-events: auto;
-    z-index: 10;
     width: 100%;
     height: 100%;
-    /* Smooth rendering optimizations */
-    image-rendering: optimizeSpeed;
-    -webkit-backface-visibility: hidden;
+    pointer-events: auto;
+    z-index: 10;
+    cursor: grab;
+    /* Critical performance optimizations */
+    will-change: contents; /* Tell browser content will change */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
     backface-visibility: hidden;
-    /* Prevent canvas from being selected */
+    -webkit-backface-visibility: hidden;
+    /* Disable all animations/transitions */
+    transition: none !important;
+    animation: none !important;
+    /* Rendering optimizations */
+    image-rendering: pixelated; /* Faster than optimizeSpeed */
+    shape-rendering: optimizeSpeed;
+    /* Prevent any layout recalculations */
+    contain: layout style paint;
+    /* Prevent selection */
     -webkit-touch-callout: none;
     -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     user-select: none;
 }
+
+    /* Canvas cursor states */
+    .hotspot-canvas:active {
+        cursor: grabbing;
+    }
 
 /* Viewer loading indicator */
 .viewer-loading {
@@ -84,6 +107,8 @@
     padding: 2rem;
     border-radius: 8px;
     z-index: 100;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
     .viewer-loading p {
@@ -105,14 +130,16 @@
     border-radius: 4px;
     z-index: 20;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: none; /* Don't block interactions */
 }
 
     .debug-info div {
         margin: 2px 0;
     }
 
-/* Hotspot type indicators */
+/* Hotspot type legend */
 .hotspot-legend {
     position: absolute;
     bottom: 20px;
@@ -122,7 +149,9 @@
     border-radius: 8px;
     z-index: 20;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: none; /* Don't block interactions */
 }
 
     .hotspot-legend h3 {
@@ -173,67 +202,17 @@
         border-color: #ffb000;
     }
 
-/* Navigation controls override */
-.openseadragon-container .navigator {
-    background: rgba(0, 0, 0, 0.8) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-    .debug-info {
-        font-size: 10px;
-        padding: 8px;
-    }
-
-    .hotspot-legend {
-        bottom: 10px;
-        left: 10px;
-        padding: 10px;
-    }
-
-        .hotspot-legend h3 {
-            font-size: 12px;
-        }
-
-    .legend-item {
-        font-size: 11px;
-    }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-    .hotspot-canvas {
-        filter: contrast(1.2);
-    }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
-/* Cursor styles for different states */
+/* OpenSeadragon controls customization */
 .openseadragon-container {
-    cursor: grab;
+    background: transparent !important;
 }
 
-    .openseadragon-container:active {
-        cursor: grabbing;
+    /* Style the navigation controls */
+    .openseadragon-container .openseadragon-controls {
+        margin: 20px !important;
     }
 
-    /* Navigation controls styling */
-    .openseadragon-container .navigator {
-        background: rgba(0, 0, 0, 0.6) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 4px;
-    }
-
-    /* Style the zoom buttons */
+    /* Style individual buttons */
     .openseadragon-container button {
         background: rgba(0, 0, 0, 0.7) !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -244,20 +223,26 @@
         border-radius: 50% !important;
         margin: 5px !important;
         font-size: 18px !important;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
     }
 
         .openseadragon-container button:hover {
             background: rgba(255, 255, 255, 0.1) !important;
             border-color: rgba(255, 255, 255, 0.4) !important;
+            transform: scale(1.1);
         }
 
-/* Prevent text selection during drag */
-.viewer-container {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
+        .openseadragon-container button:active {
+            transform: scale(0.95);
+        }
+
+    /* Hide rotation control if present */
+    .openseadragon-container .openseadragon-rotate-left,
+    .openseadragon-container .openseadragon-rotate-right {
+        display: none !important;
+    }
 
 /* Mobile controls */
 .mobile-controls {
@@ -288,6 +273,7 @@
     -webkit-backdrop-filter: blur(10px);
     padding: 0;
     margin: 0;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
 }
 
     .zoom-btn:hover {
@@ -304,11 +290,6 @@
     font-size: 20px;
 }
 
-/* Enhanced OpenSeadragon controls */
-.openseadragon-container .openseadragon-controls {
-    margin: 20px !important;
-}
-
 /* Keyboard shortcuts info */
 .shortcuts-info {
     position: absolute;
@@ -319,6 +300,7 @@
     border-radius: 8px;
     z-index: 25;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     font-size: 12px;
 }
@@ -329,6 +311,7 @@
         color: #fff;
         outline: none;
         user-select: none;
+        list-style: none;
     }
 
         .shortcuts-info summary::-webkit-details-marker {
@@ -340,6 +323,12 @@
             display: inline-block;
             margin-right: 5px;
         }
+
+    .shortcuts-info[open] summary::after {
+        content: ' ✕';
+        float: right;
+        opacity: 0.5;
+    }
 
 .shortcuts-list {
     margin-top: 10px;
@@ -365,3 +354,140 @@
         text-align: center;
         display: inline-block;
     }
+
+/* Navigator (minimap) styling */
+.openseadragon-container .navigator {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Prevent text selection during interaction */
+.viewer-container * {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .debug-info {
+        font-size: 10px;
+        padding: 8px;
+        max-width: 150px;
+    }
+
+    .hotspot-legend {
+        bottom: 10px;
+        left: 10px;
+        padding: 10px;
+        max-width: 150px;
+    }
+
+        .hotspot-legend h3 {
+            font-size: 12px;
+        }
+
+    .legend-item {
+        font-size: 11px;
+    }
+
+    .shortcuts-info {
+        display: none; /* Hide on mobile */
+    }
+
+    .mobile-controls {
+        bottom: 80px;
+        right: 15px;
+    }
+
+    .zoom-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 22px;
+    }
+
+    /* Adjust OpenSeadragon controls for mobile */
+    .openseadragon-container button {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 16px !important;
+        margin: 3px !important;
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .mobile-controls {
+        display: none; /* Hide custom controls on tablets */
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .hotspot-canvas {
+        filter: contrast(1.2);
+    }
+
+    .openseadragon-container button {
+        border-width: 2px !important;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .openseadragon-viewer {
+        transition: none !important;
+    }
+}
+
+/* Dark mode adjustments (already dark by default) */
+@media (prefers-color-scheme: light) {
+    /* Keep dark theme even in light mode for better artwork viewing */
+    .app-container {
+        background-color: #000;
+        color: #fff;
+    }
+}
+
+/* Smooth scrolling for the entire app */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Ensure proper stacking context */
+.viewer-container > * {
+    position: absolute;
+}
+
+/* Loading animation enhancement */
+.viewer-loading::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    border-radius: 8px;
+    animation: shimmer 2s infinite;
+    z-index: -1;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}

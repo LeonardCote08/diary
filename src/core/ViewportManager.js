@@ -1,48 +1,44 @@
 import OpenSeadragon from 'openseadragon';
 
 /**
- * ViewportManager - Manages viewport state and coordinate transformations
- * Optimized for performance with caching and efficient calculations
+ * ViewportManager - Manages viewport state with perfect synchronization
+ * No caching to ensure hotspots stay perfectly aligned with the image
  */
 class ViewportManager {
     constructor(viewer) {
         this.viewer = viewer;
 
-        // Cached viewport state
-        this.cachedViewport = null;
-        this.lastUpdateTime = 0;
-        this.updateThreshold = 16; // ~60fps
+        // Disable caching by default for perfect sync
+        this.updateThreshold = 0;
 
-        // Viewport padding for smoother transitions
-        this.viewportPadding = 0.2; // 20% padding around visible area
+        // Viewport padding for pre-loading nearby hotspots
+        this.viewportPadding = 0.2; // 20% padding
 
         // Performance metrics
         this.metrics = {
             lastUpdateDuration: 0,
-            totalUpdates: 0,
-            cachedQueries: 0
+            totalUpdates: 0
         };
     }
 
     /**
-     * Update cached viewport data
+     * Get current viewport data - always fresh, no caching
+     */
+    getCurrentViewport() {
+        return this.update();
+    }
+
+    /**
+     * Update viewport data - always returns fresh data
      */
     update() {
-        const now = performance.now();
-
-        // Throttle updates for performance
-        if (now - this.lastUpdateTime < this.updateThreshold && this.cachedViewport) {
-            this.metrics.cachedQueries++;
-            return this.cachedViewport;
-        }
-
         const startTime = performance.now();
 
-        // Get current viewport bounds in image coordinates
+        // Get current viewport bounds
         const viewport = this.viewer.viewport;
         const bounds = viewport.getBounds();
 
-        // Convert to image coordinates
+        // Convert viewport bounds to image coordinates
         const topLeft = viewport.viewportToImageCoordinates(
             new OpenSeadragon.Point(bounds.x, bounds.y)
         );
@@ -50,11 +46,11 @@ class ViewportManager {
             new OpenSeadragon.Point(bounds.x + bounds.width, bounds.y + bounds.height)
         );
 
-        // Apply padding for smoother scrolling
+        // Calculate padding
         const paddingX = (bottomRight.x - topLeft.x) * this.viewportPadding;
         const paddingY = (bottomRight.y - topLeft.y) * this.viewportPadding;
 
-        // Create padded bounds
+        // Create padded bounds for pre-loading nearby hotspots
         const paddedBounds = {
             minX: Math.max(0, topLeft.x - paddingX),
             minY: Math.max(0, topLeft.y - paddingY),
@@ -62,17 +58,13 @@ class ViewportManager {
             maxY: bottomRight.y + paddingY
         };
 
-        // Calculate current zoom level
-        const zoom = viewport.getZoom();
-        const containerSize = viewport.getContainerSize();
-
-        // Cache the viewport data
-        this.cachedViewport = {
+        // Get current viewport state
+        const viewportData = {
             bounds: paddedBounds,
-            zoom: zoom,
+            zoom: viewport.getZoom(),
             center: viewport.getCenter(),
             rotation: viewport.getRotation(),
-            containerSize: containerSize,
+            containerSize: viewport.getContainerSize(),
             imageBounds: {
                 minX: topLeft.x,
                 minY: topLeft.y,
@@ -83,33 +75,10 @@ class ViewportManager {
         };
 
         // Update metrics
-        this.lastUpdateTime = now;
         this.metrics.lastUpdateDuration = performance.now() - startTime;
         this.metrics.totalUpdates++;
 
-        return this.cachedViewport;
-    }
-
-    /**
-     * Get current viewport data with caching
-     */
-    getCurrentViewport() {
-        if (!this.cachedViewport) {
-            return this.update();
-        }
-
-        // Check if viewport has changed significantly
-        const currentZoom = this.viewer.viewport.getZoom();
-        const currentCenter = this.viewer.viewport.getCenter();
-
-        if (Math.abs(currentZoom - this.cachedViewport.zoom) > 0.001 ||
-            Math.abs(currentCenter.x - this.cachedViewport.center.x) > 0.001 ||
-            Math.abs(currentCenter.y - this.cachedViewport.center.y) > 0.001) {
-            return this.update();
-        }
-
-        this.metrics.cachedQueries++;
-        return this.cachedViewport;
+        return viewportData;
     }
 
     /**
@@ -117,7 +86,7 @@ class ViewportManager {
      */
     isPointInViewport(x, y) {
         const viewport = this.getCurrentViewport();
-        const bounds = viewport.bounds;
+        const bounds = viewport.imageBounds; // Use exact bounds, not padded
 
         return x >= bounds.minX && x <= bounds.maxX &&
             y >= bounds.minY && y <= bounds.maxY;
@@ -128,7 +97,7 @@ class ViewportManager {
      */
     isBoxInViewport(minX, minY, maxX, maxY) {
         const viewport = this.getCurrentViewport();
-        const bounds = viewport.bounds;
+        const bounds = viewport.bounds; // Use padded bounds for pre-loading
 
         return !(maxX < bounds.minX || minX > bounds.maxX ||
             maxY < bounds.minY || minY > bounds.maxY);
@@ -162,12 +131,16 @@ class ViewportManager {
         const containerSize = viewport.getContainerSize();
         const bounds = viewport.getBounds();
 
-        // Image units per viewport width
-        const imageWidth = this.viewer.world.getItemAt(0).getContentSize().x;
-        const viewportWidth = bounds.width;
+        // Get the actual image dimensions
+        const tiledImage = this.viewer.world.getItemAt(0);
+        if (!tiledImage) return 1;
 
-        // Pixels per image unit
-        return containerSize.x / (imageWidth * viewportWidth);
+        const imageSize = tiledImage.getContentSize();
+        const imageWidth = imageSize.x;
+
+        // Calculate how many pixels represent one image unit
+        const viewportWidthInImageUnits = bounds.width * imageWidth;
+        return containerSize.x / viewportWidthInImageUnits;
     }
 
     /**
@@ -198,8 +171,9 @@ class ViewportManager {
         return {
             ...this.metrics,
             currentZoom: this.viewer.viewport.getZoom(),
-            cacheHitRate: this.metrics.cachedQueries /
-                (this.metrics.totalUpdates + this.metrics.cachedQueries)
+            averageUpdateTime: this.metrics.totalUpdates > 0
+                ? this.metrics.lastUpdateDuration / this.metrics.totalUpdates
+                : 0
         };
     }
 
@@ -209,8 +183,7 @@ class ViewportManager {
     resetMetrics() {
         this.metrics = {
             lastUpdateDuration: 0,
-            totalUpdates: 0,
-            cachedQueries: 0
+            totalUpdates: 0
         };
     }
 
@@ -228,11 +201,17 @@ class ViewportManager {
     }
 
     /**
+     * Force immediate viewport update
+     */
+    forceUpdate() {
+        return this.update();
+    }
+
+    /**
      * Clean up
      */
     destroy() {
         this.viewer = null;
-        this.cachedViewport = null;
     }
 }
 
