@@ -1,3 +1,5 @@
+import OpenSeadragon from 'openseadragon';
+
 /**
  * ViewportManager - Manages viewport state and coordinate transformations
  * Optimized for performance with caching and efficient calculations
@@ -12,7 +14,7 @@ class ViewportManager {
         this.updateThreshold = 16; // ~60fps
 
         // Viewport padding for smoother transitions
-        this.viewportPadding = 0.1; // 10% padding around visible area
+        this.viewportPadding = 0.2; // 20% padding around visible area
 
         // Performance metrics
         this.metrics = {

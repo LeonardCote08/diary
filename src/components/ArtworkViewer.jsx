@@ -1,9 +1,11 @@
-import { onMount, createSignal, onCleanup } from 'solid-js';
+import { onMount, createSignal, onCleanup, createEffect } from 'solid-js';
 import OpenSeadragon from 'openseadragon';
 import HotspotRenderer from '../core/HotspotRenderer';
 import ViewportManager from '../core/ViewportManager';
 import SpatialIndex from '../core/SpatialIndex';
-import hotspotData from '../data/hotspots.json';
+
+// Import hotspots data - we'll use a dynamic import to handle the path issue
+let hotspotData = [];
 
 function ArtworkViewer(props) {
     let viewerRef;
@@ -17,7 +19,30 @@ function ArtworkViewer(props) {
     const [hoveredHotspot, setHoveredHotspot] = createSignal(null);
     const [selectedHotspot, setSelectedHotspot] = createSignal(null);
 
-    onMount(() => {
+    onMount(async () => {
+        // Load hotspots data
+        try {
+            const response = await fetch('/data/hotspots.json');
+            hotspotData = await response.json();
+            console.log(`Loaded ${hotspotData.length} hotspots`);
+
+            // Check for extreme coordinates
+            let maxX = 0, maxY = 0;
+            hotspotData.forEach(hotspot => {
+                const coords = hotspot.shape === 'polygon' ? hotspot.coordinates : hotspot.coordinates.flat();
+                coords.forEach(point => {
+                    if (Array.isArray(point) && point.length >= 2) {
+                        maxX = Math.max(maxX, point[0]);
+                        maxY = Math.max(maxY, point[1]);
+                    }
+                });
+            });
+            console.log(`Max hotspot coordinates: X=${maxX}, Y=${maxY}`);
+        } catch (error) {
+            console.error('Failed to load hotspots:', error);
+            hotspotData = [];
+        }
+
         // Initialize OpenSeadragon viewer
         viewer = OpenSeadragon({
             element: viewerRef,
@@ -30,36 +55,92 @@ function ArtworkViewer(props) {
             visibilityRatio: 0.5,
             constrainDuringPan: true,
 
-            // Navigation controls
+            // Navigation controls 
             showNavigationControl: true,
             navigationControlAnchor: OpenSeadragon.ControlAnchor.TOP_RIGHT,
+            showZoomControl: true,
+            showHomeControl: true,
+            showFullPageControl: false,
+            showRotationControl: false,
 
-            // Zoom settings for artwork
+            // Zoom settings 
             minZoomLevel: 0.5,
             maxZoomPixelRatio: 4,
             defaultZoomLevel: 1,
+            zoomPerClick: 2.0,
+            zoomPerScroll: 1.2,
 
-            // Animation settings
+            // Animation settings 
             animationTime: 0.5,
             springStiffness: 10,
+            zoomPerSecond: 2.0,
 
-            // Mobile optimizations
+            // Mobile optimizations 
             gestureSettingsMouse: {
-                clickToZoom: false,
+                clickToZoom: true,
                 dblClickToZoom: true,
-                flickEnabled: true
+                scrollToZoom: true,
+                flickEnabled: true,
+                flickMinSpeed: 120,
+                flickMomentum: 0.25
             },
             gestureSettingsTouch: {
                 pinchToZoom: true,
-                flickEnabled: true
+                clickToZoom: false,
+                dblClickToZoom: true,
+                flickEnabled: true,
+                flickMinSpeed: 120,
+                flickMomentum: 0.25
+            },
+            gestureSettingsPen: {
+                clickToZoom: true,
+                dblClickToZoom: true,
+                flickEnabled: false
             }
         });
+
+        // Optimize for touch devices
+        if ('ontouchstart' in window) {
+            viewer.addHandler('canvas-press', function (event) {
+                // Prevent default touch behavior
+                event.originalEvent.preventDefault();
+            });
+        }
+
+        // Add performance monitoring
+        viewer.addHandler('animation-finish', function () {
+            const fps = viewer.viewport.getAnimationTime();
+            if (fps > 100) {
+                console.warn('Slow animation detected:', fps + 'ms');
+            }
+        });
+
+        // Initialize spatial index right away
+        spatialIndex = new SpatialIndex();
+        spatialIndex.loadHotspots(hotspotData);
+
+        // Initialize viewport manager
+        viewportManager = new ViewportManager(viewer);
 
         // Wait for viewer to be ready
         viewer.addHandler('open', () => {
             console.log('OpenSeadragon viewer ready');
-            initializeHotspotSystem();
+
+            // Log image dimensions for debugging
+            const tiledImage = viewer.world.getItemAt(0);
+            if (tiledImage) {
+                const imageSize = tiledImage.getContentSize();
+                console.log(`Image dimensions: ${imageSize.x} x ${imageSize.y}`);
+            }
+
             setIsLoading(false);
+
+            // Initialize hotspot system after canvas is rendered
+            setTimeout(() => {
+                if (canvasRef) {
+                    initializeHotspotSystem();
+                }
+            }, 0);
         });
 
         // Handle viewport changes
@@ -68,7 +149,7 @@ function ArtworkViewer(props) {
 
         // Handle resize
         const resizeObserver = new ResizeObserver(() => {
-            if (viewer && renderer) {
+            if (viewer && renderer && canvasRef) {
                 resizeCanvas();
                 renderer.render();
             }
@@ -88,12 +169,10 @@ function ArtworkViewer(props) {
     });
 
     const initializeHotspotSystem = () => {
-        // Initialize spatial index with hotspot data
-        spatialIndex = new SpatialIndex();
-        spatialIndex.loadHotspots(hotspotData);
-
-        // Initialize viewport manager
-        viewportManager = new ViewportManager(viewer);
+        if (!canvasRef) {
+            console.error('Canvas not ready for hotspot system');
+            return;
+        }
 
         // Initialize canvas renderer
         renderer = new HotspotRenderer(canvasRef, {
@@ -110,6 +189,8 @@ function ArtworkViewer(props) {
         // Initial render
         resizeCanvas();
         renderer.render();
+
+        console.log('Hotspot system initialized');
     };
 
     const resizeCanvas = () => {
@@ -121,15 +202,26 @@ function ArtworkViewer(props) {
         // Handle high DPI displays
         const dpr = window.devicePixelRatio || 1;
 
-        canvasRef.width = rect.width * dpr;
-        canvasRef.height = rect.height * dpr;
-        canvasRef.style.width = `${rect.width}px`;
-        canvasRef.style.height = `${rect.height}px`;
+        // Set canvas size - use floor to avoid subpixel issues
+        const width = Math.floor(rect.width);
+        const height = Math.floor(rect.height);
 
-        // Scale canvas context for high DPI
+        canvasRef.width = width * dpr;
+        canvasRef.height = height * dpr;
+        canvasRef.style.width = `${width}px`;
+        canvasRef.style.height = `${height}px`;
+
+        // Get fresh context and reset transform
         const ctx = canvasRef.getContext('2d');
-        ctx.scale(dpr, dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        // Set rendering hints
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalAlpha = 1.0;
+
+        console.log(`Canvas resized: ${width}x${height} (DPR: ${dpr})`);
     };
+
 
     const handleViewportChange = () => {
         if (!renderer || !viewportManager) return;
@@ -137,10 +229,15 @@ function ArtworkViewer(props) {
         // Update viewport manager
         viewportManager.update();
 
-        // Re-render hotspots for new viewport
-        requestAnimationFrame(() => {
+        // Cancel any pending render
+        if (window.renderTimeout) {
+            clearTimeout(window.renderTimeout);
+        }
+
+        // Debounce render calls
+        window.renderTimeout = setTimeout(() => {
             renderer.render();
-        });
+        }, 16);
     };
 
     const setupCanvasEvents = () => {
@@ -163,12 +260,16 @@ function ArtworkViewer(props) {
 
         // Handle mouse movement for hover effects
         canvasRef.addEventListener('mousemove', (event) => {
+            if (!spatialIndex) return;
+
             const imagePoint = getImageCoordinates(event);
             const hotspot = spatialIndex.getHotspotAtPoint(imagePoint.x, imagePoint.y);
 
             if (hotspot !== hoveredHotspot()) {
                 setHoveredHotspot(hotspot);
-                renderer.setHoveredHotspot(hotspot);
+                if (renderer) {
+                    renderer.setHoveredHotspot(hotspot);
+                }
 
                 // Update cursor
                 canvasRef.style.cursor = hotspot ? 'pointer' : 'default';
@@ -178,7 +279,9 @@ function ArtworkViewer(props) {
         // Handle mouse leave
         canvasRef.addEventListener('mouseleave', () => {
             setHoveredHotspot(null);
-            renderer.setHoveredHotspot(null);
+            if (renderer) {
+                renderer.setHoveredHotspot(null);
+            }
             canvasRef.style.cursor = 'default';
         });
     };
@@ -200,8 +303,25 @@ function ArtworkViewer(props) {
         console.log('Hotspot clicked:', hotspot);
         setSelectedHotspot(hotspot);
 
-        // This will trigger audio playback and other interactions
-        // We'll implement this in the next phase
+        // Check if mobile
+        const isMobile = window.innerWidth <= 768;
+
+        if (isMobile && hotspot) {
+            // Calculate hotspot center
+            const bounds = spatialIndex.calculateBoundingBox(hotspot.coordinates);
+            const centerX = (bounds.minX + bounds.maxX) / 2;
+            const centerY = (bounds.minY + bounds.maxY) / 2;
+
+            // Convert to viewport coordinates
+            const imagePoint = new OpenSeadragon.Point(centerX, centerY);
+            const viewportPoint = viewer.viewport.imageToViewportCoordinates(imagePoint);
+
+            // Zoom to hotspot
+            viewer.viewport.zoomTo(2.5, viewportPoint, true);
+            viewer.viewport.panTo(viewportPoint, true);
+        }
+
+        // Audio playback will be implemented next
     };
 
     return (
@@ -216,17 +336,19 @@ function ArtworkViewer(props) {
                 }}
             />
 
-            <canvas
-                ref={canvasRef}
-                class="hotspot-canvas"
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    'pointer-events': 'auto',
-                    'z-index': 10
-                }}
-            />
+            {!isLoading() && (
+                <canvas
+                    ref={canvasRef}
+                    class="hotspot-canvas"
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        'pointer-events': 'auto',
+                        'z-index': 10
+                    }}
+                />
+            )}
 
             {isLoading() && (
                 <div class="viewer-loading">
@@ -235,20 +357,51 @@ function ArtworkViewer(props) {
             )}
 
             {/* Debug info - remove in production */}
-            <div class="debug-info" style={{
-                position: 'absolute',
-                top: '10px',
-                left: '10px',
-                background: 'rgba(0,0,0,0.7)',
-                color: 'white',
-                padding: '10px',
-                'font-size': '12px',
-                'font-family': 'monospace',
-                'z-index': 20
-            }}>
-                <div>Hovered: {hoveredHotspot()?.id || 'none'}</div>
-                <div>Selected: {selectedHotspot()?.id || 'none'}</div>
-            </div>
+            {!isLoading() && (
+                <div class="debug-info" style={{
+                    position: 'absolute',
+                    top: '10px',
+                    left: '10px',
+                    background: 'rgba(0,0,0,0.7)',
+                    color: 'white',
+                    padding: '10px',
+                    'font-size': '12px',
+                    'font-family': 'monospace',
+                    'z-index': 20
+                }}>
+                    <div>Hovered: {hoveredHotspot()?.id || 'none'}</div>
+                    <div>Selected: {selectedHotspot()?.id || 'none'}</div>
+                    <div>Type: {hoveredHotspot()?.type || 'none'}</div>
+                    <div>Total hotspots: {hotspotData.length}</div>
+                </div>
+            )}
+
+            {/* Hotspot legend */}
+            {!isLoading() && (
+                <div class="hotspot-legend">
+                    <h3>Hotspot Types</h3>
+                    <div class="legend-item">
+                        <div class="legend-color audio-only"></div>
+                        <span>Audio Only</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color audio-link"></div>
+                        <span>Audio + Link</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color audio-image"></div>
+                        <span>Audio + Image</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color audio-image-link"></div>
+                        <span>Audio + Image + Link</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color audio-sound"></div>
+                        <span>Audio + Sound</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,3 +1,5 @@
+import OpenSeadragon from 'openseadragon';
+
 /**
  * HotspotRenderer - High-performance Canvas 2D renderer for hotspots
  * Optimized for rendering 600+ hotspots at 60 FPS
@@ -5,7 +7,11 @@
 class HotspotRenderer {
     constructor(canvas, options = {}) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext('2d', { alpha: true });
+        this.ctx = canvas.getContext('2d', {
+            alpha: true,
+            willReadFrequently: false
+        });
+
         this.viewer = options.viewer;
         this.spatialIndex = options.spatialIndex;
         this.viewportManager = options.viewportManager;
@@ -71,8 +77,11 @@ class HotspotRenderer {
     render() {
         if (!this.viewer || !this.spatialIndex || !this.viewportManager) return;
 
-        // Clear the canvas
+        // Save state before clearing
+        this.ctx.save();
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.restore();
 
         // Get visible hotspots from viewport manager
         const viewport = this.viewportManager.getCurrentViewport();
@@ -108,6 +117,10 @@ class HotspotRenderer {
         const style = this.styles[hotspot.type] || this.styles.audio_only;
         const isSelected = this.selectedHotspot?.id === hotspot.id;
 
+        // Ensure proper composite mode
+        this.ctx.globalCompositeOperation = 'source-over';
+        this.ctx.globalAlpha = 1.0;
+
         // Convert image coordinates to viewport coordinates
         const viewportCoords = this.imageToViewportCoordinates(hotspot.coordinates);
         if (!viewportCoords || viewportCoords.length === 0) return;
@@ -115,8 +128,14 @@ class HotspotRenderer {
         // Save context state
         this.ctx.save();
 
-        // Set style based on state
-        if (isHovered || hotspot.id === this.hoveredHotspot?.id) {
+        // Set styles
+        if (isHovered) {
+            // Add glow effect for hover
+            this.ctx.shadowColor = style.stroke;
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowOffsetX = 0;
+            this.ctx.shadowOffsetY = 0;
+
             this.ctx.fillStyle = style.hoverFill;
             this.ctx.strokeStyle = style.stroke;
             this.ctx.lineWidth = 2;
@@ -125,18 +144,12 @@ class HotspotRenderer {
             this.ctx.strokeStyle = style.stroke;
             this.ctx.lineWidth = 3;
         } else {
+            // Reset shadow for normal state
+            this.ctx.shadowBlur = 0;
+
             this.ctx.fillStyle = style.fill;
             this.ctx.strokeStyle = style.stroke;
             this.ctx.lineWidth = 1;
-        }
-
-        // Handle different shape types
-        if (hotspot.shape === 'polygon') {
-            this.drawPolygon(viewportCoords);
-        } else if (hotspot.shape === 'multipolygon') {
-            viewportCoords.forEach(polygon => {
-                this.drawPolygon(polygon);
-            });
         }
 
         // Restore context state
@@ -148,6 +161,15 @@ class HotspotRenderer {
      */
     drawPolygon(coordinates) {
         if (!coordinates || coordinates.length < 3) return;
+
+        // Check if any coordinate is extreme
+        const hasExtremeCoords = coordinates.some(point =>
+            Math.abs(point[0]) > 10000 || Math.abs(point[1]) > 10000
+        );
+
+        if (hasExtremeCoords) {
+            console.warn('Extreme coordinates detected:', coordinates[0]);
+        }
 
         this.ctx.beginPath();
         this.ctx.moveTo(coordinates[0][0], coordinates[0][1]);
