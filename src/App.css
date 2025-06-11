@@ -64,6 +64,14 @@
     z-index: 10;
     width: 100%;
     height: 100%;
+    /* Smooth rendering optimizations */
+    image-rendering: optimizeSpeed;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    /* Prevent canvas from being selected */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 /* Viewer loading indicator */
@@ -218,37 +226,142 @@
         cursor: grabbing;
     }
 
-/* Smooth transitions for hotspots */
-.hotspot-canvas {
+    /* Navigation controls styling */
+    .openseadragon-container .navigator {
+        background: rgba(0, 0, 0, 0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 4px;
+    }
+
+    /* Style the zoom buttons */
+    .openseadragon-container button {
+        background: rgba(0, 0, 0, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        color: white !important;
+        transition: all 0.2s ease;
+        width: 40px !important;
+        height: 40px !important;
+        border-radius: 50% !important;
+        margin: 5px !important;
+        font-size: 18px !important;
+    }
+
+        .openseadragon-container button:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.4) !important;
+        }
+
+/* Prevent text selection during drag */
+.viewer-container {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Mobile controls */
+.mobile-controls {
     position: absolute;
-    top: 0;
-    left: 0;
-    pointer-events: auto;
-    z-index: 10;
-    width: 100%;
-    height: 100%;
-    /* Add smooth rendering */
-    image-rendering: optimizeSpeed;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
+    bottom: 100px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 30;
 }
 
-/* Navigation controls styling */
-.openseadragon-container .navigator {
-    background: rgba(0, 0, 0, 0.6) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 4px;
-}
-
-/* Style the zoom buttons */
-.openseadragon-container button {
-    background: rgba(0, 0, 0, 0.7) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    color: white !important;
+.zoom-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
     transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 0;
+    margin: 0;
 }
 
-    .openseadragon-container button:hover {
-        background: rgba(255, 255, 255, 0.1) !important;
-        border-color: rgba(255, 255, 255, 0.4) !important;
+    .zoom-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: scale(1.1);
+    }
+
+    .zoom-btn:active {
+        transform: scale(0.95);
+    }
+
+.zoom-home {
+    font-size: 20px;
+}
+
+/* Enhanced OpenSeadragon controls */
+.openseadragon-container .openseadragon-controls {
+    margin: 20px !important;
+}
+
+/* Keyboard shortcuts info */
+.shortcuts-info {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 10px;
+    border-radius: 8px;
+    z-index: 25;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 12px;
+}
+
+    .shortcuts-info summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: #fff;
+        outline: none;
+        user-select: none;
+    }
+
+        .shortcuts-info summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .shortcuts-info summary::before {
+            content: '⌨️ ';
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+.shortcuts-list {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+    .shortcuts-list div {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .shortcuts-list kbd {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: 'SF Mono', Monaco, monospace;
+        font-size: 11px;
+        min-width: 20px;
+        text-align: center;
+        display: inline-block;
     }

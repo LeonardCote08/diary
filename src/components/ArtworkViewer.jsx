@@ -55,63 +55,28 @@ function ArtworkViewer(props) {
             visibilityRatio: 0.5,
             constrainDuringPan: true,
 
-            // Navigation controls 
+            // Navigation controls
             showNavigationControl: true,
             navigationControlAnchor: OpenSeadragon.ControlAnchor.TOP_RIGHT,
-            showZoomControl: true,
-            showHomeControl: true,
-            showFullPageControl: false,
-            showRotationControl: false,
 
-            // Zoom settings 
+            // Zoom settings for artwork
             minZoomLevel: 0.5,
             maxZoomPixelRatio: 4,
             defaultZoomLevel: 1,
-            zoomPerClick: 2.0,
-            zoomPerScroll: 1.2,
 
-            // Animation settings 
+            // Animation settings
             animationTime: 0.5,
             springStiffness: 10,
-            zoomPerSecond: 2.0,
 
-            // Mobile optimizations 
+            // Mobile optimizations
             gestureSettingsMouse: {
-                clickToZoom: true,
+                clickToZoom: false,
                 dblClickToZoom: true,
-                scrollToZoom: true,
-                flickEnabled: true,
-                flickMinSpeed: 120,
-                flickMomentum: 0.25
+                flickEnabled: true
             },
             gestureSettingsTouch: {
                 pinchToZoom: true,
-                clickToZoom: false,
-                dblClickToZoom: true,
-                flickEnabled: true,
-                flickMinSpeed: 120,
-                flickMomentum: 0.25
-            },
-            gestureSettingsPen: {
-                clickToZoom: true,
-                dblClickToZoom: true,
-                flickEnabled: false
-            }
-        });
-
-        // Optimize for touch devices
-        if ('ontouchstart' in window) {
-            viewer.addHandler('canvas-press', function (event) {
-                // Prevent default touch behavior
-                event.originalEvent.preventDefault();
-            });
-        }
-
-        // Add performance monitoring
-        viewer.addHandler('animation-finish', function () {
-            const fps = viewer.viewport.getAnimationTime();
-            if (fps > 100) {
-                console.warn('Slow animation detected:', fps + 'ms');
+                flickEnabled: true
             }
         });
 
@@ -143,8 +108,24 @@ function ArtworkViewer(props) {
             }, 0);
         });
 
-        // Handle viewport changes
-        viewer.addHandler('viewport-change', handleViewportChange);
+        // Handle viewport changes - immediate render without debounce for smooth sync
+        viewer.addHandler('viewport-change', () => {
+            if (!renderer || !viewportManager) return;
+
+            // Update viewport manager
+            viewportManager.update();
+
+            // Render immediately for smooth tracking
+            renderer.render();
+        });
+
+        // Also render on animation to ensure smooth transitions
+        viewer.addHandler('animation', () => {
+            if (renderer) {
+                renderer.render();
+            }
+        });
+
         viewer.addHandler('canvas-click', handleCanvasClick);
 
         // Handle resize
@@ -156,8 +137,48 @@ function ArtworkViewer(props) {
         });
         resizeObserver.observe(viewerRef);
 
+        // Add keyboard shortcuts
+        const handleKeyPress = (event) => {
+            if (!viewer) return;
+
+            switch (event.key) {
+                case '+':
+                case '=':
+                    viewer.viewport.zoomBy(1.5);
+                    viewer.viewport.applyConstraints();
+                    break;
+                case '-':
+                case '_':
+                    viewer.viewport.zoomBy(0.7);
+                    viewer.viewport.applyConstraints();
+                    break;
+                case '0':
+                    viewer.viewport.goHome();
+                    break;
+                case 'ArrowLeft':
+                    viewer.viewport.panBy(new OpenSeadragon.Point(-0.1, 0));
+                    viewer.viewport.applyConstraints();
+                    break;
+                case 'ArrowRight':
+                    viewer.viewport.panBy(new OpenSeadragon.Point(0.1, 0));
+                    viewer.viewport.applyConstraints();
+                    break;
+                case 'ArrowUp':
+                    viewer.viewport.panBy(new OpenSeadragon.Point(0, -0.1));
+                    viewer.viewport.applyConstraints();
+                    break;
+                case 'ArrowDown':
+                    viewer.viewport.panBy(new OpenSeadragon.Point(0, 0.1));
+                    viewer.viewport.applyConstraints();
+                    break;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyPress);
+
         // Cleanup
         onCleanup(() => {
+            window.removeEventListener('keydown', handleKeyPress);
             resizeObserver.disconnect();
             if (viewer) {
                 viewer.destroy();
@@ -211,9 +232,9 @@ function ArtworkViewer(props) {
         canvasRef.style.width = `${width}px`;
         canvasRef.style.height = `${height}px`;
 
-        // Get fresh context and reset transform
+        // Get fresh context and scale for DPI
         const ctx = canvasRef.getContext('2d');
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.scale(dpr, dpr);
 
         // Set rendering hints
         ctx.imageSmoothingEnabled = false;
@@ -222,22 +243,16 @@ function ArtworkViewer(props) {
         console.log(`Canvas resized: ${width}x${height} (DPR: ${dpr})`);
     };
 
-
     const handleViewportChange = () => {
         if (!renderer || !viewportManager) return;
 
         // Update viewport manager
         viewportManager.update();
 
-        // Cancel any pending render
-        if (window.renderTimeout) {
-            clearTimeout(window.renderTimeout);
-        }
-
-        // Debounce render calls
-        window.renderTimeout = setTimeout(() => {
+        // Re-render hotspots for new viewport
+        requestAnimationFrame(() => {
             renderer.render();
-        }, 16);
+        });
     };
 
     const setupCanvasEvents = () => {
@@ -287,41 +302,16 @@ function ArtworkViewer(props) {
     };
 
     const handleCanvasClick = (event) => {
-        if (!event.quick || !spatialIndex) return;
-
-        const imagePoint = viewer.viewport.viewportToImageCoordinates(
-            event.position
-        );
-
-        const hotspot = spatialIndex.getHotspotAtPoint(imagePoint.x, imagePoint.y);
-        if (hotspot) {
-            handleHotspotClick(hotspot);
-        }
+        // Handled by the click event on canvas now
+        // This is kept for OpenSeadragon compatibility
     };
 
     const handleHotspotClick = (hotspot) => {
         console.log('Hotspot clicked:', hotspot);
         setSelectedHotspot(hotspot);
 
-        // Check if mobile
-        const isMobile = window.innerWidth <= 768;
-
-        if (isMobile && hotspot) {
-            // Calculate hotspot center
-            const bounds = spatialIndex.calculateBoundingBox(hotspot.coordinates);
-            const centerX = (bounds.minX + bounds.maxX) / 2;
-            const centerY = (bounds.minY + bounds.maxY) / 2;
-
-            // Convert to viewport coordinates
-            const imagePoint = new OpenSeadragon.Point(centerX, centerY);
-            const viewportPoint = viewer.viewport.imageToViewportCoordinates(imagePoint);
-
-            // Zoom to hotspot
-            viewer.viewport.zoomTo(2.5, viewportPoint, true);
-            viewer.viewport.panTo(viewportPoint, true);
-        }
-
-        // Audio playback will be implemented next
+        // This will trigger audio playback and other interactions
+        // We'll implement this in the next phase
     };
 
     return (
@@ -353,6 +343,21 @@ function ArtworkViewer(props) {
             {isLoading() && (
                 <div class="viewer-loading">
                     <p>Loading artwork...</p>
+                    {/* Keyboard shortcuts info */}
+                    {!isLoading() && window.innerWidth > 768 && (
+                        <div class="shortcuts-info">
+                            <details>
+                                <summary>Keyboard Shortcuts</summary>
+                                <div class="shortcuts-list">
+                                    <div><kbd>+</kbd> Zoom in</div>
+                                    <div><kbd>-</kbd> Zoom out</div>
+                                    <div><kbd>0</kbd> Reset view</div>
+                                    <div><kbd>↑↓←→</kbd> Pan</div>
+                                    <div><kbd>Double-click</kbd> Quick zoom</div>
+                                </div>
+                            </details>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -376,7 +381,35 @@ function ArtworkViewer(props) {
                 </div>
             )}
 
-            {/* Hotspot legend */}
+            {/* Custom zoom controls for mobile */}
+            {!isLoading() && window.innerWidth <= 768 && (
+                <div class="mobile-controls">
+                    <button
+                        class="zoom-btn zoom-in"
+                        onClick={() => {
+                            viewer.viewport.zoomBy(1.5);
+                            viewer.viewport.applyConstraints();
+                        }}
+                    >
+                        +
+                    </button>
+                    <button
+                        class="zoom-btn zoom-out"
+                        onClick={() => {
+                            viewer.viewport.zoomBy(0.7);
+                            viewer.viewport.applyConstraints();
+                        }}
+                    >
+                        −
+                    </button>
+                    <button
+                        class="zoom-btn zoom-home"
+                        onClick={() => viewer.viewport.goHome()}
+                    >
+                        ⌂
+                    </button>
+                </div>
+            )}
             {!isLoading() && (
                 <div class="hotspot-legend">
                     <h3>Hotspot Types</h3>
