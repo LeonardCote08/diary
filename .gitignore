@@ -7,6 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
 dist
 dist-ssr
@@ -24,6 +25,17 @@ dist-ssr
 *.sln
 *.sw?
 
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
 # Custom exclusions
 node_modules/
 dist/
@@ -36,3 +48,31 @@ assets/source/
 
 # TILES GÉNÉRÉES - Très important !
 public/images/tiles/
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# Performance test results
+performance-results/
+lighthouse-reports/
+
+# Scripts temporaires Windows
+*.ps1.bak
+*.bat.bak
+
+# Backup folders
+backup/
+old/
+_old/
+
+# Cache folders
+.cache/
+.parcel-cache/
+
+# OS generated files
+.Spotlight-V100
+.Trashes
+*.swp
+*~

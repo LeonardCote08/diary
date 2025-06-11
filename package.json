@@ -8,7 +8,12 @@
         "build": "vite build",
         "preview": "vite preview",
         "convert": "node scripts/svg-converter.js",
-        "generate-tiles": "node scripts/generate-tiles.js"
+        "generate-tiles": "node scripts/generate-tiles.js",
+        "clean-tiles": "powershell -Command \"Remove-Item -Path 'public/images/tiles/*' -Recurse -Force -ErrorAction SilentlyContinue\"",
+        "regenerate-tiles": "npm run clean-tiles && npm run generate-tiles",
+        "optimize-images": "npm run regenerate-tiles",
+        "test-performance": "vite --host --open",
+        "analyze": "vite build --mode analyze"
     },
     "dependencies": {
         "@solidjs/router": "^0.10.10",

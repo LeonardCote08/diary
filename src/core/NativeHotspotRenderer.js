@@ -2,7 +2,7 @@ import OpenSeadragon from 'openseadragon';
 
 /**
  * NativeHotspotRenderer - Uses OpenSeadragon's native overlay system
- * Guarantees perfect synchronization with zero lag
+ * Optimized for performance following Deji's scalability requirements
  */
 class NativeHotspotRenderer {
     constructor(options = {}) {
@@ -15,13 +15,21 @@ class NativeHotspotRenderer {
         this.overlays = new Map();
         this.hoveredHotspot = null;
         this.selectedHotspot = null;
+        this.visibleOverlays = new Set();
 
-        // Create SVG overlay
-        this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        this.svg.style.position = 'absolute';
-        this.svg.style.width = '100%';
-        this.svg.style.height = '100%';
-        this.svg.style.pointerEvents = 'none';
+        // Performance settings
+        this.visibilityCheckInterval = 100; // ms
+        this.batchSize = 50; // Process hotspots in batches
+        this.renderDebounceTime = 16; // ~60fps
+
+        // Create container div for overlays
+        this.overlayContainer = document.createElement('div');
+        this.overlayContainer.style.position = 'absolute';
+        this.overlayContainer.style.width = '100%';
+        this.overlayContainer.style.height = '100%';
+        this.overlayContainer.style.pointerEvents = 'none';
+        this.overlayContainer.style.overflow = 'hidden';
+        this.overlayContainer.className = 'hotspot-overlay-container';
 
         // Styles
         this.styles = {
@@ -79,102 +87,162 @@ class NativeHotspotRenderer {
     /**
      * Initialize the renderer
      */
-    init() {
-        // Add SVG to viewer
-        this.viewer.container.appendChild(this.svg);
+    async init() {
+        // Wait for viewer to be ready
+        if (!this.viewer.world.getItemCount()) {
+            this.viewer.addOnceHandler('open', () => this.init());
+            return;
+        }
 
-        // Load all hotspots
-        const hotspots = this.spatialIndex.getAllHotspots();
-        hotspots.forEach(hotspot => this.createHotspotOverlay(hotspot));
+        // Get the image bounds
+        const tiledImage = this.viewer.world.getItemAt(0);
+        const imageSize = tiledImage.getContentSize();
 
-        // Setup viewport tracking for visibility culling
-        this.viewer.addHandler('update-viewport', () => this.updateVisibility());
-        this.viewer.addHandler('animation', () => this.updateVisibility());
+        // Create SVG overlay using OpenSeadragon's overlay system
+        const svgString = `<svg xmlns="http://www.w3.org/2000/svg" 
+                               width="${imageSize.x}" 
+                               height="${imageSize.y}" 
+                               viewBox="0 0 ${imageSize.x} ${imageSize.y}"
+                               style="position: absolute; width: 100%; height: 100%;">
+                          </svg>`;
 
-        // Initial visibility update
-        this.updateVisibility();
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(svgString, 'image/svg+xml');
+        this.svg = svgDoc.documentElement;
+
+        // Add SVG as overlay
+        this.viewer.addOverlay({
+            element: this.svg,
+            location: new OpenSeadragon.Rect(0, 0, 1, imageSize.y / imageSize.x),
+            placement: OpenSeadragon.Placement.TOP_LEFT
+        });
+
+        // Load hotspots in batches for better performance
+        await this.loadHotspotsInBatches();
+
+        // Setup visibility tracking
+        this.startVisibilityTracking();
     }
 
     /**
-     * Create an overlay for a hotspot
+     * Load hotspots in batches to avoid blocking
+     */
+    async loadHotspotsInBatches() {
+        const hotspots = this.spatialIndex.getAllHotspots();
+        const totalBatches = Math.ceil(hotspots.length / this.batchSize);
+
+        for (let i = 0; i < totalBatches; i++) {
+            const start = i * this.batchSize;
+            const end = Math.min(start + this.batchSize, hotspots.length);
+            const batch = hotspots.slice(start, end);
+
+            // Process batch
+            batch.forEach(hotspot => this.createHotspotOverlay(hotspot));
+
+            // Allow browser to breathe
+            if (i < totalBatches - 1) {
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+        }
+
+        console.log(`Loaded ${hotspots.length} hotspots in ${totalBatches} batches`);
+    }
+
+    /**
+     * Create an optimized overlay for a hotspot
      */
     createHotspotOverlay(hotspot) {
-        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        group.setAttribute('data-hotspot-id', hotspot.id);
-        group.style.cursor = 'pointer';
-        group.style.pointerEvents = 'auto';
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('data-hotspot-id', hotspot.id);
+        g.style.cursor = 'pointer';
+        g.style.pointerEvents = 'auto';
+        g.style.opacity = '0';
+        g.style.transition = 'opacity 0.2s ease-out';
 
-        // Create paths for the hotspot
+        // Create paths
         if (hotspot.shape === 'polygon') {
-            const path = this.createPolygonPath(hotspot.coordinates);
-            group.appendChild(path);
+            const path = this.createOptimizedPath(hotspot.coordinates);
+            g.appendChild(path);
         } else if (hotspot.shape === 'multipolygon') {
             hotspot.coordinates.forEach(polygon => {
-                const path = this.createPolygonPath(polygon);
-                group.appendChild(path);
+                const path = this.createOptimizedPath(polygon);
+                g.appendChild(path);
             });
         }
 
         // Apply initial style
-        this.applyStyle(group, hotspot.type, 'normal');
+        this.applyStyle(g, hotspot.type, 'normal');
 
-        // Add event listeners
-        group.addEventListener('mouseenter', () => this.handleHover(hotspot, true));
-        group.addEventListener('mouseleave', () => this.handleHover(hotspot, false));
-        group.addEventListener('click', (e) => this.handleClick(e, hotspot));
+        // Optimized event listeners
+        g.addEventListener('pointerenter', () => this.handleHover(hotspot, true), { passive: true });
+        g.addEventListener('pointerleave', () => this.handleHover(hotspot, false), { passive: true });
+        g.addEventListener('click', (e) => this.handleClick(e, hotspot), { passive: true });
+
+        // Touch support
+        g.addEventListener('touchstart', () => this.handleHover(hotspot, true), { passive: true });
+        g.addEventListener('touchend', () => {
+            this.handleHover(hotspot, false);
+            this.handleClick(event, hotspot);
+        }, { passive: true });
 
         // Add to SVG
-        this.svg.appendChild(group);
+        this.svg.appendChild(g);
 
-        // Store reference
+        // Store reference with bounds
         this.overlays.set(hotspot.id, {
-            element: group,
+            element: g,
             hotspot: hotspot,
-            bounds: this.calculateBounds(hotspot.coordinates)
+            bounds: this.calculateBounds(hotspot.coordinates),
+            isVisible: false
         });
     }
 
     /**
-     * Create SVG path for polygon
+     * Create optimized SVG path
      */
-    createPolygonPath(coordinates) {
+    createOptimizedPath(coordinates) {
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
-        // Build path data
-        let d = `M ${coordinates[0][0]} ${coordinates[0][1]}`;
-        for (let i = 1; i < coordinates.length; i++) {
-            d += ` L ${coordinates[i][0]} ${coordinates[i][1]}`;
-        }
-        d += ' Z';
+        // Build optimized path data
+        const pathData = coordinates.reduce((d, point, i) => {
+            return d + (i === 0 ? 'M' : 'L') + `${Math.round(point[0])},${Math.round(point[1])}`;
+        }, '') + 'Z';
 
-        path.setAttribute('d', d);
+        path.setAttribute('d', pathData);
+        path.setAttribute('vector-effect', 'non-scaling-stroke');
         return path;
     }
 
     /**
-     * Apply style to hotspot group
+     * Apply style efficiently
      */
     applyStyle(group, type, state) {
         const style = this.styles[type] || this.styles.audio_only;
-        const paths = group.querySelectorAll('path');
+        const paths = group.getElementsByTagName('path');
 
-        paths.forEach(path => {
+        // Use CSS classes for better performance
+        const className = `hotspot-${type} hotspot-${state}`;
+        group.setAttribute('class', className);
+
+        // Apply inline styles only for dynamic properties
+        for (let path of paths) {
             if (state === 'hover') {
-                path.setAttribute('fill', style.hoverFill);
-                path.setAttribute('stroke', style.stroke);
-                path.setAttribute('stroke-width', style.hoverStrokeWidth);
-                path.style.filter = 'drop-shadow(0 0 10px ' + style.stroke + ')';
+                path.style.fill = style.hoverFill;
+                path.style.stroke = style.stroke;
+                path.style.strokeWidth = style.hoverStrokeWidth + 'px';
+                path.style.filter = `drop-shadow(0 0 8px ${style.stroke})`;
             } else if (state === 'selected') {
-                path.setAttribute('fill', style.selectedFill);
-                path.setAttribute('stroke', style.stroke);
-                path.setAttribute('stroke-width', style.selectedStrokeWidth);
+                path.style.fill = style.selectedFill;
+                path.style.stroke = style.stroke;
+                path.style.strokeWidth = style.selectedStrokeWidth + 'px';
+                path.style.filter = '';
             } else {
-                path.setAttribute('fill', style.fill);
-                path.setAttribute('stroke', style.stroke);
-                path.setAttribute('stroke-width', style.strokeWidth);
-                path.style.filter = 'none';
+                path.style.fill = style.fill;
+                path.style.stroke = style.stroke;
+                path.style.strokeWidth = style.strokeWidth + 'px';
+                path.style.filter = '';
             }
-        });
+        }
     }
 
     /**
@@ -185,12 +253,12 @@ class NativeHotspotRenderer {
         let maxX = -Infinity, maxY = -Infinity;
 
         const processPoints = (points) => {
-            points.forEach(point => {
+            for (const point of points) {
                 minX = Math.min(minX, point[0]);
                 minY = Math.min(minY, point[1]);
                 maxX = Math.max(maxX, point[0]);
                 maxY = Math.max(maxY, point[1]);
-            });
+            }
         };
 
         if (Array.isArray(coordinates[0]) && typeof coordinates[0][0] === 'number') {
@@ -203,19 +271,36 @@ class NativeHotspotRenderer {
     }
 
     /**
-     * Update visibility based on viewport
+     * Start visibility tracking with debouncing
+     */
+    startVisibilityTracking() {
+        let updateTimer = null;
+
+        const scheduleUpdate = () => {
+            if (updateTimer) clearTimeout(updateTimer);
+            updateTimer = setTimeout(() => {
+                this.updateVisibility();
+            }, this.renderDebounceTime);
+        };
+
+        // Track viewport changes
+        this.viewer.addHandler('animation', scheduleUpdate);
+        this.viewer.addHandler('animation-finish', () => this.updateVisibility());
+
+        // Initial update
+        this.updateVisibility();
+    }
+
+    /**
+     * Optimized visibility update
      */
     updateVisibility() {
         const viewport = this.viewer.viewport;
         const bounds = viewport.getBounds();
 
         // Convert viewport bounds to image coordinates
-        const topLeft = viewport.viewportToImageCoordinates(
-            new OpenSeadragon.Point(bounds.x, bounds.y)
-        );
-        const bottomRight = viewport.viewportToImageCoordinates(
-            new OpenSeadragon.Point(bounds.x + bounds.width, bounds.y + bounds.height)
-        );
+        const topLeft = viewport.viewportToImageCoordinates(bounds.getTopLeft());
+        const bottomRight = viewport.viewportToImageCoordinates(bounds.getBottomRight());
 
         const viewBounds = {
             minX: topLeft.x,
@@ -224,54 +309,42 @@ class NativeHotspotRenderer {
             maxY: bottomRight.y
         };
 
-        // Update transform
-        this.updateSvgTransform();
+        // Expand bounds for preloading
+        const padding = (viewBounds.maxX - viewBounds.minX) * 0.2;
+        viewBounds.minX -= padding;
+        viewBounds.minY -= padding;
+        viewBounds.maxX += padding;
+        viewBounds.maxY += padding;
 
-        // Update visibility for each overlay
+        // Update visibility for overlays
+        let visibleCount = 0;
         this.overlays.forEach((overlay, id) => {
+            const wasVisible = overlay.isVisible;
             const isVisible = this.boundsIntersect(overlay.bounds, viewBounds);
-            overlay.element.style.display = isVisible ? 'block' : 'none';
+
+            if (isVisible !== wasVisible) {
+                overlay.element.style.opacity = isVisible ? '1' : '0';
+                overlay.isVisible = isVisible;
+
+                if (isVisible) {
+                    this.visibleOverlays.add(id);
+                    visibleCount++;
+                } else {
+                    this.visibleOverlays.delete(id);
+                }
+            } else if (isVisible) {
+                visibleCount++;
+            }
         });
-    }
 
-    /**
-     * Update SVG transform to match viewport
-     */
-    updateSvgTransform() {
-        const viewport = this.viewer.viewport;
-        const zoom = viewport.getZoom(true);
-        const center = viewport.getCenter(true);
-        const rotation = viewport.getRotation();
-        const containerSize = viewport.getContainerSize();
-
-        // Get image size
-        const tiledImage = this.viewer.world.getItemAt(0);
-        if (!tiledImage) return;
-
-        const imageSize = tiledImage.getContentSize();
-
-        // Calculate transform
-        const bounds = viewport.getBounds(true);
-        const scale = containerSize.x / (bounds.width * imageSize.x);
-
-        // Build transform string
-        let transform = '';
-        transform += `translate(${containerSize.x / 2}px, ${containerSize.y / 2}px) `;
-
-        if (rotation) {
-            transform += `rotate(${rotation}deg) `;
+        // Performance monitoring
+        if (visibleCount > 100) {
+            console.log(`Performance note: ${visibleCount} hotspots visible`);
         }
-
-        transform += `scale(${scale}) `;
-        transform += `translate(${-center.x * imageSize.x}px, ${-center.y * imageSize.y}px)`;
-
-        // Apply transform
-        this.svg.style.transform = transform;
-        this.svg.style.transformOrigin = '0 0';
     }
 
     /**
-     * Check if two bounds intersect
+     * Check if bounds intersect
      */
     boundsIntersect(a, b) {
         return !(a.maxX < b.minX || a.minX > b.maxX ||
@@ -322,58 +395,21 @@ class NativeHotspotRenderer {
     }
 
     /**
-     * Set hovered hotspot programmatically
-     */
-    setHoveredHotspot(hotspot) {
-        // Clear previous hover
-        if (this.hoveredHotspot) {
-            const prevOverlay = this.overlays.get(this.hoveredHotspot.id);
-            if (prevOverlay && this.hoveredHotspot.id !== this.selectedHotspot?.id) {
-                this.applyStyle(prevOverlay.element, this.hoveredHotspot.type, 'normal');
-            }
-        }
-
-        // Set new hover
-        this.hoveredHotspot = hotspot;
-        if (hotspot) {
-            const overlay = this.overlays.get(hotspot.id);
-            if (overlay && hotspot.id !== this.selectedHotspot?.id) {
-                this.applyStyle(overlay.element, hotspot.type, 'hover');
-            }
-        }
-    }
-
-    /**
-     * Set selected hotspot programmatically
-     */
-    setSelectedHotspot(hotspot) {
-        // Clear previous selection
-        if (this.selectedHotspot) {
-            const prevOverlay = this.overlays.get(this.selectedHotspot.id);
-            if (prevOverlay) {
-                this.applyStyle(prevOverlay.element, this.selectedHotspot.type,
-                    this.selectedHotspot.id === this.hoveredHotspot?.id ? 'hover' : 'normal');
-            }
-        }
-
-        // Set new selection
-        this.selectedHotspot = hotspot;
-        if (hotspot) {
-            const overlay = this.overlays.get(hotspot.id);
-            if (overlay) {
-                this.applyStyle(overlay.element, hotspot.type, 'selected');
-            }
-        }
-    }
-
-    /**
      * Clean up
      */
     destroy() {
-        if (this.svg && this.svg.parentNode) {
-            this.svg.parentNode.removeChild(this.svg);
+        // Remove event handlers
+        this.viewer.removeAllHandlers('animation');
+        this.viewer.removeAllHandlers('animation-finish');
+
+        // Remove overlay
+        if (this.svg) {
+            this.viewer.removeOverlay(this.svg);
         }
+
+        // Clear references
         this.overlays.clear();
+        this.visibleOverlays.clear();
         this.viewer = null;
     }
 }

@@ -37,6 +37,18 @@
     }
 }
 
+/* Preview image for instant display */
+.preview-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+    z-index: 1;
+}
+
 /* Viewer container */
 .viewer-container {
     width: 100%;
@@ -58,43 +70,33 @@
     /* Force GPU acceleration */
     transform: translateZ(0);
     will-change: transform;
+    /* Ensure crisp rendering */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    -webkit-font-smoothing: subpixel-antialiased;
 }
 
-/* Hotspot canvas overlay */
-.hotspot-canvas {
+    /* Force high quality image rendering for all tiles */
+    .openseadragon-viewer img {
+        image-rendering: -webkit-optimize-contrast !important;
+        image-rendering: high-quality !important;
+        -ms-interpolation-mode: bicubic !important;
+    }
+
+/* Native SVG overlay for hotspots */
+.hotspot-svg-overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: auto;
+    pointer-events: none;
     z-index: 10;
-    cursor: grab;
-    /* Critical performance optimizations */
-    will-change: contents; /* Tell browser content will change */
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    /* Disable all animations/transitions */
-    transition: none !important;
-    animation: none !important;
-    /* Rendering optimizations */
-    image-rendering: pixelated; /* Faster than optimizeSpeed */
-    shape-rendering: optimizeSpeed;
-    /* Prevent any layout recalculations */
-    contain: layout style paint;
-    /* Prevent selection */
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
 }
 
-    /* Canvas cursor states */
-    .hotspot-canvas:active {
-        cursor: grabbing;
+    .hotspot-svg-overlay g {
+        cursor: pointer;
+        pointer-events: auto;
     }
 
 /* Viewer loading indicator */
@@ -371,6 +373,19 @@
     user-select: none;
 }
 
+/* Optimize rendering performance */
+.openseadragon-canvas {
+    /* Enable hardware acceleration */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+    /* Optimize for performance */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    perspective: 1000px;
+    -webkit-perspective: 1000px;
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
     .debug-info {
@@ -427,10 +442,6 @@
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-    .hotspot-canvas {
-        filter: contrast(1.2);
-    }
-
     .openseadragon-container button {
         border-width: 2px !important;
     }
