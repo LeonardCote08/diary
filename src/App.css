@@ -56,10 +56,10 @@
     position: relative;
     background: #000;
     overflow: hidden;
-    touch-action: none; /* Prevent browser touch gestures */
+    touch-action: none;
 }
 
-/* OpenSeadragon viewer */
+/* OpenSeadragon viewer - FIXED for quality */
 .openseadragon-viewer {
     position: absolute;
     top: 0;
@@ -70,18 +70,32 @@
     /* Force GPU acceleration */
     transform: translateZ(0);
     will-change: transform;
-    /* Ensure crisp rendering */
+    /* CRITICAL: Sharp image rendering */
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
     -webkit-font-smoothing: subpixel-antialiased;
+    /* Prevent any blurring */
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-perspective: 1000;
+    perspective: 1000;
 }
 
-    /* Force high quality image rendering for all tiles */
+    /* Force high quality for all images in viewer */
     .openseadragon-viewer img {
         image-rendering: -webkit-optimize-contrast !important;
-        image-rendering: high-quality !important;
-        -ms-interpolation-mode: bicubic !important;
+        image-rendering: crisp-edges !important;
+        -ms-interpolation-mode: nearest-neighbor !important;
+        /* Prevent browser smoothing */
+        -webkit-transform: translateZ(0) scale(1.0);
+        transform: translateZ(0) scale(1.0);
     }
+
+/* OpenSeadragon canvas specific */
+.openseadragon-canvas {
+    image-rendering: -webkit-optimize-contrast !important;
+    image-rendering: crisp-edges !important;
+}
 
 /* Native SVG overlay for hotspots */
 .hotspot-svg-overlay {
@@ -134,7 +148,7 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    pointer-events: none; /* Don't block interactions */
+    pointer-events: none;
 }
 
     .debug-info div {
@@ -153,7 +167,7 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    pointer-events: none; /* Don't block interactions */
+    pointer-events: none;
 }
 
     .hotspot-legend h3 {
@@ -240,7 +254,7 @@
             transform: scale(0.95);
         }
 
-    /* Hide rotation control if present */
+    /* Hide rotation control */
     .openseadragon-container .openseadragon-rotate-left,
     .openseadragon-container .openseadragon-rotate-right {
         display: none !important;
@@ -373,19 +387,6 @@
     user-select: none;
 }
 
-/* Optimize rendering performance */
-.openseadragon-canvas {
-    /* Enable hardware acceleration */
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    will-change: transform;
-    /* Optimize for performance */
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    perspective: 1000px;
-    -webkit-perspective: 1000px;
-}
-
 /* Mobile responsiveness */
 @media (max-width: 768px) {
     .debug-info {
@@ -410,7 +411,7 @@
     }
 
     .shortcuts-info {
-        display: none; /* Hide on mobile */
+        display: none;
     }
 
     .mobile-controls {
@@ -424,7 +425,6 @@
         font-size: 22px;
     }
 
-    /* Adjust OpenSeadragon controls for mobile */
     .openseadragon-container button {
         width: 36px !important;
         height: 36px !important;
@@ -436,7 +436,7 @@
 /* Tablet adjustments */
 @media (min-width: 769px) and (max-width: 1024px) {
     .mobile-controls {
-        display: none; /* Hide custom controls on tablets */
+        display: none;
     }
 }
 
@@ -460,16 +460,15 @@
     }
 }
 
-/* Dark mode adjustments (already dark by default) */
+/* Dark mode adjustments */
 @media (prefers-color-scheme: light) {
-    /* Keep dark theme even in light mode for better artwork viewing */
     .app-container {
         background-color: #000;
         color: #fff;
     }
 }
 
-/* Smooth scrolling for the entire app */
+/* Smooth scrolling */
 html {
     scroll-behavior: smooth;
 }

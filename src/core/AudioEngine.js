@@ -25,14 +25,16 @@ class AudioEngine {
      * Preload audio for a set of hotspots
      */
     async preloadHotspots(hotspots) {
+        // TEMPORAIRE - Désactiver le préchargement jusqu'à avoir de vrais fichiers audio
         return;
 
+        /* Code original commenté pour plus tard
         const audioUrls = hotspots
             .filter(h => h.audioUrl)
             .map(h => ({ id: h.id, url: h.audioUrl }));
-
+    
         this.isPreloading = true;
-
+    
         for (const { id, url } of audioUrls) {
             if (!this.sounds.has(id)) {
                 const sound = new Howl({
@@ -41,12 +43,13 @@ class AudioEngine {
                     preload: true,
                     onend: () => this.handlePlaybackEnd(id)
                 });
-
+    
                 this.sounds.set(id, sound);
             }
         }
-
+    
         this.isPreloading = false;
+        */
     }
 
     /**

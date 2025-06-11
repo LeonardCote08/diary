@@ -9,8 +9,7 @@ import performanceConfig from '../config/performanceConfig';
 let hotspotData = [];
 
 /**
- * ArtworkViewer - Optimized for smooth zooming and clear image quality
- * Following Deji's performance requirements
+ * ArtworkViewer - Main viewer component with fixed tile quality
  */
 function ArtworkViewer(props) {
     let viewerRef;
@@ -37,12 +36,12 @@ function ArtworkViewer(props) {
             hotspotData = [];
         }
 
-        // Load preview image first for instant display
+        // Load preview image first
         const previewImg = new Image();
         previewImg.onload = () => setPreviewLoaded(true);
         previewImg.src = `/images/tiles/${props.artworkId}/preview.jpg`;
 
-        // Initialize OpenSeadragon with centralized performance settings
+        // Initialize OpenSeadragon with fixed quality settings
         const viewerSettings = performanceConfig.viewer;
 
         viewer = OpenSeadragon({
@@ -50,7 +49,7 @@ function ArtworkViewer(props) {
             tileSources: `/images/tiles/${props.artworkId}/${props.artworkId}_output.dzi`,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
-            // Performance settings from config
+            // Core performance settings
             immediateRender: viewerSettings.immediateRender,
             preserveViewport: viewerSettings.preserveViewport,
             visibilityRatio: viewerSettings.visibilityRatio,
@@ -58,13 +57,21 @@ function ArtworkViewer(props) {
             wrapHorizontal: false,
             wrapVertical: false,
 
-            // Preload settings
+            // Fixed tile loading settings for quality
             imageLoaderLimit: viewerSettings.imageLoaderLimit,
             maxImageCacheCount: viewerSettings.maxImageCacheCount,
             minPixelRatio: viewerSettings.minPixelRatio,
             smoothTileEdgesMinZoom: viewerSettings.smoothTileEdgesMinZoom,
             alwaysBlend: viewerSettings.alwaysBlend,
-            placeholderFillStyle: '#000000',
+            placeholderFillStyle: viewerSettings.placeholderFillStyle,
+
+            // Additional quality settings
+            minZoomImageRatio: viewerSettings.minZoomImageRatio || 0.8,
+            maxTilesPerFrame: viewerSettings.maxTilesPerFrame || 4,
+            tileRetryMax: viewerSettings.tileRetryMax || 3,
+            tileRetryDelay: viewerSettings.tileRetryDelay || 200,
+            compositeOperation: viewerSettings.compositeOperation || 'source-over',
+            preload: viewerSettings.preload !== false,
 
             // Navigation controls
             showNavigationControl: true,
@@ -104,18 +111,19 @@ function ArtworkViewer(props) {
                 pinchToZoom: true
             },
 
-            // Additional performance
+            // Debug and network
             debugMode: performanceConfig.debug.showMetrics,
             timeout: performanceConfig.network.timeout,
-            drawer: 'canvas', // Utiliser 'canvas' au lieu de useCanvas
+            drawer: 'canvas',
             crossOriginPolicy: 'Anonymous',
             ajaxWithCredentials: false,
 
-            // Subpixel rendering for sharper images
+            // Subpixel rendering
             subPixelRoundingForTransparency: viewerSettings.subPixelRendering ?
                 OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS :
                 OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.NEVER
         });
+
         // Initialize spatial index
         spatialIndex = new SpatialIndex();
         spatialIndex.loadHotspots(hotspotData);
@@ -132,7 +140,10 @@ function ArtworkViewer(props) {
             setViewerReady(true);
             setIsLoading(false);
 
-            // Initialize native hotspot renderer after a small delay
+            // Force high quality on initial load
+            viewer.viewport.applyConstraints(true);
+
+            // Initialize hotspot system after viewer is stable
             setTimeout(() => {
                 initializeHotspotSystem();
 
@@ -143,15 +154,28 @@ function ArtworkViewer(props) {
             }, 100);
         });
 
-        // Optimize tile loading
-        viewer.addHandler('tile-loaded', (event) => {
-            // Force high quality rendering
+        // Force high quality rendering on tiles
+        viewer.addHandler('tile-loading', (event) => {
             if (event.tile && event.tile.element) {
+                event.tile.element.style.imageRendering = '-webkit-optimize-contrast';
                 event.tile.element.style.imageRendering = 'high-quality';
             }
         });
 
-        // Update visible hotspots and preload audio on viewport change
+        viewer.addHandler('tile-loaded', (event) => {
+            if (event.tile && event.tile.element) {
+                event.tile.element.style.imageRendering = '-webkit-optimize-contrast';
+                event.tile.element.style.imageRendering = 'high-quality';
+                event.tile.element.style.transform = 'translateZ(0)';
+            }
+        });
+
+        // Force redraw on animation finish to ensure quality
+        viewer.addHandler('animation-finish', () => {
+            viewer.forceRedraw();
+        });
+
+        // Update visible content on viewport change
         let updateTimer = null;
         const updateVisibleContent = () => {
             if (updateTimer) clearTimeout(updateTimer);
@@ -171,6 +195,7 @@ function ArtworkViewer(props) {
             if (viewer && viewer.viewport) {
                 viewer.viewport.resize();
                 viewer.viewport.applyConstraints();
+                viewer.forceRedraw();
             }
         });
         resizeObserver.observe(viewerRef);
@@ -220,7 +245,7 @@ function ArtworkViewer(props) {
             return;
         }
 
-        // Initialize native renderer for perfect sync
+        // Initialize native renderer
         renderer = new NativeHotspotRenderer({
             viewer: viewer,
             spatialIndex: spatialIndex,
@@ -234,9 +259,24 @@ function ArtworkViewer(props) {
         setSelectedHotspot(hotspot);
 
         // Play audio if available
-        //if (audioEngine && hotspot.audioUrl) {
-        //    audioEngine.play(hotspot.id);
-       // }
+        if (audioEngine && hotspot.audioUrl) {
+            audioEngine.play(hotspot.id);
+        }
+    };
+
+    // Mobile button handlers
+    const handleZoomIn = () => {
+        viewer.viewport.zoomBy(1.5);
+        viewer.viewport.applyConstraints();
+    };
+
+    const handleZoomOut = () => {
+        viewer.viewport.zoomBy(0.7);
+        viewer.viewport.applyConstraints();
+    };
+
+    const handleHome = () => {
+        viewer.viewport.goHome();
     };
 
     return (
@@ -259,7 +299,7 @@ function ArtworkViewer(props) {
             )}
 
             {/* Debug info */}
-            {viewerReady() && (
+            {viewerReady() && performanceConfig.debug.showMetrics && (
                 <div class="debug-info">
                     <div>Hovered: {hoveredHotspot()?.id || 'none'}</div>
                     <div>Selected: {selectedHotspot()?.id || 'none'}</div>
@@ -268,7 +308,7 @@ function ArtworkViewer(props) {
                 </div>
             )}
 
-            {/* Keyboard shortcuts */}
+            {/* Keyboard shortcuts - desktop only */}
             {viewerReady() && window.innerWidth > 768 && (
                 <div class="shortcuts-info">
                     <details>
@@ -287,30 +327,9 @@ function ArtworkViewer(props) {
             {/* Mobile controls */}
             {viewerReady() && window.innerWidth <= 768 && (
                 <div class="mobile-controls">
-                    <button
-                        class="zoom-btn zoom-in"
-                        onClick={() => {
-                            viewer.viewport.zoomBy(1.5);
-                            viewer.viewport.applyConstraints();
-                        }}
-                    >
-                        +
-                    </button>
-                    <button
-                        class="zoom-btn zoom-out"
-                        onClick={() => {
-                            viewer.viewport.zoomBy(0.7);
-                            viewer.viewport.applyConstraints();
-                        }}
-                    >
-                        −
-                    </button>
-                    <button
-                        class="zoom-btn zoom-home"
-                        onClick={() => viewer.viewport.goHome()}
-                    >
-                        ⌂
-                    </button>
+                    <button class="zoom-btn zoom-in" onClick={handleZoomIn}>+</button>
+                    <button class="zoom-btn zoom-out" onClick={handleZoomOut}>−</button>
+                    <button class="zoom-btn zoom-home" onClick={handleHome}>⌂</button>
                 </div>
             )}
 
