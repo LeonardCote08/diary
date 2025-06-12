@@ -46,7 +46,7 @@ function ArtworkViewer(props) {
 
         viewer = OpenSeadragon({
             element: viewerRef,
-            tileSources: `/images/tiles/${props.artworkId}/${props.artworkId}_output.dzi`,
+            tileSources: `/images/tiles/${props.artworkId}/${props.artworkId}.dzi`,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
             // Core performance settings

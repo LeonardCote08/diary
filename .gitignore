@@ -46,13 +46,18 @@ assets/source/
 *.tiff
 *.tif
 
-# TILES GÉNÉRÉES - Très important !
+# TILES - Very important!
 public/images/tiles/
 
 # Temporary files
 *.tmp
 *.temp
 ~$*
+
+# Backup files
+*.backup
+*.bak
+*.old
 
 # Performance test results
 performance-results/
@@ -76,3 +81,11 @@ _old/
 .Trashes
 *.swp
 *~
+
+# VIPS temporary files
+*.v
+vips-*-*
+
+# Test outputs
+test-results/
+test-output/

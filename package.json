@@ -8,12 +8,13 @@
         "build": "vite build",
         "preview": "vite preview",
         "convert": "node scripts/svg-converter.js",
-        "generate-tiles": "node scripts/generate-tiles.js",
+        "tiles": "node scripts/generate-tiles-vips.js",
+        "tiles:old": "node scripts/generate-tiles.js",
         "clean-tiles": "powershell -Command \"Remove-Item -Path 'public/images/tiles/*' -Recurse -Force -ErrorAction SilentlyContinue\"",
-        "regenerate-tiles": "npm run clean-tiles && npm run generate-tiles",
-        "optimize-images": "npm run regenerate-tiles",
-        "test-performance": "vite --host --open",
-        "analyze": "vite build --mode analyze"
+        "regenerate-tiles": "npm run clean-tiles && npm run tiles",
+        "process-artwork": "npm run convert && npm run regenerate-tiles",
+        "test": "npm run tiles && npm run dev",
+        "batch-tiles": "powershell -File scripts/batch-process-artworks.ps1"
     },
     "dependencies": {
         "@solidjs/router": "^0.10.10",
@@ -27,7 +28,6 @@
         "cheerio": "^1.1.0",
         "commander": "^11.1.0",
         "parse-svg-path": "^0.1.2",
-        "sharp": "^0.34.2",
         "vite": "^6.3.5",
         "vite-plugin-solid": "^2.11.6"
     }
