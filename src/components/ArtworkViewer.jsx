@@ -5,6 +5,7 @@ import ViewportManager from '../core/ViewportManager';
 import SpatialIndex from '../core/SpatialIndex';
 import AudioEngine from '../core/AudioEngine';
 import PerformanceMonitor from '../core/PerformanceMonitor';
+import HybridTileSource from '../core/HybridTileSource';
 import performanceConfig from '../config/performanceConfig';
 
 let hotspotData = [];
@@ -44,12 +45,28 @@ function ArtworkViewer(props) {
         previewImg.onload = () => setPreviewLoaded(true);
         previewImg.src = `/images/tiles/${props.artworkId}/preview.jpg`;
 
-        // Initialize OpenSeadragon with pixel-perfect settings
+        // Initialize OpenSeadragon with hybrid tile detection
         const viewerSettings = performanceConfig.viewer;
+        const dziUrl = `/images/tiles/${props.artworkId}/${props.artworkId}.dzi`;
+
+        // Try to detect hybrid tiles
+        let tileSource = dziUrl;
+        let isHybrid = false;
+
+        try {
+            const hybridSource = await HybridTileSource.createFromDZI(dziUrl);
+            if (hybridSource) {
+                tileSource = hybridSource;
+                isHybrid = true;
+                console.log('Using hybrid tile source (JPEG + PNG)');
+            }
+        } catch (error) {
+            console.log('Using standard DZI tiles');
+        }
 
         viewer = OpenSeadragon({
             element: viewerRef,
-            tileSources: `/images/tiles/${props.artworkId}/${props.artworkId}.dzi`,
+            tileSources: tileSource,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
             // Core performance settings - PIXEL PERFECT
@@ -69,8 +86,8 @@ function ArtworkViewer(props) {
             placeholderFillStyle: viewerSettings.placeholderFillStyle,
 
             // CRITICAL: Disable all smoothing
-            imageSmoothingEnabled: false,
-            smoothImageZoom: false,
+            imageSmoothingEnabled: viewerSettings.imageSmoothingEnabled,
+            smoothImageZoom: viewerSettings.smoothImageZoom,
 
             // Quality optimizations
             minZoomImageRatio: viewerSettings.minZoomImageRatio,
@@ -148,38 +165,21 @@ function ArtworkViewer(props) {
         performanceMonitor = new PerformanceMonitor(viewer);
         performanceMonitor.start();
 
+        // Configure viewer for hybrid tiles if detected
+        if (isHybrid) {
+            HybridTileSource.configureViewer(viewer, tileSource);
+        }
+
         // Enable debug overlay if in debug mode
         if (performanceConfig.debug.showMetrics) {
             performanceMonitor.enableDebugOverlay();
         }
-
-        // Critical: Force pixel-perfect rendering on canvas
-        viewer.addHandler('canvas-press', () => {
-            const canvas = viewer.drawer.canvas;
-            const context = viewer.drawer.context;
-            if (context) {
-                context.imageSmoothingEnabled = false;
-                context.mozImageSmoothingEnabled = false;
-                context.webkitImageSmoothingEnabled = false;
-                context.msImageSmoothingEnabled = false;
-            }
-        });
 
         // Viewer ready handler
         viewer.addHandler('open', () => {
             console.log('OpenSeadragon viewer ready');
             setViewerReady(true);
             setIsLoading(false);
-
-            // Force pixel-perfect rendering immediately
-            const canvas = viewer.drawer.canvas;
-            const context = viewer.drawer.context;
-            if (context) {
-                context.imageSmoothingEnabled = false;
-                context.mozImageSmoothingEnabled = false;
-                context.webkitImageSmoothingEnabled = false;
-                context.msImageSmoothingEnabled = false;
-            }
 
             // Force high quality on initial load
             viewer.viewport.applyConstraints(true);
@@ -195,57 +195,32 @@ function ArtworkViewer(props) {
             }, 100);
         });
 
-        // Critical: Force pixel-perfect on every tile draw
+        // Optimize tile rendering for high-quality JPEG
         viewer.addHandler('tile-drawing', (event) => {
             const context = event.context;
-            // Force pixel-perfect rendering for each tile
-            context.imageSmoothingEnabled = false;
-            context.mozImageSmoothingEnabled = false;
-            context.webkitImageSmoothingEnabled = false;
-            context.msImageSmoothingEnabled = false;
-            // Use nearest-neighbor scaling
-            context.imageSmoothingQuality = 'low';
+            // Use high-quality rendering for JPEG
+            context.imageSmoothingEnabled = true;
+            context.imageSmoothingQuality = 'high';
         });
 
         viewer.addHandler('tile-loaded', (event) => {
             if (event.tile && event.tile.element) {
-                // Force pixel-perfect rendering on tile elements
-                event.tile.element.style.imageRendering = 'pixelated';
-                event.tile.element.style.imageRendering = '-moz-crisp-edges';
-                event.tile.element.style.imageRendering = 'crisp-edges';
+                // Optimize rendering for quality
+                event.tile.element.style.imageRendering = 'auto';
                 event.tile.element.style.filter = 'none';
                 event.tile.element.style.transform = 'translateZ(0)';
                 event.tile.element.style.willChange = 'transform';
             }
         });
 
-        // Force redraw on animation to maintain quality
-        viewer.addHandler('animation', () => {
-            const context = viewer.drawer.context;
-            if (context && context.imageSmoothingEnabled) {
-                context.imageSmoothingEnabled = false;
-            }
-        });
-
         // Force redraw on animation finish to ensure quality
         viewer.addHandler('animation-finish', () => {
             viewer.forceRedraw();
-            // Re-apply pixel-perfect settings
-            const context = viewer.drawer.context;
-            if (context) {
-                context.imageSmoothingEnabled = false;
-            }
         });
 
         // Update on resize to maintain quality
         viewer.addHandler('resize', () => {
-            const context = viewer.drawer.context;
-            if (context) {
-                context.imageSmoothingEnabled = false;
-                context.mozImageSmoothingEnabled = false;
-                context.webkitImageSmoothingEnabled = false;
-                context.msImageSmoothingEnabled = false;
-            }
+            viewer.forceRedraw();
         });
 
         // Update visible content on viewport change
@@ -265,10 +240,14 @@ function ArtworkViewer(props) {
 
         // Handle resize
         const resizeObserver = new ResizeObserver(() => {
-            if (viewer && viewer.viewport) {
-                viewer.viewport.resize();
-                viewer.viewport.applyConstraints();
-                viewer.forceRedraw();
+            if (viewer && viewer.viewport && viewer.isOpen()) {
+                try {
+                    viewer.viewport.resize();
+                    viewer.viewport.applyConstraints();
+                    viewer.forceRedraw();
+                } catch (error) {
+                    console.warn('Resize error:', error);
+                }
             }
         });
         resizeObserver.observe(viewerRef);
@@ -322,12 +301,17 @@ function ArtworkViewer(props) {
             return;
         }
 
-        // Initialize native renderer
+        // Initialize native renderer with performance settings
         renderer = new NativeHotspotRenderer({
             viewer: viewer,
             spatialIndex: spatialIndex,
             onHotspotHover: setHoveredHotspot,
-            onHotspotClick: handleHotspotClick
+            onHotspotClick: handleHotspotClick,
+            visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
+            batchSize: performanceConfig.hotspots.batchSize,
+            renderDebounceTime: performanceConfig.hotspots.renderDebounceTime,
+            maxVisibleHotspots: performanceConfig.hotspots.maxVisibleHotspots,
+            minZoomForHotspots: performanceConfig.hotspots.minZoomForHotspots
         });
     };
 

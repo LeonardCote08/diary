@@ -4,51 +4,51 @@
  */
 
 const performanceConfig = {
-    // OpenSeadragon viewer settings - PIXEL-PERFECT QUALITY
+    // OpenSeadragon viewer settings - ADAPTIVE FOR HYBRID TILES
     viewer: {
-        // Tile loading optimization - Maximum quality
-        imageLoaderLimit: 12,              // Balanced for PNG tiles
-        maxImageCacheCount: 1500,          // Large cache for PNG tiles
+        // Tile loading optimization
+        imageLoaderLimit: 10,              // Balanced loading
+        maxImageCacheCount: 1200,          // Good cache for mixed formats
         minPixelRatio: 1.0,                // Force 1:1 pixel rendering
-        smoothTileEdgesMinZoom: Infinity,  // Never smooth edges
-        alwaysBlend: false,                // No blending for sharper tiles
+        smoothTileEdgesMinZoom: 3,         // Smooth edges only at very low zoom
+        alwaysBlend: true,                 // Smooth transitions
 
-        // CRITICAL: Force pixel-perfect rendering
-        immediateRender: true,             // Render immediately at full quality
+        // Quality settings - Adaptive
+        immediateRender: false,            // Wait for quality tiles
         preserveViewport: true,
-        visibilityRatio: 1.5,              // Preload more off-screen tiles
-        subPixelRendering: false,          // Disable for sharp pixels
-        imageSmoothingEnabled: false,      // CRITICAL: No smoothing
+        visibilityRatio: 1.5,              // Good preloading
+        subPixelRendering: true,
+        imageSmoothingEnabled: true,       // Will be toggled based on zoom
 
         // Preload settings
         preload: true,
         placeholderFillStyle: '#000000',
 
-        // Animation settings - Smooth but not blurry
-        animationTime: 0.4,                // Slightly slower for quality
-        springStiffness: 8,                // Less bouncy
-        blendTime: 0,                      // No blending
+        // Animation settings
+        animationTime: 0.4,                // Smooth animations
+        springStiffness: 8,                // Responsive
+        blendTime: 0.15,                   // Quick blending
         flickEnabled: true,
         flickMinSpeed: 120,
         flickMomentum: 0.3,
 
-        // Zoom settings for deep inspection
-        zoomPerScroll: 1.15,               // Finer zoom control
-        zoomPerClick: 1.5,
+        // Zoom settings for detail inspection
+        zoomPerScroll: 1.2,
+        zoomPerClick: 2.0,
         minZoomLevel: 0.5,
-        maxZoomLevel: 30,                  // Allow extreme zoom
+        maxZoomLevel: 20,                  // High zoom for PNG detail
         defaultZoomLevel: 1,
-        maxZoomPixelRatio: Infinity,       // No limit on zoom quality
+        maxZoomPixelRatio: 10,             // Good pixel ratio limit
 
         // Tile quality settings
-        minZoomImageRatio: 0.3,            // Keep high res tiles longer
-        maxTilesPerFrame: 6,               // Balanced for PNG
-        tileRetryMax: 5,
-        tileRetryDelay: 200,
+        minZoomImageRatio: 0.4,
+        maxTilesPerFrame: 5,               // Balanced processing
+        tileRetryMax: 3,
+        tileRetryDelay: 300,
 
         // Rendering quality
         compositeOperation: 'source-over',
-        smoothImageZoom: false,            // No smoothing during zoom
+        smoothImageZoom: true,             // Will be toggled for PNG levels
 
         // Viewport constraints
         constrainDuringPan: true,
@@ -57,32 +57,34 @@ const performanceConfig = {
 
         // Navigation
         navigatorAutoResize: true,
-        showNavigator: false,              // Hide for performance
+        showNavigator: false,
 
         // Canvas rendering
-        drawer: 'canvas',                  // Use canvas drawer
+        drawer: 'canvas',
         debugMode: false,
-        canvas2dBackingStorePixelRatio: 1  // Force 1:1 pixel ratio
+        canvas2dBackingStorePixelRatio: window.devicePixelRatio || 1
     },
 
-    // Tile generation settings - Updated for PNG
+    // Tile generation settings - HYBRID APPROACH
     tiles: {
         tileSize: 512,
-        overlap: 1,
-        quality: 100,                      // Not used for PNG
-        format: 'png',                     // Lossless format
-        progressive: false,                // Not applicable to PNG
-        chromaSubsampling: null            // Not applicable to PNG
+        overlap: 2,
+        jpegQuality: 95,                   // High quality JPEG for overview
+        pngCompression: 9,                 // Maximum PNG compression
+        format: 'hybrid',                  // Use both JPEG and PNG
+        progressive: false,
+        chromaSubsampling: null
     },
 
-    // Hotspot rendering
+    // Hotspot rendering - OPTIMIZED FOR PERFORMANCE
     hotspots: {
-        batchSize: 50,
-        visibilityCheckInterval: 100,
-        renderDebounceTime: 16,
+        batchSize: 30,                     // Reduced batch size
+        visibilityCheckInterval: 150,      // Less frequent checks
+        renderDebounceTime: 50,            // More debouncing
         fadeInDuration: 200,
-        preloadPadding: 0.2,
-        maxVisibleHotspots: 200
+        preloadPadding: 0.1,               // Less aggressive preloading
+        maxVisibleHotspots: 100,           // Limit visible hotspots
+        minZoomForHotspots: 2              // Only show hotspots when zoomed in
     },
 
     // Audio engine

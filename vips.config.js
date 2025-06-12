@@ -1,41 +1,42 @@
 /**
- * VIPS Configuration - Optimized for pixel-perfect text clarity
+ * VIPS Configuration - Optimized for high-quality JPEG tiles
  * 
- * Using PNG format for lossless compression of hand-drawn art
+ * Using JPEG with maximum quality settings for sharp images
  */
 
 export default {
     // VIPS executable path (leave null for auto-detection)
     vipsPath: null,
 
-    // Tile generation settings - OPTIMIZED FOR TEXT CLARITY
-    tileSize: 512,        // Larger tiles = fewer seams, better quality
-    overlap: 1,           // Minimal overlap for PNG (no blending artifacts)
-    quality: 100,         // Not used for PNG, but kept for compatibility
-    format: 'png',        // PNG for lossless compression
+    // Tile generation settings - HIGH QUALITY JPEG
+    tileSize: 512,        // Larger tiles = better quality, fewer requests
+    overlap: 2,           // Small overlap to prevent seams
+    quality: 95,          // Very high JPEG quality
+    format: 'jpg',        // JPEG for reasonable file sizes
 
-    // PNG specific settings
-    pngCompression: 9,    // Maximum compression (smaller files)
-    pngFilter: 'all',     // Try all PNG filters for best compression
+    // JPEG specific settings
+    jpegSubsample: 'off', // Disable chroma subsampling (4:4:4)
+    jpegOptimize: true,   // Optimize Huffman coding
+    jpegProgressive: false, // Non-progressive for better quality
 
     // Deep zoom settings
     depth: 'onepixel',    // Generate all levels down to 1 pixel
-    skipLevels: 0,        // Generate all levels for smoothest zoom
+    skipLevels: 0,        // Generate all levels
 
     // Interpolation for resizing
-    kernel: 'lanczos3',   // Highest quality for text preservation
+    kernel: 'lanczos3',   // High quality for all content
 
     // Preview generation settings
     previewWidth: 2048,
     previewHeight: 2048,
-    previewQuality: 95,   // JPEG for preview is fine
+    previewQuality: 95,
     previewFormat: 'jpg',
 
     // Performance settings
     concurrency: null,    // Use all CPU cores
     memoryLimit: null,    // Let VIPS manage memory
 
-    // Advanced options for quality
-    background: '0 0 0',  // Black background for transparency
+    // Advanced options
+    background: '0 0 0',  // Black background
     stripMetadata: true,  // Remove metadata to reduce file size
 };

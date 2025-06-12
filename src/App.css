@@ -59,7 +59,7 @@
     touch-action: none;
 }
 
-/* OpenSeadragon viewer - PIXEL PERFECT RENDERING */
+/* OpenSeadragon viewer - HIGH QUALITY RENDERING */
 .openseadragon-viewer {
     position: absolute;
     top: 0;
@@ -70,11 +70,10 @@
     /* Force GPU acceleration */
     transform: translateZ(0);
     will-change: transform;
-    /* CRITICAL: Pixel-perfect image rendering */
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
-    -webkit-font-smoothing: none;
+    /* High-quality image rendering */
+    image-rendering: auto;
+    image-rendering: high-quality;
+    -webkit-font-smoothing: antialiased;
     /* Prevent any blurring */
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
@@ -85,13 +84,12 @@
     transform: translate3d(0, 0, 0);
 }
 
-    /* Force pixel-perfect for all images in viewer */
+    /* High quality for all images in viewer */
     .openseadragon-viewer img {
-        /* CRITICAL: Pixel-perfect rendering */
-        image-rendering: pixelated !important;
-        image-rendering: -moz-crisp-edges !important;
-        image-rendering: crisp-edges !important;
-        -ms-interpolation-mode: nearest-neighbor !important;
+        /* High-quality rendering */
+        image-rendering: auto !important;
+        image-rendering: high-quality !important;
+        -ms-interpolation-mode: bicubic !important;
         /* GPU acceleration for each tile */
         -webkit-transform: translateZ(0) scale(1.0);
         transform: translateZ(0) scale(1.0);
@@ -99,39 +97,36 @@
         /* Prevent blur on transform */
         -webkit-backface-visibility: hidden;
         backface-visibility: hidden;
-        /* No smoothing */
+        /* No artificial sharpening */
         filter: none !important;
     }
 
-/* OpenSeadragon canvas specific - PIXEL PERFECT */
+/* OpenSeadragon canvas specific - HIGH QUALITY */
 .openseadragon-canvas {
-    /* Force pixel-perfect rendering */
-    image-rendering: pixelated !important;
-    image-rendering: -moz-crisp-edges !important;
-    image-rendering: crisp-edges !important;
-    /* Preserve 3D for sharp transforms */
+    /* High-quality rendering */
+    image-rendering: auto !important;
+    image-rendering: high-quality !important;
+    /* Preserve 3D for smooth transforms */
     -webkit-transform-style: preserve-3d;
     transform-style: preserve-3d;
 }
 
-    /* Canvas element optimization - PIXEL PERFECT */
+    /* Canvas element optimization - HIGH QUALITY */
     .openseadragon-canvas canvas {
-        /* CRITICAL: No smoothing */
-        image-rendering: pixelated !important;
-        image-rendering: -moz-crisp-edges !important;
-        image-rendering: crisp-edges !important;
-        /* Sharp rendering */
-        shape-rendering: crispEdges;
-        text-rendering: geometricPrecision;
-        /* Disable any filtering */
+        /* High-quality smoothing */
+        image-rendering: auto !important;
+        image-rendering: high-quality !important;
+        /* Smooth rendering */
+        shape-rendering: auto;
+        text-rendering: optimizeLegibility;
+        /* No filtering */
         filter: none !important;
     }
 
-/* Override any OpenSeadragon default smoothing */
+/* Override any OpenSeadragon defaults */
 .openseadragon-container * {
-    image-rendering: pixelated !important;
-    image-rendering: -moz-crisp-edges !important;
-    image-rendering: crisp-edges !important;
+    image-rendering: auto !important;
+    image-rendering: high-quality !important;
 }
 
 /* Native SVG overlay for hotspots */

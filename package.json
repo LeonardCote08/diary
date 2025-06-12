@@ -1,5 +1,5 @@
 {
-    "name": "diary",
+    "name": "interactive-art-diary",
     "private": true,
     "version": "0.0.0",
     "type": "module",
@@ -7,15 +7,16 @@
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview",
-        "convert": "node scripts/svg-converter.js",
-        "tiles": "node scripts/generate-tiles-vips.js",
-        "tiles:old": "node scripts/generate-tiles.js",
-        "tiles:hq": "powershell -File regenerate-hq-tiles.ps1",
-        "clean-tiles": "powershell -Command \"Remove-Item -Path 'public/images/tiles/*' -Recurse -Force -ErrorAction SilentlyContinue\"",
-        "regenerate-tiles": "npm run clean-tiles && npm run tiles",
-        "process-artwork": "npm run convert && npm run regenerate-tiles",
-        "test": "npm run tiles:hq && npm run dev",
-        "batch-tiles": "powershell -File scripts/batch-process-artworks.ps1"
+        "start": "powershell -ExecutionPolicy Bypass -File scripts/start-app.ps1",
+        "tiles": "powershell -ExecutionPolicy Bypass -File scripts/generate-hybrid-tiles-fixed.ps1",
+        "tiles:jpeg": "powershell -ExecutionPolicy Bypass -File scripts/generate-hq-jpeg-tiles.ps1",
+        "tiles:png": "powershell -ExecutionPolicy Bypass -File scripts/generate-png-tiles.ps1",
+        "tiles:hybrid-old": "powershell -ExecutionPolicy Bypass -File scripts/generate-hybrid-tiles.ps1",
+        "tiles:test": "powershell -ExecutionPolicy Bypass -File scripts/test-png-quality.ps1",
+        "tiles:verify": "powershell -ExecutionPolicy Bypass -File scripts/verify-tiles.ps1",
+        "tiles:batch": "powershell -ExecutionPolicy Bypass -File scripts/batch-process-artworks.ps1",
+        "convert:svg": "node scripts/svg-converter.js",
+        "cleanup": "powershell -ExecutionPolicy Bypass -File scripts/cleanup-project.ps1"
     },
     "dependencies": {
         "@solidjs/router": "^0.10.10",
@@ -25,11 +26,12 @@
         "solid-js": "^1.9.5"
     },
     "devDependencies": {
-        "abs-svg-path": "^0.1.1",
-        "cheerio": "^1.1.0",
+        "@types/openseadragon": "^3.0.10",
+        "cheerio": "^1.0.0",
         "commander": "^11.1.0",
         "parse-svg-path": "^0.1.2",
-        "vite": "^6.3.5",
-        "vite-plugin-solid": "^2.11.6"
+        "abs-svg-path": "^0.1.1",
+        "vite": "^5.4.11",
+        "vite-plugin-solid": "^2.10.2"
     }
 }
