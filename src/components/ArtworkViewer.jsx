@@ -10,7 +10,8 @@ import performanceConfig from '../config/performanceConfig';
 let hotspotData = [];
 
 /**
- * ArtworkViewer - Main viewer component with fixed tile quality
+ * ArtworkViewer - Main viewer component with pixel-perfect rendering
+ * Optimized for maximum text clarity at all zoom levels
  */
 function ArtworkViewer(props) {
     let viewerRef;
@@ -43,7 +44,7 @@ function ArtworkViewer(props) {
         previewImg.onload = () => setPreviewLoaded(true);
         previewImg.src = `/images/tiles/${props.artworkId}/preview.jpg`;
 
-        // Initialize OpenSeadragon with fixed quality settings
+        // Initialize OpenSeadragon with pixel-perfect settings
         const viewerSettings = performanceConfig.viewer;
 
         viewer = OpenSeadragon({
@@ -51,7 +52,7 @@ function ArtworkViewer(props) {
             tileSources: `/images/tiles/${props.artworkId}/${props.artworkId}.dzi`,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
-            // Core performance settings - OPTIMIZED
+            // Core performance settings - PIXEL PERFECT
             immediateRender: viewerSettings.immediateRender,
             preserveViewport: viewerSettings.preserveViewport,
             visibilityRatio: viewerSettings.visibilityRatio,
@@ -59,13 +60,17 @@ function ArtworkViewer(props) {
             wrapHorizontal: viewerSettings.wrapHorizontal,
             wrapVertical: viewerSettings.wrapVertical,
 
-            // Tile loading - MAXIMUM QUALITY
+            // Tile loading - Optimized for PNG
             imageLoaderLimit: viewerSettings.imageLoaderLimit,
             maxImageCacheCount: viewerSettings.maxImageCacheCount,
             minPixelRatio: viewerSettings.minPixelRatio,
             smoothTileEdgesMinZoom: viewerSettings.smoothTileEdgesMinZoom,
             alwaysBlend: viewerSettings.alwaysBlend,
             placeholderFillStyle: viewerSettings.placeholderFillStyle,
+
+            // CRITICAL: Disable all smoothing
+            imageSmoothingEnabled: false,
+            smoothImageZoom: false,
 
             // Quality optimizations
             minZoomImageRatio: viewerSettings.minZoomImageRatio,
@@ -74,7 +79,10 @@ function ArtworkViewer(props) {
             tileRetryDelay: viewerSettings.tileRetryDelay,
             compositeOperation: viewerSettings.compositeOperation,
             preload: viewerSettings.preload,
-            imageSmoothingEnabled: viewerSettings.imageSmoothingEnabled,
+
+            // Maximum zoom quality
+            maxZoomPixelRatio: Infinity,
+            subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.NEVER,
 
             // Navigation controls
             showNavigationControl: true,
@@ -85,14 +93,14 @@ function ArtworkViewer(props) {
             showRotationControl: false,
             showNavigator: viewerSettings.showNavigator,
 
-            // Zoom settings - ALLOW DEEPER ZOOM
+            // Zoom settings - Allow extreme zoom
             minZoomLevel: viewerSettings.minZoomLevel,
             maxZoomLevel: viewerSettings.maxZoomLevel,
             defaultZoomLevel: viewerSettings.defaultZoomLevel,
             zoomPerClick: viewerSettings.zoomPerClick,
             zoomPerScroll: viewerSettings.zoomPerScroll,
 
-            // Smooth animations
+            // Animation settings
             animationTime: viewerSettings.animationTime,
             springStiffness: viewerSettings.springStiffness,
             blendTime: viewerSettings.blendTime,
@@ -123,10 +131,7 @@ function ArtworkViewer(props) {
             useCanvas: true,
             drawer: 'canvas',
             crossOriginPolicy: 'Anonymous',
-            ajaxWithCredentials: false,
-
-            // Subpixel rendering for quality
-            subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS
+            ajaxWithCredentials: false
         });
 
         // Initialize spatial index
@@ -148,11 +153,33 @@ function ArtworkViewer(props) {
             performanceMonitor.enableDebugOverlay();
         }
 
+        // Critical: Force pixel-perfect rendering on canvas
+        viewer.addHandler('canvas-press', () => {
+            const canvas = viewer.drawer.canvas;
+            const context = viewer.drawer.context;
+            if (context) {
+                context.imageSmoothingEnabled = false;
+                context.mozImageSmoothingEnabled = false;
+                context.webkitImageSmoothingEnabled = false;
+                context.msImageSmoothingEnabled = false;
+            }
+        });
+
         // Viewer ready handler
         viewer.addHandler('open', () => {
             console.log('OpenSeadragon viewer ready');
             setViewerReady(true);
             setIsLoading(false);
+
+            // Force pixel-perfect rendering immediately
+            const canvas = viewer.drawer.canvas;
+            const context = viewer.drawer.context;
+            if (context) {
+                context.imageSmoothingEnabled = false;
+                context.mozImageSmoothingEnabled = false;
+                context.webkitImageSmoothingEnabled = false;
+                context.msImageSmoothingEnabled = false;
+            }
 
             // Force high quality on initial load
             viewer.viewport.applyConstraints(true);
@@ -168,28 +195,57 @@ function ArtworkViewer(props) {
             }, 100);
         });
 
-        // Optimize tile rendering for quality
+        // Critical: Force pixel-perfect on every tile draw
         viewer.addHandler('tile-drawing', (event) => {
             const context = event.context;
-            // Force high-quality rendering
-            context.imageSmoothingEnabled = true;
-            context.imageSmoothingQuality = 'high';
+            // Force pixel-perfect rendering for each tile
+            context.imageSmoothingEnabled = false;
+            context.mozImageSmoothingEnabled = false;
+            context.webkitImageSmoothingEnabled = false;
+            context.msImageSmoothingEnabled = false;
+            // Use nearest-neighbor scaling
+            context.imageSmoothingQuality = 'low';
         });
 
         viewer.addHandler('tile-loaded', (event) => {
             if (event.tile && event.tile.element) {
-                // Remove any blur filters
-                event.tile.element.style.imageRendering = 'auto';
+                // Force pixel-perfect rendering on tile elements
+                event.tile.element.style.imageRendering = 'pixelated';
+                event.tile.element.style.imageRendering = '-moz-crisp-edges';
+                event.tile.element.style.imageRendering = 'crisp-edges';
                 event.tile.element.style.filter = 'none';
                 event.tile.element.style.transform = 'translateZ(0)';
-                // Force GPU acceleration
                 event.tile.element.style.willChange = 'transform';
+            }
+        });
+
+        // Force redraw on animation to maintain quality
+        viewer.addHandler('animation', () => {
+            const context = viewer.drawer.context;
+            if (context && context.imageSmoothingEnabled) {
+                context.imageSmoothingEnabled = false;
             }
         });
 
         // Force redraw on animation finish to ensure quality
         viewer.addHandler('animation-finish', () => {
             viewer.forceRedraw();
+            // Re-apply pixel-perfect settings
+            const context = viewer.drawer.context;
+            if (context) {
+                context.imageSmoothingEnabled = false;
+            }
+        });
+
+        // Update on resize to maintain quality
+        viewer.addHandler('resize', () => {
+            const context = viewer.drawer.context;
+            if (context) {
+                context.imageSmoothingEnabled = false;
+                context.mozImageSmoothingEnabled = false;
+                context.webkitImageSmoothingEnabled = false;
+                context.msImageSmoothingEnabled = false;
+            }
         });
 
         // Update visible content on viewport change

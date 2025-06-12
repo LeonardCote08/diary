@@ -1,34 +1,41 @@
 /**
- * VIPS Configuration
+ * VIPS Configuration - Optimized for pixel-perfect text clarity
  * 
- * This file is used to configure VIPS tile generation settings
- * If VIPS is not in your PATH, you can specify the exact path here
+ * Using PNG format for lossless compression of hand-drawn art
  */
 
 export default {
     // VIPS executable path (leave null for auto-detection)
     vipsPath: null,
 
-    // Tile generation settings - OPTIMIZED FOR QUALITY
-    tileSize: 256,        // Smaller tiles = better quality at deep zoom
-    overlap: 2,           // More overlap = no seams at any zoom level
-    quality: 95,          // Higher quality for text readability
-    format: 'jpg',        // JPEG for photos, PNG for graphics with text
+    // Tile generation settings - OPTIMIZED FOR TEXT CLARITY
+    tileSize: 512,        // Larger tiles = fewer seams, better quality
+    overlap: 1,           // Minimal overlap for PNG (no blending artifacts)
+    quality: 100,         // Not used for PNG, but kept for compatibility
+    format: 'png',        // PNG for lossless compression
+
+    // PNG specific settings
+    pngCompression: 9,    // Maximum compression (smaller files)
+    pngFilter: 'all',     // Try all PNG filters for best compression
 
     // Deep zoom settings
-    depth: 'auto',        // Auto-calculate optimal zoom levels
+    depth: 'onepixel',    // Generate all levels down to 1 pixel
     skipLevels: 0,        // Generate all levels for smoothest zoom
+
+    // Interpolation for resizing
+    kernel: 'lanczos3',   // Highest quality for text preservation
 
     // Preview generation settings
     previewWidth: 2048,
     previewHeight: 2048,
-    previewQuality: 90,
+    previewQuality: 95,   // JPEG for preview is fine
+    previewFormat: 'jpg',
 
     // Performance settings
     concurrency: null,    // Use all CPU cores
     memoryLimit: null,    // Let VIPS manage memory
 
     // Advanced options for quality
-    compression: 'jpeg',  // Use JPEG compression
-    subsample: 'off',     // Disable chroma subsampling for better text
+    background: '0 0 0',  // Black background for transparency
+    stripMetadata: true,  // Remove metadata to reduce file size
 };
