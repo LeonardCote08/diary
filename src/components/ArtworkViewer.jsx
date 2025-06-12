@@ -181,7 +181,13 @@ function ArtworkViewer(props) {
             setViewerReady(true);
             setIsLoading(false);
 
-            // Force high quality on initial load
+            // Force initial zoom to level 3 or 4 for sharp initial view
+            const bounds = viewer.world.getItemAt(0).getBounds();
+            viewer.viewport.fitBounds(bounds, true);
+
+            // Zoom out slightly to show full image but at good quality
+            // This ensures we start at a level with enough tiles
+            viewer.viewport.zoomBy(0.5);
             viewer.viewport.applyConstraints(true);
 
             // Initialize hotspot system after viewer is stable
