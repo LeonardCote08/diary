@@ -70,32 +70,50 @@
     /* Force GPU acceleration */
     transform: translateZ(0);
     will-change: transform;
-    /* CRITICAL: Sharp image rendering */
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
+    /* High-quality image rendering */
+    image-rendering: auto;
+    image-rendering: high-quality;
     -webkit-font-smoothing: subpixel-antialiased;
     /* Prevent any blurring */
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
     -webkit-perspective: 1000;
     perspective: 1000;
+    /* Hardware acceleration */
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
 }
 
     /* Force high quality for all images in viewer */
     .openseadragon-viewer img {
-        image-rendering: -webkit-optimize-contrast !important;
-        image-rendering: crisp-edges !important;
-        -ms-interpolation-mode: nearest-neighbor !important;
-        /* Prevent browser smoothing */
+        image-rendering: auto !important;
+        image-rendering: high-quality !important;
+        -ms-interpolation-mode: bicubic !important;
+        /* GPU acceleration for each tile */
         -webkit-transform: translateZ(0) scale(1.0);
         transform: translateZ(0) scale(1.0);
+        will-change: transform;
+        /* Prevent blur on transform */
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
     }
 
 /* OpenSeadragon canvas specific */
 .openseadragon-canvas {
-    image-rendering: -webkit-optimize-contrast !important;
-    image-rendering: crisp-edges !important;
+    image-rendering: auto !important;
+    image-rendering: high-quality !important;
+    /* Smooth scaling */
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
 }
+
+    /* Canvas element optimization */
+    .openseadragon-canvas canvas {
+        image-rendering: auto !important;
+        /* Force subpixel rendering */
+        shape-rendering: geometricPrecision;
+        text-rendering: geometricPrecision;
+    }
 
 /* Native SVG overlay for hotspots */
 .hotspot-svg-overlay {

@@ -138,16 +138,22 @@ async function generateTilesForImage(inputPath, outputName, vipsPath) {
     // Create output directory
     await fs.mkdir(outputDir, { recursive: true });
 
-    // Build VIPS command
+    // Build VIPS command with quality optimizations
     const args = [
         'dzsave',
         inputPath,
         outputBase,
         '--tile-size', config.tileSize.toString(),
         '--overlap', config.overlap.toString(),
-        '--suffix', `.${config.format}[Q=${config.quality}]`,
+        '--suffix', `.${config.format}[Q=${config.quality},optimize_coding,strip]`,
+        '--depth', 'onetile',  // Generate all zoom levels down to single tile
         '--vips-progress'
     ];
+
+    // Add format-specific optimizations
+    if (config.format === 'jpg' || config.format === 'jpeg') {
+        // For better quality, we can add additional parameters here if needed
+    }
 
     console.log('🔨 Generating tiles with VIPS...');
     console.log(`   Command: ${vipsPath} ${args.join(' ')}`);

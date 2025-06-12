@@ -4,49 +4,59 @@
  */
 
 const performanceConfig = {
-    // OpenSeadragon viewer settings
+    // OpenSeadragon viewer settings - OPTIMIZED FOR SMOOTHNESS & QUALITY
     viewer: {
-        // Tile loading optimization - FIXED for quality
-        imageLoaderLimit: 12,            // Increased for faster tile loading
-        maxImageCacheCount: 1000,        // Doubled cache for better quality
-        minPixelRatio: 1.0,              // FIXED: Full quality from start
-        smoothTileEdgesMinZoom: 0.5,     // Enable smoothing earlier
-        alwaysBlend: false,              // FIXED: Disable to prevent blur
+        // Tile loading optimization - Maximum quality
+        imageLoaderLimit: 16,            // More concurrent tile loads
+        maxImageCacheCount: 2000,        // Larger cache for smoother panning
+        minPixelRatio: 1.5,              // Higher quality baseline
+        smoothTileEdgesMinZoom: 0.1,     // Always smooth edges
+        alwaysBlend: true,               // Smooth tile transitions
 
-        // Force high quality tiles
-        immediateRender: true,
+        // Force highest quality
+        immediateRender: false,          // Wait for quality tiles
         preserveViewport: true,
-        visibilityRatio: 1.0,            // Load full visible area
+        visibilityRatio: 1.5,            // Preload more off-screen tiles
         subPixelRendering: true,
 
-        // Preload more aggressively
+        // Preload aggressively for smooth panning
         preload: true,
         placeholderFillStyle: '#000000',
 
-        // Animation settings for smooth zoom/pan
-        animationTime: 0.5,
-        springStiffness: 7.5,
-        blendTime: 0,                    // FIXED: No blending delay
+        // Animation settings for buttery smooth zoom/pan
+        animationTime: 0.3,              // Faster animations
+        springStiffness: 10,             // More responsive
+        blendTime: 0.1,                  // Quick blending
         flickEnabled: true,
         flickMinSpeed: 120,
-        flickMomentum: 0.25,
+        flickMomentum: 0.4,              // More momentum
 
         // Zoom settings
-        zoomPerScroll: 1.15,
+        zoomPerScroll: 1.1,              // Smaller increments = smoother
         zoomPerClick: 1.5,
-        minZoomLevel: 0.3,
-        maxZoomLevel: 10,
-        defaultZoomLevel: 0.6,
+        minZoomLevel: 0.5,
+        maxZoomLevel: 20,                // Allow deeper zoom
+        defaultZoomLevel: 1,
 
         // Tile quality settings
-        minZoomImageRatio: 0.8,          // Keep higher res tiles longer
-        maxTilesPerFrame: 4,             // Load more tiles per frame
-        tileRetryMax: 3,                 // Retry failed tiles
-        tileRetryDelay: 200,
+        minZoomImageRatio: 0.5,          // Keep high res tiles longer
+        maxTilesPerFrame: 8,             // Load more tiles per frame
+        tileRetryMax: 5,                 // More retries
+        tileRetryDelay: 100,             // Faster retries
 
         // Image quality
         compositeOperation: 'source-over',
-        imageSmoothingEnabled: false     // FIXED: Disable smoothing
+        imageSmoothingEnabled: true,     // Enable smoothing for quality
+        smoothImageZoom: true,           // Smooth during zoom
+
+        // Viewport constraints
+        constrainDuringPan: true,
+        wrapHorizontal: false,
+        wrapVertical: false,
+
+        // Navigation
+        navigatorAutoResize: true,
+        showNavigator: false,            // Hide minimap for performance
     },
 
     // Tile generation settings

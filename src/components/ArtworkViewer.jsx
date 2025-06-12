@@ -4,6 +4,7 @@ import NativeHotspotRenderer from '../core/NativeHotspotRenderer';
 import ViewportManager from '../core/ViewportManager';
 import SpatialIndex from '../core/SpatialIndex';
 import AudioEngine from '../core/AudioEngine';
+import PerformanceMonitor from '../core/PerformanceMonitor';
 import performanceConfig from '../config/performanceConfig';
 
 let hotspotData = [];
@@ -18,6 +19,7 @@ function ArtworkViewer(props) {
     let viewportManager = null;
     let spatialIndex = null;
     let audioEngine = null;
+    let performanceMonitor = null;
 
     const [isLoading, setIsLoading] = createSignal(true);
     const [hoveredHotspot, setHoveredHotspot] = createSignal(null);
@@ -49,15 +51,15 @@ function ArtworkViewer(props) {
             tileSources: `/images/tiles/${props.artworkId}/${props.artworkId}.dzi`,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
-            // Core performance settings
+            // Core performance settings - OPTIMIZED
             immediateRender: viewerSettings.immediateRender,
             preserveViewport: viewerSettings.preserveViewport,
             visibilityRatio: viewerSettings.visibilityRatio,
-            constrainDuringPan: true,
-            wrapHorizontal: false,
-            wrapVertical: false,
+            constrainDuringPan: viewerSettings.constrainDuringPan,
+            wrapHorizontal: viewerSettings.wrapHorizontal,
+            wrapVertical: viewerSettings.wrapVertical,
 
-            // Fixed tile loading settings for quality
+            // Tile loading - MAXIMUM QUALITY
             imageLoaderLimit: viewerSettings.imageLoaderLimit,
             maxImageCacheCount: viewerSettings.maxImageCacheCount,
             minPixelRatio: viewerSettings.minPixelRatio,
@@ -65,13 +67,14 @@ function ArtworkViewer(props) {
             alwaysBlend: viewerSettings.alwaysBlend,
             placeholderFillStyle: viewerSettings.placeholderFillStyle,
 
-            // Additional quality settings
-            minZoomImageRatio: viewerSettings.minZoomImageRatio || 0.8,
-            maxTilesPerFrame: viewerSettings.maxTilesPerFrame || 4,
-            tileRetryMax: viewerSettings.tileRetryMax || 3,
-            tileRetryDelay: viewerSettings.tileRetryDelay || 200,
-            compositeOperation: viewerSettings.compositeOperation || 'source-over',
-            preload: viewerSettings.preload !== false,
+            // Quality optimizations
+            minZoomImageRatio: viewerSettings.minZoomImageRatio,
+            maxTilesPerFrame: viewerSettings.maxTilesPerFrame,
+            tileRetryMax: viewerSettings.tileRetryMax,
+            tileRetryDelay: viewerSettings.tileRetryDelay,
+            compositeOperation: viewerSettings.compositeOperation,
+            preload: viewerSettings.preload,
+            imageSmoothingEnabled: viewerSettings.imageSmoothingEnabled,
 
             // Navigation controls
             showNavigationControl: true,
@@ -80,15 +83,16 @@ function ArtworkViewer(props) {
             showHomeControl: true,
             showFullPageControl: false,
             showRotationControl: false,
+            showNavigator: viewerSettings.showNavigator,
 
-            // Zoom settings
+            // Zoom settings - ALLOW DEEPER ZOOM
             minZoomLevel: viewerSettings.minZoomLevel,
             maxZoomLevel: viewerSettings.maxZoomLevel,
             defaultZoomLevel: viewerSettings.defaultZoomLevel,
             zoomPerClick: viewerSettings.zoomPerClick,
             zoomPerScroll: viewerSettings.zoomPerScroll,
 
-            // Animation settings
+            // Smooth animations
             animationTime: viewerSettings.animationTime,
             springStiffness: viewerSettings.springStiffness,
             blendTime: viewerSettings.blendTime,
@@ -101,27 +105,28 @@ function ArtworkViewer(props) {
                 scrollToZoom: true,
                 clickToZoom: false,
                 dblClickToZoom: true,
-                flickEnabled: viewerSettings.flickEnabled
+                flickEnabled: viewerSettings.flickEnabled,
+                pinchRotate: false
             },
             gestureSettingsTouch: {
                 scrollToZoom: false,
                 clickToZoom: false,
                 dblClickToZoom: true,
                 flickEnabled: viewerSettings.flickEnabled,
-                pinchToZoom: true
+                pinchToZoom: true,
+                pinchRotate: false
             },
 
-            // Debug and network
+            // Performance
             debugMode: performanceConfig.debug.showMetrics,
             timeout: performanceConfig.network.timeout,
+            useCanvas: true,
             drawer: 'canvas',
             crossOriginPolicy: 'Anonymous',
             ajaxWithCredentials: false,
 
-            // Subpixel rendering
-            subPixelRoundingForTransparency: viewerSettings.subPixelRendering ?
-                OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS :
-                OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.NEVER
+            // Subpixel rendering for quality
+            subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS
         });
 
         // Initialize spatial index
@@ -133,6 +138,15 @@ function ArtworkViewer(props) {
 
         // Initialize audio engine
         audioEngine = new AudioEngine();
+
+        // Initialize performance monitor
+        performanceMonitor = new PerformanceMonitor(viewer);
+        performanceMonitor.start();
+
+        // Enable debug overlay if in debug mode
+        if (performanceConfig.debug.showMetrics) {
+            performanceMonitor.enableDebugOverlay();
+        }
 
         // Viewer ready handler
         viewer.addHandler('open', () => {
@@ -154,19 +168,22 @@ function ArtworkViewer(props) {
             }, 100);
         });
 
-        // Force high quality rendering on tiles
-        viewer.addHandler('tile-loading', (event) => {
-            if (event.tile && event.tile.element) {
-                event.tile.element.style.imageRendering = '-webkit-optimize-contrast';
-                event.tile.element.style.imageRendering = 'high-quality';
-            }
+        // Optimize tile rendering for quality
+        viewer.addHandler('tile-drawing', (event) => {
+            const context = event.context;
+            // Force high-quality rendering
+            context.imageSmoothingEnabled = true;
+            context.imageSmoothingQuality = 'high';
         });
 
         viewer.addHandler('tile-loaded', (event) => {
             if (event.tile && event.tile.element) {
-                event.tile.element.style.imageRendering = '-webkit-optimize-contrast';
-                event.tile.element.style.imageRendering = 'high-quality';
+                // Remove any blur filters
+                event.tile.element.style.imageRendering = 'auto';
+                event.tile.element.style.filter = 'none';
                 event.tile.element.style.transform = 'translateZ(0)';
+                // Force GPU acceleration
+                event.tile.element.style.willChange = 'transform';
             }
         });
 
@@ -233,6 +250,10 @@ function ArtworkViewer(props) {
             window.removeEventListener('keydown', handleKeyPress);
             resizeObserver.disconnect();
             if (updateTimer) clearTimeout(updateTimer);
+            if (performanceMonitor) {
+                performanceMonitor.stop();
+                performanceMonitor.disableDebugOverlay();
+            }
             if (viewer) viewer.destroy();
             if (renderer) renderer.destroy();
             if (audioEngine) audioEngine.destroy();
