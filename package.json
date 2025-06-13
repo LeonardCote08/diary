@@ -9,7 +9,11 @@
         "preview": "vite preview",
         "tiles": "powershell -ExecutionPolicy Bypass -File scripts/generate-optimized-tiles.ps1",
         "tiles:verify": "powershell -ExecutionPolicy Bypass -File scripts/verify-tiles.ps1",
+        "tiles:test": "powershell -ExecutionPolicy Bypass -File scripts/test-tiles-exist.ps1",
+        "tiles:check": "powershell -ExecutionPolicy Bypass -File scripts/check-tile-format.ps1",
+        "tiles:fix": "powershell -ExecutionPolicy Bypass -File scripts/fix-dzi-format.ps1",
         "cleanup": "powershell -ExecutionPolicy Bypass -File scripts/cleanup-project.ps1",
+        "cleanup:osd": "powershell -ExecutionPolicy Bypass -File scripts/cleanup-openseadragon-files.ps1",
         "convert:svg": "node scripts/svg-converter.js"
     },
     "devDependencies": {
@@ -22,8 +26,7 @@
         "cheerio": "^1.0.0",
         "commander": "^12.1.0",
         "howler": "^2.2.4",
-        "openseadragon": "^5.0.1",
-        "parse-svg-path": "^0.1.2",
+        "ol": "^10.3.0",
         "rbush": "^4.0.1",
         "solid-js": "^1.9.5"
     }

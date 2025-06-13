@@ -1,11 +1,11 @@
 /**
- * PerformanceMonitor - Real-time performance tracking and optimization
+ * PerformanceMonitor for OpenLayers - Real-time performance tracking
  * Monitors FPS and adjusts settings dynamically without sacrificing quality
  */
 
 class PerformanceMonitor {
-    constructor(viewer) {
-        this.viewer = viewer;
+    constructor(map) {
+        this.map = map;
         this.frameCount = 0;
         this.lastTime = performance.now();
         this.fps = 60;
@@ -19,15 +19,16 @@ class PerformanceMonitor {
         // Monitoring state
         this.isMonitoring = false;
         this.monitoringInterval = null;
+        this.renderFrameCallback = null;
 
         // Performance metrics
         this.metrics = {
             averageFPS: 60,
             minFPS: 60,
             maxFPS: 60,
-            tileLoadTime: 0,
+            renderTime: 0,
             visibleTiles: 0,
-            cachedTiles: 0,
+            loadedTiles: 0,
             memoryUsage: 0
         };
     }
@@ -41,8 +42,8 @@ class PerformanceMonitor {
         this.isMonitoring = true;
         this.lastTime = performance.now();
 
-        // Monitor FPS
-        this.measureFrame();
+        // Monitor FPS through render frames
+        this.startFrameMonitoring();
 
         // Update metrics every second
         this.monitoringInterval = setInterval(() => {
@@ -50,9 +51,10 @@ class PerformanceMonitor {
             this.optimizeSettings();
         }, 1000);
 
-        // Track tile loading performance
-        this.viewer.addHandler('tile-loaded', this.onTileLoaded.bind(this));
-        this.viewer.addHandler('tile-load-failed', this.onTileLoadFailed.bind(this));
+        // Track tile loading
+        this.map.on('tileloadstart', this.onTileLoadStart.bind(this));
+        this.map.on('tileloadend', this.onTileLoadEnd.bind(this));
+        this.map.on('tileloaderror', this.onTileLoadError.bind(this));
 
         console.log('Performance monitoring started');
     }
@@ -68,40 +70,54 @@ class PerformanceMonitor {
             this.monitoringInterval = null;
         }
 
-        this.viewer.removeHandler('tile-loaded', this.onTileLoaded);
-        this.viewer.removeHandler('tile-load-failed', this.onTileLoadFailed);
+        if (this.renderFrameCallback) {
+            this.map.un('postrender', this.renderFrameCallback);
+            this.renderFrameCallback = null;
+        }
+
+        this.map.un('tileloadstart', this.onTileLoadStart);
+        this.map.un('tileloadend', this.onTileLoadEnd);
+        this.map.un('tileloaderror', this.onTileLoadError);
 
         console.log('Performance monitoring stopped');
     }
 
     /**
-     * Measure frame rate
+     * Start frame monitoring
      */
-    measureFrame() {
-        if (!this.isMonitoring) return;
+    startFrameMonitoring() {
+        let frameStartTime = performance.now();
 
-        const currentTime = performance.now();
-        const deltaTime = currentTime - this.lastTime;
+        this.renderFrameCallback = () => {
+            if (!this.isMonitoring) return;
 
-        // Calculate instantaneous FPS
-        if (deltaTime > 0) {
-            const instantFPS = 1000 / deltaTime;
-            this.fpsHistory.push(instantFPS);
+            const currentTime = performance.now();
+            const deltaTime = currentTime - this.lastTime;
 
-            // Keep history size limited
-            if (this.fpsHistory.length > this.maxHistorySize) {
-                this.fpsHistory.shift();
+            // Calculate instantaneous FPS
+            if (deltaTime > 0) {
+                const instantFPS = 1000 / deltaTime;
+                this.fpsHistory.push(instantFPS);
+
+                // Keep history size limited
+                if (this.fpsHistory.length > this.maxHistorySize) {
+                    this.fpsHistory.shift();
+                }
+
+                // Calculate average FPS
+                this.fps = this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length;
             }
 
-            // Calculate average FPS
-            this.fps = this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length;
-        }
+            // Track render time
+            this.metrics.renderTime = currentTime - frameStartTime;
 
-        this.lastTime = currentTime;
-        this.frameCount++;
+            this.lastTime = currentTime;
+            this.frameCount++;
 
-        // Schedule next measurement
-        requestAnimationFrame(() => this.measureFrame());
+            frameStartTime = currentTime;
+        };
+
+        this.map.on('postrender', this.renderFrameCallback);
     }
 
     /**
@@ -114,11 +130,17 @@ class PerformanceMonitor {
         this.metrics.maxFPS = Math.round(Math.max(...this.fpsHistory));
 
         // Tile metrics
-        const world = this.viewer.world;
-        if (world.getItemCount() > 0) {
-            const tiledImage = world.getItemAt(0);
-            this.metrics.visibleTiles = tiledImage._tilesToDraw ? tiledImage._tilesToDraw.length : 0;
-            this.metrics.cachedTiles = tiledImage._tileCache ? Object.keys(tiledImage._tileCache).length : 0;
+        const tileLayers = this.map.getLayers().getArray()
+            .filter(layer => layer.getSource && layer.getSource().getTileGrid);
+
+        if (tileLayers.length > 0) {
+            const tileSource = tileLayers[0].getSource();
+            const tileCache = tileSource.getTileCacheForProjection ?
+                tileSource.getTileCacheForProjection(tileSource.getProjection()) : null;
+
+            if (tileCache) {
+                this.metrics.loadedTiles = tileCache.getCount();
+            }
         }
 
         // Memory usage (if available)
@@ -132,67 +154,54 @@ class PerformanceMonitor {
      */
     optimizeSettings() {
         const avgFPS = this.metrics.averageFPS;
+        const view = this.map.getView();
 
         // Only optimize if performance is poor
-        if (avgFPS < this.minAcceptableFPS) {
+        if (avgFPS < this.minAcceptableFPS && avgFPS > 0) {
             console.warn(`Low FPS detected: ${avgFPS}. Optimizing...`);
 
-            // Reduce concurrent tile loads
-            if (this.viewer.imageLoaderLimit > 8) {
-                this.viewer.imageLoaderLimit = Math.max(8, this.viewer.imageLoaderLimit - 2);
-                console.log(`Reduced imageLoaderLimit to ${this.viewer.imageLoaderLimit}`);
-            }
+            // Reduce animation duration for faster response
+            const interactions = this.map.getInteractions();
+            interactions.forEach(interaction => {
+                if (interaction.setDuration && typeof interaction.setDuration === 'function') {
+                    interaction.setDuration(150);
+                }
+            });
 
-            // Reduce animation time for faster response
-            if (this.viewer.animationTime > 0.2) {
-                this.viewer.animationTime = Math.max(0.2, this.viewer.animationTime - 0.1);
-                console.log(`Reduced animationTime to ${this.viewer.animationTime}`);
-            }
-
-            // Reduce tiles per frame
-            if (this.viewer.maxTilesPerFrame > 4) {
-                this.viewer.maxTilesPerFrame = Math.max(4, this.viewer.maxTilesPerFrame - 1);
-                console.log(`Reduced maxTilesPerFrame to ${this.viewer.maxTilesPerFrame}`);
-            }
+            // Notify about performance issues
+            console.log('Consider reducing tile quality or visible hotspots for better performance');
         }
         // Restore settings if performance is good
         else if (avgFPS > this.targetFPS) {
-            // Gradually restore settings
-            if (this.viewer.imageLoaderLimit < 16) {
-                this.viewer.imageLoaderLimit = Math.min(16, this.viewer.imageLoaderLimit + 1);
-            }
-
-            if (this.viewer.animationTime < 0.3) {
-                this.viewer.animationTime = Math.min(0.3, this.viewer.animationTime + 0.05);
-            }
-
-            if (this.viewer.maxTilesPerFrame < 8) {
-                this.viewer.maxTilesPerFrame = Math.min(8, this.viewer.maxTilesPerFrame + 1);
-            }
+            // Restore default interaction durations
+            const interactions = this.map.getInteractions();
+            interactions.forEach(interaction => {
+                if (interaction.setDuration && typeof interaction.setDuration === 'function') {
+                    interaction.setDuration(250);
+                }
+            });
         }
     }
 
     /**
-     * Handle tile loaded event
+     * Handle tile load start
      */
-    onTileLoaded(event) {
-        // Track tile loading performance
-        if (event.tiledImage && event.tile) {
-            const loadTime = event.tile.loadTime || 0;
-            this.metrics.tileLoadTime = (this.metrics.tileLoadTime + loadTime) / 2;
-        }
+    onTileLoadStart() {
+        this.metrics.visibleTiles++;
     }
 
     /**
-     * Handle tile load failed event
+     * Handle tile load end
      */
-    onTileLoadFailed(event) {
-        // Don't warn about missing intermediate levels (9-11) - this is normal with VIPS
-        if (event.tile && event.tile.level >= 9 && event.tile.level <= 11) {
-            return;
-        }
-        console.warn('Tile load failed:', event.tile);
-        // Could implement retry logic here
+    onTileLoadEnd() {
+        this.metrics.loadedTiles++;
+    }
+
+    /**
+     * Handle tile load error
+     */
+    onTileLoadError(event) {
+        console.warn('Tile load error:', event);
     }
 
     /**
@@ -216,8 +225,8 @@ class PerformanceMonitor {
             warnings.push(`Low FPS: ${this.metrics.averageFPS}`);
         }
 
-        if (this.metrics.tileLoadTime > 500) {
-            warnings.push(`Slow tile loading: ${Math.round(this.metrics.tileLoadTime)}ms`);
+        if (this.metrics.renderTime > 16) {
+            warnings.push(`Slow rendering: ${Math.round(this.metrics.renderTime)}ms`);
         }
 
         if (this.metrics.memoryUsage > 500) {
@@ -246,6 +255,7 @@ class PerformanceMonitor {
             border-radius: 4px;
             z-index: 9999;
             min-width: 200px;
+            pointer-events: none;
         `;
 
         document.body.appendChild(this.debugOverlay);
@@ -254,12 +264,18 @@ class PerformanceMonitor {
         setInterval(() => {
             if (this.isMonitoring && this.debugOverlay) {
                 const metrics = this.getMetrics();
+                const view = this.map.getView();
+                const zoom = view.getZoom();
+                const resolution = view.getResolution();
+
                 this.debugOverlay.innerHTML = `
                     <div style="font-weight: bold; margin-bottom: 5px;">Performance Monitor</div>
                     <div>FPS: ${metrics.averageFPS} (${metrics.minFPS}-${metrics.maxFPS})</div>
-                    <div>Tiles: ${metrics.visibleTiles} visible / ${metrics.cachedTiles} cached</div>
-                    <div>Load Time: ${Math.round(metrics.tileLoadTime)}ms</div>
+                    <div>Render: ${Math.round(metrics.renderTime)}ms</div>
+                    <div>Tiles: ${metrics.visibleTiles} / ${metrics.loadedTiles}</div>
                     <div>Memory: ${metrics.memoryUsage}MB</div>
+                    <div>Zoom: ${zoom ? zoom.toFixed(2) : 'N/A'}</div>
+                    <div>Resolution: ${resolution ? resolution.toFixed(2) : 'N/A'}</div>
                     ${metrics.warnings.length > 0 ? `<div style="color: #ff6b6b; margin-top: 5px;">${metrics.warnings.join('<br>')}</div>` : ''}
                 `;
             }

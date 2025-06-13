@@ -59,14 +59,15 @@
     touch-action: none;
 }
 
-/* CRITICAL: OpenSeadragon viewer - PIXEL-PERFECT RENDERING */
-.openseadragon-viewer {
+/* CRITICAL: OpenLayers viewer - PIXEL-PERFECT RENDERING */
+.openlayers-viewer {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     cursor: grab;
+    background: #1a1a1a; /* Ensure visible background */
     /* CRITICAL: Pixel-perfect rendering for text */
     image-rendering: crisp-edges !important;
     image-rendering: -moz-crisp-edges !important;
@@ -84,8 +85,8 @@
     perspective: 1000;
 }
 
-    /* CRITICAL: Apply to ALL images in viewer */
-    .openseadragon-viewer img {
+    /* CRITICAL: Apply to ALL canvases in viewer */
+    .openlayers-viewer canvas {
         /* Pixel-perfect rendering */
         image-rendering: crisp-edges !important;
         image-rendering: -moz-crisp-edges !important;
@@ -103,52 +104,76 @@
         -webkit-filter: none !important;
     }
 
-/* OpenSeadragon canvas - PIXEL PERFECT */
-.openseadragon-canvas {
-    image-rendering: crisp-edges !important;
+/* OpenLayers specific overrides */
+.ol-viewport {
+    position: absolute !important;
     image-rendering: pixelated !important;
-    -webkit-transform-style: preserve-3d;
-    transform-style: preserve-3d;
 }
 
-    /* Canvas element - NO SMOOTHING */
-    .openseadragon-canvas canvas {
-        image-rendering: crisp-edges !important;
-        image-rendering: pixelated !important;
-        shape-rendering: crispEdges !important;
-        filter: none !important;
-    }
-
-/* Override ANY OpenSeadragon defaults */
-.openseadragon-container * {
-    image-rendering: crisp-edges !important;
+.ol-layer canvas {
     image-rendering: pixelated !important;
+    image-rendering: crisp-edges !important;
+}
+
+.ol-tile {
+    image-rendering: pixelated !important;
+    image-rendering: crisp-edges !important;
 }
 
 /* Browser-specific optimizations */
 @supports (-webkit-optimize-contrast: none) {
     /* Chrome/Edge specific */
-    .openseadragon-viewer,
-    .openseadragon-viewer img {
+    .openlayers-viewer,
+    .openlayers-viewer canvas,
+    .ol-layer canvas {
         image-rendering: -webkit-optimize-contrast !important;
     }
 }
 
-/* Native SVG overlay for hotspots */
-.hotspot-svg-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 10;
+/* OpenLayers controls customization */
+.ol-control {
+    background: transparent !important;
 }
 
-    .hotspot-svg-overlay g {
-        cursor: pointer;
-        pointer-events: auto;
+.ol-zoom {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+.ol-control button {
+    background: rgba(0, 0, 0, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    transition: all 0.2s ease;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    margin: 5px !important;
+    font-size: 18px !important;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .ol-control button:hover {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-color: rgba(255, 255, 255, 0.4) !important;
+        transform: scale(1.1);
     }
+
+    .ol-control button:active {
+        transform: scale(0.95);
+    }
+
+/* Hide attribution and rotation */
+.ol-attribution,
+.ol-rotate {
+    display: none !important;
+}
 
 /* Viewer loading indicator */
 .viewer-loading {
@@ -253,46 +278,6 @@
     .legend-color.audio-sound {
         background: rgba(255, 176, 0, 0.5);
         border-color: #ffb000;
-    }
-
-/* OpenSeadragon controls customization */
-.openseadragon-container {
-    background: transparent !important;
-}
-
-    .openseadragon-container .openseadragon-controls {
-        margin: 20px !important;
-    }
-
-    .openseadragon-container button {
-        background: rgba(0, 0, 0, 0.7) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        color: white !important;
-        transition: all 0.2s ease;
-        width: 40px !important;
-        height: 40px !important;
-        border-radius: 50% !important;
-        margin: 5px !important;
-        font-size: 18px !important;
-        cursor: pointer;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-    }
-
-        .openseadragon-container button:hover {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border-color: rgba(255, 255, 255, 0.4) !important;
-            transform: scale(1.1);
-        }
-
-        .openseadragon-container button:active {
-            transform: scale(0.95);
-        }
-
-    /* Hide rotation control */
-    .openseadragon-container .openseadragon-rotate-left,
-    .openseadragon-container .openseadragon-rotate-right {
-        display: none !important;
     }
 
 /* Mobile controls */
@@ -406,14 +391,6 @@
         display: inline-block;
     }
 
-/* Navigator (minimap) styling */
-.openseadragon-container .navigator {
-    background: rgba(0, 0, 0, 0.8) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
 /* Prevent text selection during interaction */
 .viewer-container * {
     -webkit-user-select: none;
@@ -460,7 +437,7 @@
         font-size: 22px;
     }
 
-    .openseadragon-container button {
+    .ol-control button {
         width: 36px !important;
         height: 36px !important;
         font-size: 16px !important;
@@ -477,7 +454,7 @@
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-    .openseadragon-container button {
+    .ol-control button {
         border-width: 2px !important;
     }
 }
@@ -490,7 +467,7 @@
         transition-duration: 0.01ms !important;
     }
 
-    .openseadragon-viewer {
+    .openlayers-viewer {
         transition: none !important;
     }
 }
@@ -523,3 +500,20 @@
         transform: translateX(100%);
     }
 }
+
+/* Force pixel-perfect rendering on all tile images */
+.ol-layer img {
+    image-rendering: pixelated !important;
+    image-rendering: crisp-edges !important;
+    image-rendering: -moz-crisp-edges !important;
+    image-rendering: -webkit-crisp-edges !important;
+}
+
+/* Ensure cursors work properly */
+.ol-dragpan {
+    cursor: grab;
+}
+
+    .ol-dragpan:active {
+        cursor: grabbing;
+    }
