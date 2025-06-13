@@ -59,7 +59,7 @@
     touch-action: none;
 }
 
-/* OpenSeadragon viewer - HIGH QUALITY RENDERING */
+/* CRITICAL: OpenSeadragon viewer - PIXEL-PERFECT RENDERING */
 .openseadragon-viewer {
     position: absolute;
     top: 0;
@@ -67,66 +67,71 @@
     width: 100%;
     height: 100%;
     cursor: grab;
+    /* CRITICAL: Pixel-perfect rendering for text */
+    image-rendering: crisp-edges !important;
+    image-rendering: -moz-crisp-edges !important;
+    image-rendering: -webkit-crisp-edges !important;
+    image-rendering: pixelated !important;
+    /* Disable ALL smoothing */
+    -webkit-font-smoothing: none !important;
+    font-smooth: never !important;
     /* Force GPU acceleration */
     transform: translateZ(0);
     will-change: transform;
-    /* High-quality image rendering */
-    image-rendering: auto;
-    image-rendering: high-quality;
-    -webkit-font-smoothing: antialiased;
-    /* Prevent any blurring */
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
     -webkit-perspective: 1000;
     perspective: 1000;
-    /* Hardware acceleration */
-    -webkit-transform: translate3d(0, 0, 0);
-    transform: translate3d(0, 0, 0);
 }
 
-    /* High quality for all images in viewer */
+    /* CRITICAL: Apply to ALL images in viewer */
     .openseadragon-viewer img {
-        /* High-quality rendering */
-        image-rendering: auto !important;
-        image-rendering: high-quality !important;
-        -ms-interpolation-mode: bicubic !important;
-        /* GPU acceleration for each tile */
-        -webkit-transform: translateZ(0) scale(1.0);
+        /* Pixel-perfect rendering */
+        image-rendering: crisp-edges !important;
+        image-rendering: -moz-crisp-edges !important;
+        image-rendering: -webkit-crisp-edges !important;
+        image-rendering: pixelated !important;
+        /* No interpolation */
+        -ms-interpolation-mode: nearest-neighbor !important;
+        /* GPU acceleration */
         transform: translateZ(0) scale(1.0);
         will-change: transform;
-        /* Prevent blur on transform */
         -webkit-backface-visibility: hidden;
         backface-visibility: hidden;
-        /* No artificial sharpening */
+        /* No filtering */
         filter: none !important;
+        -webkit-filter: none !important;
     }
 
-/* OpenSeadragon canvas specific - HIGH QUALITY */
+/* OpenSeadragon canvas - PIXEL PERFECT */
 .openseadragon-canvas {
-    /* High-quality rendering */
-    image-rendering: auto !important;
-    image-rendering: high-quality !important;
-    /* Preserve 3D for smooth transforms */
+    image-rendering: crisp-edges !important;
+    image-rendering: pixelated !important;
     -webkit-transform-style: preserve-3d;
     transform-style: preserve-3d;
 }
 
-    /* Canvas element optimization - HIGH QUALITY */
+    /* Canvas element - NO SMOOTHING */
     .openseadragon-canvas canvas {
-        /* High-quality smoothing */
-        image-rendering: auto !important;
-        image-rendering: high-quality !important;
-        /* Smooth rendering */
-        shape-rendering: auto;
-        text-rendering: optimizeLegibility;
-        /* No filtering */
+        image-rendering: crisp-edges !important;
+        image-rendering: pixelated !important;
+        shape-rendering: crispEdges !important;
         filter: none !important;
     }
 
-/* Override any OpenSeadragon defaults */
+/* Override ANY OpenSeadragon defaults */
 .openseadragon-container * {
-    image-rendering: auto !important;
-    image-rendering: high-quality !important;
+    image-rendering: crisp-edges !important;
+    image-rendering: pixelated !important;
+}
+
+/* Browser-specific optimizations */
+@supports (-webkit-optimize-contrast: none) {
+    /* Chrome/Edge specific */
+    .openseadragon-viewer,
+    .openseadragon-viewer img {
+        image-rendering: -webkit-optimize-contrast !important;
+    }
 }
 
 /* Native SVG overlay for hotspots */
@@ -255,12 +260,10 @@
     background: transparent !important;
 }
 
-    /* Style the navigation controls */
     .openseadragon-container .openseadragon-controls {
         margin: 20px !important;
     }
 
-    /* Style individual buttons */
     .openseadragon-container button {
         background: rgba(0, 0, 0, 0.7) !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -490,19 +493,6 @@
     .openseadragon-viewer {
         transition: none !important;
     }
-}
-
-/* Dark mode adjustments */
-@media (prefers-color-scheme: light) {
-    .app-container {
-        background-color: #000;
-        color: #fff;
-    }
-}
-
-/* Smooth scrolling */
-html {
-    scroll-behavior: smooth;
 }
 
 /* Ensure proper stacking context */

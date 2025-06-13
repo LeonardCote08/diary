@@ -5,13 +5,12 @@ import ViewportManager from '../core/ViewportManager';
 import SpatialIndex from '../core/SpatialIndex';
 import AudioEngine from '../core/AudioEngine';
 import PerformanceMonitor from '../core/PerformanceMonitor';
-import HybridTileSource from '../core/HybridTileSource';
 import performanceConfig from '../config/performanceConfig';
 
 let hotspotData = [];
 
 /**
- * ArtworkViewer - Enhanced for maximum text clarity
+ * ArtworkViewer - Optimized for perfect text clarity
  */
 function ArtworkViewer(props) {
     let viewerRef;
@@ -44,121 +43,71 @@ function ArtworkViewer(props) {
         previewImg.onload = () => setPreviewLoaded(true);
         previewImg.src = `/images/tiles/${props.artworkId}/preview.jpg`;
 
-        // Initialize OpenSeadragon with enhanced settings
-        const viewerSettings = performanceConfig.viewer;
+        // Initialize OpenSeadragon with optimized settings
         const dziUrl = `/images/tiles/${props.artworkId}/${props.artworkId}.dzi`;
-
-        // Detect tile format
-        let tileSource = dziUrl;
-        let isHybrid = false;
-        let isPngOnly = false;
-
-        try {
-            const hybridSource = await HybridTileSource.createFromDZI(dziUrl);
-            if (hybridSource) {
-                tileSource = hybridSource;
-                isHybrid = true;
-                console.log('Using hybrid tile source with enhanced text clarity');
-            }
-        } catch (error) {
-            console.log('Using standard tiles');
-        }
-
-        // Check if using PNG-only tiles
-        try {
-            const dziResponse = await fetch(dziUrl);
-            const dziText = await dziResponse.text();
-            if (dziText.includes('Format="png"')) {
-                isPngOnly = true;
-                console.log('Using PNG-only tiles for maximum quality');
-            }
-        } catch (error) {
-            console.log('Could not detect tile format');
-        }
 
         viewer = OpenSeadragon({
             element: viewerRef,
-            tileSources: tileSource,
+            tileSources: dziUrl,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
-            // Critical quality settings
-            immediateRender: viewerSettings.immediateRender,
-            preserveViewport: viewerSettings.preserveViewport,
-            visibilityRatio: viewerSettings.visibilityRatio,
-            constrainDuringPan: viewerSettings.constrainDuringPan,
-            wrapHorizontal: viewerSettings.wrapHorizontal,
-            wrapVertical: viewerSettings.wrapVertical,
-
-            // Tile loading
-            imageLoaderLimit: viewerSettings.imageLoaderLimit,
-            maxImageCacheCount: viewerSettings.maxImageCacheCount,
-            minPixelRatio: viewerSettings.minPixelRatio,
-            smoothTileEdgesMinZoom: viewerSettings.smoothTileEdgesMinZoom,
-            alwaysBlend: viewerSettings.alwaysBlend,
-            placeholderFillStyle: viewerSettings.placeholderFillStyle,
-
-            // CRITICAL: Disable all smoothing for text clarity
+            // CRITICAL: Disable ALL smoothing for pixel-perfect text
             imageSmoothingEnabled: false,
-            smoothImageZoom: false,
-            subPixelRendering: false,
+            smoothTileEdgesMinZoom: Infinity,
+            alwaysBlend: false,
+            placeholderFillStyle: null,
+            opacity: 1,
+            preload: true,
+            compositeOperation: null,
 
-            // Quality settings
-            minZoomImageRatio: viewerSettings.minZoomImageRatio,
-            maxTilesPerFrame: viewerSettings.maxTilesPerFrame,
-            tileRetryMax: viewerSettings.tileRetryMax,
-            tileRetryDelay: viewerSettings.tileRetryDelay,
-            compositeOperation: viewerSettings.compositeOperation,
-            preload: viewerSettings.preload,
+            // Tile loading optimization
+            immediateRender: true,
+            imageLoaderLimit: 12,
+            maxImageCacheCount: 2000,
+            timeout: 120000,
+            useCanvas: true,
 
-            // Maximum zoom
-            maxZoomPixelRatio: viewerSettings.maxZoomPixelRatio,
-            subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.NEVER,
+            // Visibility and coverage
+            visibilityRatio: 1.0,
+            minPixelRatio: 1.0,
+            defaultZoomLevel: 1,
+            minZoomLevel: 0.5,
+            maxZoomPixelRatio: 5,
 
             // Navigation
+            constrainDuringPan: true,
+            wrapHorizontal: false,
+            wrapVertical: false,
+
+            // Animation (faster for responsiveness)
+            animationTime: 0.3,
+            springStiffness: 10,
+
+            // Controls
             showNavigationControl: true,
             navigationControlAnchor: OpenSeadragon.ControlAnchor.TOP_RIGHT,
             showZoomControl: true,
             showHomeControl: true,
             showFullPageControl: false,
             showRotationControl: false,
-            showNavigator: viewerSettings.showNavigator,
 
-            // Zoom settings
-            minZoomLevel: viewerSettings.minZoomLevel,
-            maxZoomLevel: viewerSettings.maxZoomLevel,
-            defaultZoomLevel: viewerSettings.defaultZoomLevel,
-            zoomPerClick: viewerSettings.zoomPerClick,
-            zoomPerScroll: viewerSettings.zoomPerScroll,
-
-            // Animation
-            animationTime: viewerSettings.animationTime,
-            springStiffness: viewerSettings.springStiffness,
-            blendTime: viewerSettings.blendTime,
-            flickEnabled: viewerSettings.flickEnabled,
-            flickMinSpeed: viewerSettings.flickMinSpeed,
-            flickMomentum: viewerSettings.flickMomentum,
-
-            // Input settings
+            // Input
             gestureSettingsMouse: {
                 scrollToZoom: true,
                 clickToZoom: false,
                 dblClickToZoom: true,
-                flickEnabled: viewerSettings.flickEnabled,
-                pinchRotate: false
+                flickEnabled: true
             },
             gestureSettingsTouch: {
                 scrollToZoom: false,
                 clickToZoom: false,
                 dblClickToZoom: true,
-                flickEnabled: viewerSettings.flickEnabled,
-                pinchToZoom: true,
-                pinchRotate: false
+                flickEnabled: true,
+                pinchToZoom: true
             },
 
             // Performance
-            debugMode: performanceConfig.debug.showMetrics,
-            timeout: performanceConfig.network.timeout,
-            drawer: 'canvas',  // Use canvas drawer instead of deprecated useCanvas
+            debugMode: false,
             crossOriginPolicy: 'Anonymous',
             ajaxWithCredentials: false
         });
@@ -171,48 +120,39 @@ function ArtworkViewer(props) {
         performanceMonitor = new PerformanceMonitor(viewer);
         performanceMonitor.start();
 
-        // Configure for tile format
-        if (isHybrid) {
-            HybridTileSource.configureViewer(viewer, tileSource);
-        }
-
-        // Force pixel-perfect rendering
+        // Critical rendering optimizations
         const forcePixelPerfect = () => {
+            if (!viewer.drawer || !viewer.drawer.context) return;
+
             const context = viewer.drawer.context;
-            if (context) {
-                context.imageSmoothingEnabled = false;
-                context.msImageSmoothingEnabled = false;
-                context.webkitImageSmoothingEnabled = false;
-                context.mozImageSmoothingEnabled = false;
+            context.imageSmoothingEnabled = false;
+            context.msImageSmoothingEnabled = false;
+            context.webkitImageSmoothingEnabled = false;
+            context.mozImageSmoothingEnabled = false;
+
+            // Force pixelated rendering
+            const canvas = viewer.drawer.canvas;
+            if (canvas) {
+                canvas.style.imageRendering = 'pixelated';
+                canvas.style.imageRendering = 'crisp-edges';
+                canvas.style.imageRendering = '-moz-crisp-edges';
+                canvas.style.imageRendering = '-webkit-crisp-edges';
             }
         };
 
         // Viewer ready handler
         viewer.addHandler('open', () => {
-            console.log('Viewer ready - configuring for text clarity');
+            console.log('Viewer ready - applying pixel-perfect rendering');
             setViewerReady(true);
             setIsLoading(false);
 
-            // Force pixel-perfect immediately
+            // Apply critical rendering settings
             forcePixelPerfect();
 
-            // Get the actual tile source info
+            // Fit to screen
             const tiledImage = viewer.world.getItemAt(0);
-            const source = tiledImage.source;
-            console.log(`Tile source levels: 0 to ${source.maxLevel}`);
-
-            // Set initial zoom to show full image with good quality
             const bounds = tiledImage.getBounds();
             viewer.viewport.fitBounds(bounds, true);
-
-            // Ensure we're at a zoom level with enough tiles
-            const currentZoom = viewer.viewport.getZoom();
-            const minGoodZoom = 0.8; // Adjust based on your tile structure
-
-            if (currentZoom < minGoodZoom) {
-                viewer.viewport.zoomTo(minGoodZoom, null, true);
-            }
-
             viewer.viewport.applyConstraints(true);
 
             // Initialize hotspots
@@ -224,44 +164,33 @@ function ArtworkViewer(props) {
             }, 100);
         });
 
-        // Enhanced tile drawing for quality
-        viewer.addHandler('tile-drawing', (event) => {
-            const context = event.context;
-            const tile = event.tile;
-
-            // Get tile URL
-            const tileUrl = tile.getUrl ? tile.getUrl() : tile.url || '';
-
-            // Force pixel-perfect for PNG tiles or high zoom
-            if (tileUrl.includes('.png') || tile.level >= 3) {
-                context.imageSmoothingEnabled = false;
-                context.msImageSmoothingEnabled = false;
-                context.webkitImageSmoothingEnabled = false;
-                context.mozImageSmoothingEnabled = false;
-            } else {
-                // High-quality smoothing for JPEG overview
-                context.imageSmoothingEnabled = true;
-                context.imageSmoothingQuality = 'high';
-            }
-        });
+        // Ensure pixel-perfect on every draw
+        viewer.addHandler('update-viewport', forcePixelPerfect);
+        viewer.addHandler('animation-finish', forcePixelPerfect);
+        viewer.addHandler('resize', forcePixelPerfect);
 
         // Optimize tile rendering
+        viewer.addHandler('tile-drawing', (event) => {
+            const context = event.context;
+
+            // Force nearest-neighbor for all tiles
+            context.imageSmoothingEnabled = false;
+            context.msImageSmoothingEnabled = false;
+            context.webkitImageSmoothingEnabled = false;
+            context.mozImageSmoothingEnabled = false;
+        });
+
+        // Apply rendering to loaded tiles
         viewer.addHandler('tile-loaded', (event) => {
             if (event.tile && event.tile.element) {
-                const tile = event.tile;
-                const element = tile.element;
+                const element = event.tile.element;
 
-                // Get URL from tile
-                const tileUrl = tile.getUrl ? tile.getUrl() : tile.url || '';
-
-                // Apply rendering based on format
-                if (tileUrl.includes('.png')) {
-                    element.style.imageRendering = 'pixelated';
-                    element.style.imageRendering = '-moz-crisp-edges';
-                    element.style.imageRendering = 'crisp-edges';
-                } else {
-                    element.style.imageRendering = 'auto';
-                }
+                // Force pixel-perfect rendering
+                element.style.imageRendering = 'pixelated';
+                element.style.imageRendering = 'crisp-edges';
+                element.style.imageRendering = '-moz-crisp-edges';
+                element.style.imageRendering = '-webkit-crisp-edges';
+                element.style.imageRendering = '-webkit-optimize-contrast';
 
                 // Hardware acceleration
                 element.style.transform = 'translateZ(0)';
@@ -269,18 +198,6 @@ function ArtworkViewer(props) {
                 element.style.backfaceVisibility = 'hidden';
                 element.style.perspective = '1000px';
             }
-        });
-
-        // Force quality on zoom/pan end
-        viewer.addHandler('animation-finish', () => {
-            forcePixelPerfect();
-            viewer.forceRedraw();
-        });
-
-        // Maintain quality on resize
-        viewer.addHandler('resize', () => {
-            forcePixelPerfect();
-            viewer.forceRedraw();
         });
 
         // Update visible content
@@ -301,7 +218,6 @@ function ArtworkViewer(props) {
         const resizeObserver = new ResizeObserver(() => {
             if (viewer && viewer.viewport && viewer.isOpen()) {
                 try {
-                    // Ensure viewer has valid dimensions
                     const container = viewer.container;
                     if (container && container.clientWidth > 0 && container.clientHeight > 0) {
                         viewer.viewport.resize();
@@ -332,7 +248,7 @@ function ArtworkViewer(props) {
                 'ArrowDown': () => viewer.viewport.panBy(new OpenSeadragon.Point(0, 0.1)),
                 'f': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
                 'F': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
-                'q': () => forcePixelPerfect() // Quick quality reset
+                'r': () => { forcePixelPerfect(); viewer.forceRedraw(); }
             };
 
             const handler = handlers[event.key];
@@ -439,7 +355,7 @@ function ArtworkViewer(props) {
                             <div><kbd>-</kbd> Zoom out</div>
                             <div><kbd>0</kbd> Reset view</div>
                             <div><kbd>F</kbd> Fit to screen</div>
-                            <div><kbd>Q</kbd> Reset quality</div>
+                            <div><kbd>R</kbd> Refresh rendering</div>
                             <div><kbd>↑↓←→</kbd> Pan</div>
                         </div>
                     </details>
