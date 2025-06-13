@@ -7,15 +7,13 @@
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview",
-        "tiles": "powershell -ExecutionPolicy Bypass -File scripts/generate-proper-hybrid-tiles.ps1",
-        "tiles:hybrid-old": "powershell -ExecutionPolicy Bypass -File scripts/generate-hybrid-tiles-fixed.ps1",
-        "tiles:jpeg": "powershell -ExecutionPolicy Bypass -File scripts/generate-hq-jpeg-tiles.ps1",
         "tiles:png": "powershell -ExecutionPolicy Bypass -File scripts/generate-png-tiles.ps1",
-        "tiles:test": "powershell -ExecutionPolicy Bypass -File scripts/test-png-quality.ps1",
+        "tiles:ultra": "powershell -ExecutionPolicy Bypass -File scripts/generate-ultra-quality-tiles.ps1",
         "tiles:verify": "powershell -ExecutionPolicy Bypass -File scripts/verify-tiles.ps1",
-        "tiles:batch": "powershell -ExecutionPolicy Bypass -File scripts/batch-process-artworks.ps1",
+        "test:quality": "powershell -ExecutionPolicy Bypass -File scripts/test-text-quality.ps1",
         "convert:svg": "node scripts/svg-converter.js",
-        "cleanup": "powershell -ExecutionPolicy Bypass -File scripts/cleanup-project.ps1"
+        "cleanup": "powershell -ExecutionPolicy Bypass -File scripts/cleanup-project.ps1",
+        "cleanup:scripts": "powershell -ExecutionPolicy Bypass -File scripts/final-cleanup.ps1"
     },
     "dependencies": {
         "@solidjs/router": "^0.10.10",

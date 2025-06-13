@@ -11,8 +11,7 @@ import performanceConfig from '../config/performanceConfig';
 let hotspotData = [];
 
 /**
- * ArtworkViewer - Main viewer component with pixel-perfect rendering
- * Optimized for maximum text clarity at all zoom levels
+ * ArtworkViewer - Enhanced for maximum text clarity
  */
 function ArtworkViewer(props) {
     let viewerRef;
@@ -40,28 +39,41 @@ function ArtworkViewer(props) {
             hotspotData = [];
         }
 
-        // Load preview image first
+        // Load preview image
         const previewImg = new Image();
         previewImg.onload = () => setPreviewLoaded(true);
         previewImg.src = `/images/tiles/${props.artworkId}/preview.jpg`;
 
-        // Initialize OpenSeadragon with hybrid tile detection
+        // Initialize OpenSeadragon with enhanced settings
         const viewerSettings = performanceConfig.viewer;
         const dziUrl = `/images/tiles/${props.artworkId}/${props.artworkId}.dzi`;
 
-        // Try to detect hybrid tiles
+        // Detect tile format
         let tileSource = dziUrl;
         let isHybrid = false;
+        let isPngOnly = false;
 
         try {
             const hybridSource = await HybridTileSource.createFromDZI(dziUrl);
             if (hybridSource) {
                 tileSource = hybridSource;
                 isHybrid = true;
-                console.log('Using hybrid tile source (JPEG + PNG)');
+                console.log('Using hybrid tile source with enhanced text clarity');
             }
         } catch (error) {
-            console.log('Using standard DZI tiles');
+            console.log('Using standard tiles');
+        }
+
+        // Check if using PNG-only tiles
+        try {
+            const dziResponse = await fetch(dziUrl);
+            const dziText = await dziResponse.text();
+            if (dziText.includes('Format="png"')) {
+                isPngOnly = true;
+                console.log('Using PNG-only tiles for maximum quality');
+            }
+        } catch (error) {
+            console.log('Could not detect tile format');
         }
 
         viewer = OpenSeadragon({
@@ -69,7 +81,7 @@ function ArtworkViewer(props) {
             tileSources: tileSource,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
-            // Core performance settings - PIXEL PERFECT
+            // Critical quality settings
             immediateRender: viewerSettings.immediateRender,
             preserveViewport: viewerSettings.preserveViewport,
             visibilityRatio: viewerSettings.visibilityRatio,
@@ -77,7 +89,7 @@ function ArtworkViewer(props) {
             wrapHorizontal: viewerSettings.wrapHorizontal,
             wrapVertical: viewerSettings.wrapVertical,
 
-            // Tile loading - Optimized for PNG
+            // Tile loading
             imageLoaderLimit: viewerSettings.imageLoaderLimit,
             maxImageCacheCount: viewerSettings.maxImageCacheCount,
             minPixelRatio: viewerSettings.minPixelRatio,
@@ -85,11 +97,12 @@ function ArtworkViewer(props) {
             alwaysBlend: viewerSettings.alwaysBlend,
             placeholderFillStyle: viewerSettings.placeholderFillStyle,
 
-            // CRITICAL: Disable all smoothing
-            imageSmoothingEnabled: viewerSettings.imageSmoothingEnabled,
-            smoothImageZoom: viewerSettings.smoothImageZoom,
+            // CRITICAL: Disable all smoothing for text clarity
+            imageSmoothingEnabled: false,
+            smoothImageZoom: false,
+            subPixelRendering: false,
 
-            // Quality optimizations
+            // Quality settings
             minZoomImageRatio: viewerSettings.minZoomImageRatio,
             maxTilesPerFrame: viewerSettings.maxTilesPerFrame,
             tileRetryMax: viewerSettings.tileRetryMax,
@@ -97,11 +110,11 @@ function ArtworkViewer(props) {
             compositeOperation: viewerSettings.compositeOperation,
             preload: viewerSettings.preload,
 
-            // Maximum zoom quality
-            maxZoomPixelRatio: Infinity,
+            // Maximum zoom
+            maxZoomPixelRatio: viewerSettings.maxZoomPixelRatio,
             subPixelRoundingForTransparency: OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.NEVER,
 
-            // Navigation controls
+            // Navigation
             showNavigationControl: true,
             navigationControlAnchor: OpenSeadragon.ControlAnchor.TOP_RIGHT,
             showZoomControl: true,
@@ -110,14 +123,14 @@ function ArtworkViewer(props) {
             showRotationControl: false,
             showNavigator: viewerSettings.showNavigator,
 
-            // Zoom settings - Allow extreme zoom
+            // Zoom settings
             minZoomLevel: viewerSettings.minZoomLevel,
             maxZoomLevel: viewerSettings.maxZoomLevel,
             defaultZoomLevel: viewerSettings.defaultZoomLevel,
             zoomPerClick: viewerSettings.zoomPerClick,
             zoomPerScroll: viewerSettings.zoomPerScroll,
 
-            // Animation settings
+            // Animation
             animationTime: viewerSettings.animationTime,
             springStiffness: viewerSettings.springStiffness,
             blendTime: viewerSettings.blendTime,
@@ -125,7 +138,7 @@ function ArtworkViewer(props) {
             flickMinSpeed: viewerSettings.flickMinSpeed,
             flickMomentum: viewerSettings.flickMomentum,
 
-            // Mouse/Touch settings
+            // Input settings
             gestureSettingsMouse: {
                 scrollToZoom: true,
                 clickToZoom: false,
@@ -145,112 +158,157 @@ function ArtworkViewer(props) {
             // Performance
             debugMode: performanceConfig.debug.showMetrics,
             timeout: performanceConfig.network.timeout,
-            useCanvas: true,
-            drawer: 'canvas',
+            drawer: 'canvas',  // Use canvas drawer instead of deprecated useCanvas
             crossOriginPolicy: 'Anonymous',
             ajaxWithCredentials: false
         });
 
-        // Initialize spatial index
+        // Initialize components
         spatialIndex = new SpatialIndex();
         spatialIndex.loadHotspots(hotspotData);
-
-        // Initialize viewport manager
         viewportManager = new ViewportManager(viewer);
-
-        // Initialize audio engine
         audioEngine = new AudioEngine();
-
-        // Initialize performance monitor
         performanceMonitor = new PerformanceMonitor(viewer);
         performanceMonitor.start();
 
-        // Configure viewer for hybrid tiles if detected
+        // Configure for tile format
         if (isHybrid) {
             HybridTileSource.configureViewer(viewer, tileSource);
         }
 
-        // Enable debug overlay if in debug mode
-        if (performanceConfig.debug.showMetrics) {
-            performanceMonitor.enableDebugOverlay();
-        }
+        // Force pixel-perfect rendering
+        const forcePixelPerfect = () => {
+            const context = viewer.drawer.context;
+            if (context) {
+                context.imageSmoothingEnabled = false;
+                context.msImageSmoothingEnabled = false;
+                context.webkitImageSmoothingEnabled = false;
+                context.mozImageSmoothingEnabled = false;
+            }
+        };
 
         // Viewer ready handler
         viewer.addHandler('open', () => {
-            console.log('OpenSeadragon viewer ready');
+            console.log('Viewer ready - configuring for text clarity');
             setViewerReady(true);
             setIsLoading(false);
 
-            // Force initial zoom to level 3 or 4 for sharp initial view
-            const bounds = viewer.world.getItemAt(0).getBounds();
+            // Force pixel-perfect immediately
+            forcePixelPerfect();
+
+            // Get the actual tile source info
+            const tiledImage = viewer.world.getItemAt(0);
+            const source = tiledImage.source;
+            console.log(`Tile source levels: 0 to ${source.maxLevel}`);
+
+            // Set initial zoom to show full image with good quality
+            const bounds = tiledImage.getBounds();
             viewer.viewport.fitBounds(bounds, true);
 
-            // Zoom out slightly to show full image but at good quality
-            // This ensures we start at a level with enough tiles
-            viewer.viewport.zoomBy(0.5);
+            // Ensure we're at a zoom level with enough tiles
+            const currentZoom = viewer.viewport.getZoom();
+            const minGoodZoom = 0.8; // Adjust based on your tile structure
+
+            if (currentZoom < minGoodZoom) {
+                viewer.viewport.zoomTo(minGoodZoom, null, true);
+            }
+
             viewer.viewport.applyConstraints(true);
 
-            // Initialize hotspot system after viewer is stable
+            // Initialize hotspots
             setTimeout(() => {
                 initializeHotspotSystem();
-
-                // Preload audio for visible hotspots
                 const viewport = viewportManager.getCurrentViewport();
                 const visibleHotspots = spatialIndex.queryViewport(viewport.bounds, viewport.zoom);
                 audioEngine.preloadHotspots(visibleHotspots);
             }, 100);
         });
 
-        // Optimize tile rendering for high-quality JPEG
+        // Enhanced tile drawing for quality
         viewer.addHandler('tile-drawing', (event) => {
             const context = event.context;
-            // Use high-quality rendering for JPEG
-            context.imageSmoothingEnabled = true;
-            context.imageSmoothingQuality = 'high';
-        });
+            const tile = event.tile;
 
-        viewer.addHandler('tile-loaded', (event) => {
-            if (event.tile && event.tile.element) {
-                // Optimize rendering for quality
-                event.tile.element.style.imageRendering = 'auto';
-                event.tile.element.style.filter = 'none';
-                event.tile.element.style.transform = 'translateZ(0)';
-                event.tile.element.style.willChange = 'transform';
+            // Get tile URL
+            const tileUrl = tile.getUrl ? tile.getUrl() : tile.url || '';
+
+            // Force pixel-perfect for PNG tiles or high zoom
+            if (tileUrl.includes('.png') || tile.level >= 3) {
+                context.imageSmoothingEnabled = false;
+                context.msImageSmoothingEnabled = false;
+                context.webkitImageSmoothingEnabled = false;
+                context.mozImageSmoothingEnabled = false;
+            } else {
+                // High-quality smoothing for JPEG overview
+                context.imageSmoothingEnabled = true;
+                context.imageSmoothingQuality = 'high';
             }
         });
 
-        // Force redraw on animation finish to ensure quality
+        // Optimize tile rendering
+        viewer.addHandler('tile-loaded', (event) => {
+            if (event.tile && event.tile.element) {
+                const tile = event.tile;
+                const element = tile.element;
+
+                // Get URL from tile
+                const tileUrl = tile.getUrl ? tile.getUrl() : tile.url || '';
+
+                // Apply rendering based on format
+                if (tileUrl.includes('.png')) {
+                    element.style.imageRendering = 'pixelated';
+                    element.style.imageRendering = '-moz-crisp-edges';
+                    element.style.imageRendering = 'crisp-edges';
+                } else {
+                    element.style.imageRendering = 'auto';
+                }
+
+                // Hardware acceleration
+                element.style.transform = 'translateZ(0)';
+                element.style.willChange = 'transform';
+                element.style.backfaceVisibility = 'hidden';
+                element.style.perspective = '1000px';
+            }
+        });
+
+        // Force quality on zoom/pan end
         viewer.addHandler('animation-finish', () => {
+            forcePixelPerfect();
             viewer.forceRedraw();
         });
 
-        // Update on resize to maintain quality
+        // Maintain quality on resize
         viewer.addHandler('resize', () => {
+            forcePixelPerfect();
             viewer.forceRedraw();
         });
 
-        // Update visible content on viewport change
+        // Update visible content
         let updateTimer = null;
         const updateVisibleContent = () => {
             if (updateTimer) clearTimeout(updateTimer);
             updateTimer = setTimeout(() => {
                 if (!viewportManager || !spatialIndex || !audioEngine) return;
-
                 const viewport = viewportManager.getCurrentViewport();
                 const visibleHotspots = spatialIndex.queryViewport(viewport.bounds, viewport.zoom);
                 audioEngine.preloadHotspots(visibleHotspots);
-            }, 200);
+            }, 150);
         };
 
         viewer.addHandler('viewport-change', updateVisibleContent);
 
-        // Handle resize
+        // Resize handling
         const resizeObserver = new ResizeObserver(() => {
             if (viewer && viewer.viewport && viewer.isOpen()) {
                 try {
-                    viewer.viewport.resize();
-                    viewer.viewport.applyConstraints();
-                    viewer.forceRedraw();
+                    // Ensure viewer has valid dimensions
+                    const container = viewer.container;
+                    if (container && container.clientWidth > 0 && container.clientHeight > 0) {
+                        viewer.viewport.resize();
+                        viewer.viewport.applyConstraints();
+                        forcePixelPerfect();
+                        viewer.forceRedraw();
+                    }
                 } catch (error) {
                     console.warn('Resize error:', error);
                 }
@@ -263,17 +321,18 @@ function ArtworkViewer(props) {
             if (!viewer) return;
 
             const handlers = {
-                '+': () => viewer.viewport.zoomBy(1.2),
-                '=': () => viewer.viewport.zoomBy(1.2),
-                '-': () => viewer.viewport.zoomBy(0.8),
-                '_': () => viewer.viewport.zoomBy(0.8),
+                '+': () => viewer.viewport.zoomBy(1.3),
+                '=': () => viewer.viewport.zoomBy(1.3),
+                '-': () => viewer.viewport.zoomBy(0.77),
+                '_': () => viewer.viewport.zoomBy(0.77),
                 '0': () => viewer.viewport.goHome(),
-                'ArrowLeft': () => viewer.viewport.panBy(new OpenSeadragon.Point(-0.05, 0)),
-                'ArrowRight': () => viewer.viewport.panBy(new OpenSeadragon.Point(0.05, 0)),
-                'ArrowUp': () => viewer.viewport.panBy(new OpenSeadragon.Point(0, -0.05)),
-                'ArrowDown': () => viewer.viewport.panBy(new OpenSeadragon.Point(0, 0.05)),
+                'ArrowLeft': () => viewer.viewport.panBy(new OpenSeadragon.Point(-0.1, 0)),
+                'ArrowRight': () => viewer.viewport.panBy(new OpenSeadragon.Point(0.1, 0)),
+                'ArrowUp': () => viewer.viewport.panBy(new OpenSeadragon.Point(0, -0.1)),
+                'ArrowDown': () => viewer.viewport.panBy(new OpenSeadragon.Point(0, 0.1)),
                 'f': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
-                'F': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds())
+                'F': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
+                'q': () => forcePixelPerfect() // Quick quality reset
             };
 
             const handler = handlers[event.key];
@@ -302,12 +361,8 @@ function ArtworkViewer(props) {
     });
 
     const initializeHotspotSystem = () => {
-        if (!viewer) {
-            console.error('Viewer not ready');
-            return;
-        }
+        if (!viewer) return;
 
-        // Initialize native renderer with performance settings
         renderer = new NativeHotspotRenderer({
             viewer: viewer,
             spatialIndex: spatialIndex,
@@ -325,20 +380,19 @@ function ArtworkViewer(props) {
         console.log('Hotspot clicked:', hotspot);
         setSelectedHotspot(hotspot);
 
-        // Play audio if available
         if (audioEngine && hotspot.audioUrl) {
             audioEngine.play(hotspot.id);
         }
     };
 
-    // Mobile button handlers
+    // Mobile controls
     const handleZoomIn = () => {
         viewer.viewport.zoomBy(1.5);
         viewer.viewport.applyConstraints();
     };
 
     const handleZoomOut = () => {
-        viewer.viewport.zoomBy(0.7);
+        viewer.viewport.zoomBy(0.67);
         viewer.viewport.applyConstraints();
     };
 
@@ -348,7 +402,7 @@ function ArtworkViewer(props) {
 
     return (
         <div class="viewer-container">
-            {/* Preview image for instant display */}
+            {/* Preview for instant display */}
             {previewLoaded() && !viewerReady() && (
                 <img
                     src={`/images/tiles/${props.artworkId}/preview.jpg`}
@@ -361,7 +415,7 @@ function ArtworkViewer(props) {
 
             {isLoading() && (
                 <div class="viewer-loading">
-                    <p>Loading artwork...</p>
+                    <p>Loading high-resolution artwork...</p>
                 </div>
             )}
 
@@ -375,7 +429,7 @@ function ArtworkViewer(props) {
                 </div>
             )}
 
-            {/* Keyboard shortcuts - desktop only */}
+            {/* Keyboard shortcuts */}
             {viewerReady() && window.innerWidth > 768 && (
                 <div class="shortcuts-info">
                     <details>
@@ -385,6 +439,7 @@ function ArtworkViewer(props) {
                             <div><kbd>-</kbd> Zoom out</div>
                             <div><kbd>0</kbd> Reset view</div>
                             <div><kbd>F</kbd> Fit to screen</div>
+                            <div><kbd>Q</kbd> Reset quality</div>
                             <div><kbd>↑↓←→</kbd> Pan</div>
                         </div>
                     </details>

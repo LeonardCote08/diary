@@ -1,7 +1,7 @@
-# Verify tile generation - Check if tiles were generated correctly
+# Verify tile generation and diagnose issues
 
 Write-Host "======================================" -ForegroundColor Cyan
-Write-Host " TILE VERIFICATION" -ForegroundColor Cyan
+Write-Host " TILE VERIFICATION & DIAGNOSTICS" -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -10,7 +10,7 @@ $tilesPath = "public\images\tiles\zebra"
 # Check if tiles directory exists
 if (-not (Test-Path $tilesPath)) {
     Write-Host "✗ Tiles directory not found: $tilesPath" -ForegroundColor Red
-    Write-Host "  Run 'npm run tiles' first" -ForegroundColor Yellow
+    Write-Host "  Run 'npm run tiles:png' or 'npm run tiles:ultra' first" -ForegroundColor Yellow
     exit 1
 }
 
@@ -22,11 +22,16 @@ $dziFile = "$tilesPath\zebra.dzi"
 if (Test-Path $dziFile) {
     Write-Host "✓ DZI file found" -ForegroundColor Green
     [xml]$dzi = Get-Content $dziFile
-    $width = $dzi.Image.Size.Width
-    $height = $dzi.Image.Size.Height
-    $tileSize = $dzi.Image.TileSize
+    $width = [int]$dzi.Image.Size.Width
+    $height = [int]$dzi.Image.Size.Height
+    $tileSize = [int]$dzi.Image.TileSize
+    $overlap = [int]$dzi.Image.Overlap
+    $format = $dzi.Image.Format
+    
     Write-Host "  Dimensions: $width x $height" -ForegroundColor Gray
     Write-Host "  Tile size: $tileSize" -ForegroundColor Gray
+    Write-Host "  Overlap: $overlap" -ForegroundColor Gray
+    Write-Host "  Format: $format" -ForegroundColor Cyan
 } else {
     Write-Host "✗ DZI file not found" -ForegroundColor Red
     exit 1
@@ -38,9 +43,31 @@ if (Test-Path $filesDir) {
     Write-Host ""
     Write-Host "✓ Tiles directory found" -ForegroundColor Green
     
-    # Count levels and tiles
-    $levels = Get-ChildItem $filesDir -Directory | Sort-Object { [int]$_.Name }
-    Write-Host "  Total levels: $($levels.Count)" -ForegroundColor Gray
+    # Get all levels
+    $allLevels = Get-ChildItem $filesDir -Directory | ForEach-Object { [int]$_.Name } | Sort-Object
+    $minLevel = $allLevels | Measure-Object -Minimum | Select-Object -ExpandProperty Minimum
+    $maxLevel = $allLevels | Measure-Object -Maximum | Select-Object -ExpandProperty Maximum
+    $totalLevels = $allLevels.Count
+    
+    Write-Host "  Levels found: $minLevel to $maxLevel" -ForegroundColor Gray
+    Write-Host "  Total levels: $totalLevels" -ForegroundColor Gray
+    
+    # Check for missing levels
+    $expectedLevels = $minLevel..$maxLevel
+    $missingLevels = @()
+    foreach ($level in $expectedLevels) {
+        if ($level -notin $allLevels) {
+            $missingLevels += $level
+        }
+    }
+    
+    if ($missingLevels.Count -gt 0) {
+        Write-Host ""
+        Write-Host "⚠ WARNING: Missing levels detected!" -ForegroundColor Yellow
+        Write-Host "  Missing: $($missingLevels -join ', ')" -ForegroundColor Yellow
+        Write-Host "  This may cause 'Image load aborted' errors" -ForegroundColor Yellow
+    }
+    
     Write-Host ""
     
     $totalJpeg = 0
@@ -48,9 +75,13 @@ if (Test-Path $filesDir) {
     $totalSize = 0
     
     Write-Host "Level analysis:" -ForegroundColor Yellow
-    foreach ($level in $levels) {
-        $jpegFiles = Get-ChildItem "$($level.FullName)\*.jpg" -ErrorAction SilentlyContinue
-        $pngFiles = Get-ChildItem "$($level.FullName)\*.png" -ErrorAction SilentlyContinue
+    
+    # Analyze each existing level
+    foreach ($level in $allLevels) {
+        $levelPath = Join-Path $filesDir $level.ToString()
+        
+        $jpegFiles = Get-ChildItem "$levelPath\*.jpg" -ErrorAction SilentlyContinue
+        $pngFiles = Get-ChildItem "$levelPath\*.png" -ErrorAction SilentlyContinue
         
         $levelJpeg = if ($jpegFiles) { $jpegFiles.Count } else { 0 }
         $levelPng = if ($pngFiles) { $pngFiles.Count } else { 0 }
@@ -58,62 +89,84 @@ if (Test-Path $filesDir) {
         
         $format = if ($levelPng -gt 0) { "PNG" } elseif ($levelJpeg -gt 0) { "JPEG" } else { "NONE" }
         
-        Write-Host "  Level $($level.Name): $levelTotal tiles ($format)" -ForegroundColor Gray
+        # Calculate size
+        $levelSize = 0
+        if ($jpegFiles) { $levelSize += ($jpegFiles | Measure-Object -Property Length -Sum).Sum }
+        if ($pngFiles) { $levelSize += ($pngFiles | Measure-Object -Property Length -Sum).Sum }
+        $levelSizeMB = [Math]::Round($levelSize / 1MB, 2)
+        
+        Write-Host "  Level $level`: $levelTotal tiles ($format) - $levelSizeMB MB" -ForegroundColor Gray
         
         $totalJpeg += $levelJpeg
         $totalPng += $levelPng
-        
-        # Calculate size
-        if ($jpegFiles) { $jpegFiles | ForEach-Object { $totalSize += $_.Length } }
-        if ($pngFiles) { $pngFiles | ForEach-Object { $totalSize += $_.Length } }
+        $totalSize += $levelSize
     }
+    
+    $totalSizeMB = [Math]::Round($totalSize / 1MB, 2)
     
     Write-Host ""
     Write-Host "Summary:" -ForegroundColor Yellow
     Write-Host "  JPEG tiles: $totalJpeg" -ForegroundColor Gray
     Write-Host "  PNG tiles: $totalPng" -ForegroundColor Gray
     Write-Host "  Total tiles: $($totalJpeg + $totalPng)" -ForegroundColor Gray
-    Write-Host "  Total size: $([Math]::Round($totalSize / 1MB, 2)) MB" -ForegroundColor Gray
-    
-    # Check hybrid info
-    Write-Host ""
-    $hybridInfo = "$tilesPath\hybrid-info.json"
-    if (Test-Path $hybridInfo) {
-        Write-Host "✓ Hybrid configuration found" -ForegroundColor Green
-        $info = Get-Content $hybridInfo | ConvertFrom-Json
-        Write-Host "  JPEG levels: 0-$($info.jpegLevels - 1)" -ForegroundColor Gray
-        Write-Host "  PNG levels: $($info.pngStartLevel)-$($info.totalLevels - 1)" -ForegroundColor Gray
-    } else {
-        Write-Host "⚠ No hybrid configuration (standard tiles)" -ForegroundColor Yellow
-    }
+    Write-Host "  Total size: $totalSizeMB MB" -ForegroundColor Gray
     
     # Check preview
     Write-Host ""
     if (Test-Path "$tilesPath\preview.jpg") {
-        Write-Host "✓ Preview image found" -ForegroundColor Green
+        $previewSize = (Get-Item "$tilesPath\preview.jpg").Length / 1KB
+        Write-Host "✓ Preview image found ($([Math]::Round($previewSize, 0)) KB)" -ForegroundColor Green
     } else {
         Write-Host "⚠ No preview image" -ForegroundColor Yellow
+    }
+    
+    # Performance estimation
+    Write-Host ""
+    Write-Host "Performance notes:" -ForegroundColor Yellow
+    if ($totalSizeMB -gt 150) {
+        Write-Host "  ⚠ Large file size may slow initial loading" -ForegroundColor Yellow
+        Write-Host "  Consider using JPEG Ultra for better performance" -ForegroundColor Gray
+    } else {
+        Write-Host "  ✓ File size is reasonable for web delivery" -ForegroundColor Green
     }
     
     # Final verdict
     Write-Host ""
     Write-Host "======================================" -ForegroundColor Cyan
-    if ($totalJpeg -gt 0 -and $totalPng -gt 0) {
-        Write-Host " ✅ HYBRID TILES VERIFIED!" -ForegroundColor Green
-        Write-Host " Ready for optimal viewing" -ForegroundColor Green
-    } elseif ($totalJpeg -gt 0) {
-        Write-Host " ✅ JPEG TILES VERIFIED!" -ForegroundColor Green
-        Write-Host " Good quality, fast loading" -ForegroundColor Green
-    } elseif ($totalPng -gt 0) {
-        Write-Host " ✅ PNG TILES VERIFIED!" -ForegroundColor Green
-        Write-Host " Maximum quality" -ForegroundColor Green
+    
+    if ($missingLevels.Count -eq 0 -and ($totalJpeg -gt 0 -or $totalPng -gt 0)) {
+        if ($totalPng -gt 0 -and $totalJpeg -eq 0) {
+            Write-Host " ✅ PNG TILES VERIFIED!" -ForegroundColor Green
+            Write-Host " Maximum quality for text" -ForegroundColor Green
+        } elseif ($totalJpeg -gt 0 -and $totalPng -eq 0) {
+            Write-Host " ✅ JPEG TILES VERIFIED!" -ForegroundColor Green
+            Write-Host " Ultra-quality JPEG" -ForegroundColor Green
+        } else {
+            Write-Host " ✅ HYBRID TILES DETECTED!" -ForegroundColor Green
+            Write-Host " Mixed format tiles" -ForegroundColor Green
+        }
+        Write-Host " Ready for viewing!" -ForegroundColor Green
     } else {
-        Write-Host " ❌ NO TILES FOUND!" -ForegroundColor Red
+        Write-Host " ⚠ TILES VERIFIED WITH WARNINGS" -ForegroundColor Yellow
+        if ($missingLevels.Count -gt 0) {
+            Write-Host " Missing levels may cause loading issues" -ForegroundColor Yellow
+        }
     }
     Write-Host "======================================" -ForegroundColor Cyan
     
 } else {
     Write-Host "✗ Tiles directory not found" -ForegroundColor Red
+}
+
+Write-Host ""
+
+# Show tile statistics
+$tileCount = $totalJpeg + $totalPng
+if ($tileCount -gt 0) {
+    Write-Host "Tile statistics:" -ForegroundColor Cyan
+    Write-Host "  Tiles per second at 10 Mbps: ~$([Math]::Round(10 * 1024 * 1024 / 8 / ($totalSize / $tileCount), 0)) tiles/sec" -ForegroundColor Gray
+    Write-Host "  Estimated load time at 10 Mbps: ~$([Math]::Round($totalSize / (10 * 1024 * 1024 / 8), 1)) seconds" -ForegroundColor Gray
+    Write-Host "  Average tile size: $([Math]::Round($totalSize / $tileCount / 1024, 1)) KB" -ForegroundColor Gray
 }
 
 Write-Host ""

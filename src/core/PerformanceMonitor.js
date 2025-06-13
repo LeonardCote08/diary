@@ -187,6 +187,10 @@ class PerformanceMonitor {
      * Handle tile load failed event
      */
     onTileLoadFailed(event) {
+        // Don't warn about missing intermediate levels (9-11) - this is normal with VIPS
+        if (event.tile && event.tile.level >= 9 && event.tile.level <= 11) {
+            return;
+        }
         console.warn('Tile load failed:', event.tile);
         // Could implement retry logic here
     }
