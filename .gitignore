@@ -1,0 +1,91 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# Custom exclusions
+node_modules/
+dist/
+.env
+.env.local
+input/
+assets/source/
+*.tiff
+*.tif
+
+# TILES - Very important!
+public/images/tiles/
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# Performance test results
+performance-results/
+lighthouse-reports/
+
+# Scripts temporaires Windows
+*.ps1.bak
+*.bat.bak
+
+# Backup folders
+backup/
+old/
+_old/
+
+# Cache folders
+.cache/
+.parcel-cache/
+
+# OS generated files
+.Spotlight-V100
+.Trashes
+*.swp
+*~
+
+# VIPS temporary files
+*.v
+vips-*-*
+
+# Test outputs
+test-results/
+test-output/

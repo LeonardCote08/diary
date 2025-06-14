@@ -1,0 +1,30 @@
+{
+    "name": "diary",
+    "private": true,
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "tiles": "powershell -ExecutionPolicy Bypass -File scripts/generate-optimized-tiles.ps1",
+        "tiles:verify": "powershell -ExecutionPolicy Bypass -File scripts/verify-tiles.ps1",
+        "cleanup": "powershell -ExecutionPolicy Bypass -File scripts/cleanup-project.ps1",
+        "convert:svg": "node scripts/svg-converter.js"
+    },
+    "devDependencies": {
+        "@solidjs/router": "^0.10.10",
+        "vite": "^5.4.11",
+        "vite-plugin-solid": "^2.10.2"
+    },
+    "dependencies": {
+        "abs-svg-path": "^0.1.1",
+        "cheerio": "^1.0.0",
+        "commander": "^12.1.0",
+        "howler": "^2.2.4",
+        "openseadragon": "^5.0.1",
+        "parse-svg-path": "^0.1.2",
+        "rbush": "^4.0.1",
+        "solid-js": "^1.9.5"
+    }
+}
