@@ -37,6 +37,10 @@ class PerformanceMonitor {
         // Performance history for trend analysis
         this.performanceHistory = [];
         this.maxPerformanceHistory = 10;
+
+        // Track viewport changes
+        this.lastZoom = null;
+        this.lastCenter = null;
     }
 
     /**
@@ -127,8 +131,30 @@ class PerformanceMonitor {
         const world = this.viewer.world;
         if (world.getItemCount() > 0) {
             const tiledImage = world.getItemAt(0);
-            this.metrics.visibleTiles = tiledImage._tilesToDraw ? tiledImage._tilesToDraw.length : 0;
-            this.metrics.cachedTiles = tiledImage._tileCache ? Object.keys(tiledImage._tileCache).length : 0;
+            if (tiledImage) {
+                // Count visible tiles
+                this.metrics.visibleTiles = tiledImage._tilesToDraw ? tiledImage._tilesToDraw.length : 0;
+
+                // Count cached tiles correctly
+                if (tiledImage._tileCache) {
+                    try {
+                        const cache = tiledImage._tileCache;
+
+                        // OpenSeadragon 5.x uses _tilesLoaded array
+                        if (cache._tilesLoaded && Array.isArray(cache._tilesLoaded)) {
+                            this.metrics.cachedTiles = cache._tilesLoaded.length;
+                        } else if (cache._imagesLoadedCount !== undefined) {
+                            this.metrics.cachedTiles = cache._imagesLoadedCount;
+                        } else {
+                            this.metrics.cachedTiles = 0;
+                        }
+                    } catch (e) {
+                        this.metrics.cachedTiles = 0;
+                    }
+                } else {
+                    this.metrics.cachedTiles = 0;
+                }
+            }
         }
 
         // Memory usage (if available)
@@ -156,9 +182,23 @@ class PerformanceMonitor {
         const avgFPS = this.metrics.averageFPS;
 
         // Don't optimize during zoom/pan animations
-        if (this.viewer.viewport.getVelocity().length() > 0.01) {
+        const viewport = this.viewer.viewport;
+        const zoom = viewport.getZoom();
+        const center = viewport.getCenter();
+
+        // Skip if viewport is changing
+        if (this.lastZoom && Math.abs(zoom - this.lastZoom) > 0.001) {
+            this.lastZoom = zoom;
             return;
         }
+        if (this.lastCenter && (Math.abs(center.x - this.lastCenter.x) > 0.001 ||
+            Math.abs(center.y - this.lastCenter.y) > 0.001)) {
+            this.lastCenter = center;
+            return;
+        }
+
+        this.lastZoom = zoom;
+        this.lastCenter = center;
 
         // Critical performance issues
         if (avgFPS < this.criticalFPS) {
@@ -348,10 +388,8 @@ class PerformanceMonitor {
                     <div style="font-weight: bold; margin-bottom: 5px;">Performance Monitor</div>
                     <div style="color: ${performanceColor};">FPS: ${metrics.averageFPS} (${metrics.minFPS}-${metrics.maxFPS})</div>
                     <div>Zoom: ${metrics.zoomLevel.toFixed(2)}x</div>
-                    <div>Tiles: ${metrics.visibleTiles} / ${metrics.cachedTiles}</div>
-                    <div>Load: ${Math.round(metrics.tileLoadTime)}ms</div>
                     <div>Memory: ${metrics.memoryUsage}MB</div>
-                    <div>Level: <span style="color: ${performanceColor};">${metrics.performanceLevel}</span></div>
+                    <div>Status: <span style="color: ${performanceColor};">${metrics.performanceLevel}</span></div>
                     ${metrics.warnings.length > 0 ? `<div style="color: #ff6b6b; margin-top: 5px;">${metrics.warnings.join('<br>')}</div>` : ''}
                 `;
             }

@@ -59,8 +59,8 @@ const performanceConfig = {
         navigatorAutoResize: true,
         showNavigator: false,
 
-        // Canvas rendering
-        useCanvas: true,
+        // Rendering
+        drawer: 'canvas',
         debugMode: false
     },
 
@@ -137,8 +137,8 @@ const performanceConfig = {
 
     // Debug
     debug: {
-        showFPS: false,
-        showMetrics: false,
+        showFPS: true,
+        showMetrics: true,
         logPerformance: false,
         warnThreshold: {
             fps: 24,

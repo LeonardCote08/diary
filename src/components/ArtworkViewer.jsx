@@ -22,12 +22,17 @@ function ArtworkViewer(props) {
     let audioEngine = null;
     let performanceMonitor = null;
     let renderOptimizer = null;
+    let resizeObserver = null;
+    let updateTimer = null;
 
     const [isLoading, setIsLoading] = createSignal(true);
     const [hoveredHotspot, setHoveredHotspot] = createSignal(null);
     const [selectedHotspot, setSelectedHotspot] = createSignal(null);
     const [viewerReady, setViewerReady] = createSignal(false);
     const [previewLoaded, setPreviewLoaded] = createSignal(false);
+
+    // Keyboard handler function
+    let handleKeyPress = null;
 
     onMount(async () => {
         // Load hotspots data
@@ -62,12 +67,14 @@ function ArtworkViewer(props) {
             preload: true,
             compositeOperation: null,
 
-            // Optimized tile loading
+            // Tile loading optimization
             immediateRender: false,
             imageLoaderLimit: 10,
             maxImageCacheCount: 1500,
             timeout: 120000,
-            useCanvas: true,
+
+            // Specify drawer instead of useCanvas (deprecated)
+            drawer: 'canvas',
 
             // Visibility and coverage
             visibilityRatio: 0.9,
@@ -123,7 +130,48 @@ function ArtworkViewer(props) {
         performanceMonitor = new PerformanceMonitor(viewer);
         renderOptimizer = new RenderOptimizer(viewer);
 
+        // Make viewer and performanceMonitor globally accessible for debugging
+        window.viewer = viewer;
+        window.performanceMonitor = performanceMonitor;
+
+        // Add debug helper functions
+        window.debugTileCache = () => {
+            if (!viewer || !viewer.world || viewer.world.getItemCount() === 0) {
+                console.log('Viewer not ready');
+                return;
+            }
+
+            const tiledImage = viewer.world.getItemAt(0);
+            if (tiledImage && tiledImage._tileCache) {
+                console.log('Tile Cache Structure:', tiledImage._tileCache);
+                console.log('Cache type:', tiledImage._tileCache.constructor.name);
+
+                // Try different methods to count
+                if (tiledImage._tileCache._tiles) {
+                    console.log('Tiles in _tiles:', Object.keys(tiledImage._tileCache._tiles).length);
+                }
+                if (tiledImage._tileCache.length !== undefined) {
+                    console.log('Cache length:', tiledImage._tileCache.length);
+                }
+
+                // Show first few entries
+                let count = 0;
+                for (let key in tiledImage._tileCache) {
+                    if (count++ < 5) {
+                        console.log(`Cache[${key}]:`, tiledImage._tileCache[key]);
+                    }
+                }
+            } else {
+                console.log('No tile cache found');
+            }
+        };
+
         performanceMonitor.start();
+
+        // Enable debug overlay if configured
+        if (performanceConfig.debug.showFPS || performanceConfig.debug.showMetrics) {
+            performanceMonitor.enableDebugOverlay();
+        }
 
         // Viewer ready handler
         viewer.addHandler('open', () => {
@@ -162,7 +210,6 @@ function ArtworkViewer(props) {
         });
 
         // Update visible content with debouncing
-        let updateTimer = null;
         const updateVisibleContent = () => {
             if (updateTimer) clearTimeout(updateTimer);
             updateTimer = setTimeout(() => {
@@ -176,24 +223,26 @@ function ArtworkViewer(props) {
         viewer.addHandler('viewport-change', updateVisibleContent);
 
         // Resize handling
-        const resizeObserver = new ResizeObserver(() => {
-            if (viewer && viewer.viewport && viewer.isOpen()) {
-                try {
-                    const container = viewer.container;
-                    if (container && container.clientWidth > 0 && container.clientHeight > 0) {
+        resizeObserver = new ResizeObserver((entries) => {
+            if (!viewer || !viewer.viewport || !viewer.isOpen()) return;
+
+            for (let entry of entries) {
+                const { width, height } = entry.contentRect;
+                if (width > 0 && height > 0) {
+                    try {
                         viewer.viewport.resize();
                         viewer.viewport.applyConstraints();
                         viewer.forceRedraw();
+                    } catch (error) {
+                        console.warn('Resize error:', error);
                     }
-                } catch (error) {
-                    console.warn('Resize error:', error);
                 }
             }
         });
         resizeObserver.observe(viewerRef);
 
         // Keyboard navigation
-        const handleKeyPress = (event) => {
+        handleKeyPress = (event) => {
             if (!viewer) return;
 
             const handlers = {
@@ -223,8 +272,12 @@ function ArtworkViewer(props) {
 
         // Cleanup
         onCleanup(() => {
-            window.removeEventListener('keydown', handleKeyPress);
-            resizeObserver.disconnect();
+            if (handleKeyPress) {
+                window.removeEventListener('keydown', handleKeyPress);
+            }
+            if (resizeObserver && viewerRef) {
+                resizeObserver.disconnect();
+            }
             if (updateTimer) clearTimeout(updateTimer);
             if (performanceMonitor) {
                 performanceMonitor.stop();
@@ -236,6 +289,17 @@ function ArtworkViewer(props) {
             if (viewer) viewer.destroy();
             if (renderer) renderer.destroy();
             if (audioEngine) audioEngine.destroy();
+
+            // Clean up global references
+            if (window.performanceMonitor === performanceMonitor) {
+                delete window.performanceMonitor;
+            }
+            if (window.viewer === viewer) {
+                delete window.viewer;
+            }
+            if (window.debugTileCache) {
+                delete window.debugTileCache;
+            }
         });
     });
 
