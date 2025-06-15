@@ -1,33 +1,33 @@
 /**
- * Performance Configuration - Optimized for perfect text clarity
- * Based on research recommendations for gigapixel hand-drawn images
+ * Performance Configuration - Optimized for smooth zoom and pixel-perfect clarity
+ * Balances animation fluidity with text readability
  */
 
 const performanceConfig = {
-    // OpenSeadragon viewer settings - PIXEL-PERFECT PRIORITY
+    // OpenSeadragon viewer settings
     viewer: {
-        // Tile loading - optimized for 512x512 tiles
-        imageLoaderLimit: 12,
-        maxImageCacheCount: 2000,
-        minPixelRatio: 1.0,
-        smoothTileEdgesMinZoom: Infinity,  // Never smooth
-        alwaysBlend: false,
+        // Tile loading
+        imageLoaderLimit: 10,
+        maxImageCacheCount: 1500,
+        minPixelRatio: 0.9,
+        smoothTileEdgesMinZoom: 1.5,
+        alwaysBlend: true,
 
-        // Critical rendering settings
-        immediateRender: true,
+        // Rendering settings - start with smoothing for better animations
+        immediateRender: false,
         preserveViewport: true,
-        visibilityRatio: 1.0,
-        subPixelRendering: false,
-        imageSmoothingEnabled: false,  // CRITICAL
+        visibilityRatio: 0.9,
+        subPixelRendering: true,
+        imageSmoothingEnabled: true,
 
         // Preload settings
         preload: true,
-        placeholderFillStyle: null,
+        placeholderFillStyle: '#000000',
 
-        // Animation settings
-        animationTime: 0.3,
-        springStiffness: 10,
-        blendTime: 0,
+        // Animation settings - smoother values
+        animationTime: 0.5,
+        springStiffness: 7,
+        blendTime: 0.1,
         flickEnabled: true,
         flickMinSpeed: 120,
         flickMomentum: 0.25,
@@ -36,19 +36,19 @@ const performanceConfig = {
         zoomPerScroll: 1.3,
         zoomPerClick: 2.0,
         minZoomLevel: 0.5,
-        maxZoomLevel: 50,
+        maxZoomLevel: 40,
         defaultZoomLevel: 1,
-        maxZoomPixelRatio: 5,
+        maxZoomPixelRatio: 4,
 
         // Tile quality settings
-        minZoomImageRatio: 0.5,
-        maxTilesPerFrame: 8,
+        minZoomImageRatio: 0.8,
+        maxTilesPerFrame: 6,
         tileRetryMax: 5,
         tileRetryDelay: 200,
 
         // Rendering
         compositeOperation: null,
-        smoothImageZoom: false,
+        smoothImageZoom: true,
 
         // Constraints
         constrainDuringPan: true,
@@ -64,13 +64,13 @@ const performanceConfig = {
         debugMode: false
     },
 
-    // Tile settings - based on research
+    // Tile settings
     tiles: {
-        tileSize: 512,      // Optimal for text clarity
-        overlap: 8,         // Prevents text cut-off
-        jpegQuality: 98,    // High quality
+        tileSize: 256,      // Back to standard size for better performance
+        overlap: 2,         // Minimal overlap
+        jpegQuality: 95,    // High quality
         pngCompression: 6,  // Balanced
-        format: 'optimized' // PNG or JPEG 4:4:4
+        format: 'jpeg'      // JPEG for smaller files
     },
 
     // Hotspot rendering
@@ -103,7 +103,7 @@ const performanceConfig = {
 
     // Memory management
     memory: {
-        maxCachedImages: 1500,
+        maxCachedImages: 1200,
         maxCachedAudio: 30,
         gcInterval: 90000,
         lowMemoryThreshold: 200
@@ -111,7 +111,7 @@ const performanceConfig = {
 
     // Network
     network: {
-        maxConcurrentRequests: 12,
+        maxConcurrentRequests: 10,
         retryAttempts: 5,
         retryDelay: 300,
         timeout: 120000,
@@ -120,10 +120,19 @@ const performanceConfig = {
 
     // Mobile settings
     mobile: {
-        reduceQuality: false,  // Never compromise on quality
+        reduceQuality: false,
         maxZoomLevel: 30,
         touchSensitivity: 1.1,
         doubleTapDelay: 300
+    },
+
+    // Render optimization settings
+    renderOptimization: {
+        enableAdaptiveRendering: true,
+        animationEndDelay: 150,
+        pixelPerfectDelay: 50,
+        zoomThreshold: 0.01,
+        smoothTransitionDuration: 200
     },
 
     // Debug
@@ -144,16 +153,18 @@ const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/
 const isLowEndDevice = navigator.hardwareConcurrency <= 2 || navigator.deviceMemory <= 2;
 const isHighDPI = window.devicePixelRatio > 1;
 
-// Apply minimal mobile optimizations
+// Apply mobile optimizations
 if (isMobile) {
     performanceConfig.viewer.imageLoaderLimit = 8;
     performanceConfig.viewer.maxImageCacheCount = 1000;
+    performanceConfig.viewer.animationTime = 0.6;
     performanceConfig.hotspots.batchSize = 30;
 }
 
-// Low-end device adjustments (without compromising quality)
+// Low-end device adjustments
 if (isLowEndDevice) {
-    performanceConfig.viewer.animationTime = 0.4;
+    performanceConfig.viewer.animationTime = 0.7;
+    performanceConfig.viewer.springStiffness = 6;
     performanceConfig.memory.maxCachedImages = 800;
     performanceConfig.network.maxConcurrentRequests = 6;
 }
@@ -176,21 +187,16 @@ export function getOptimizedSettings() {
     };
 }
 
-// Dynamic performance adjustment (never compromise rendering quality)
+// Dynamic performance adjustment
 export function adjustSettingsForPerformance(currentFPS) {
     if (currentFPS < 24 && currentFPS > 0) {
-        // Only reduce non-quality settings
+        // Reduce load without affecting quality
         performanceConfig.viewer.imageLoaderLimit = Math.max(4, performanceConfig.viewer.imageLoaderLimit - 2);
-        performanceConfig.viewer.animationTime = Math.min(0.5, performanceConfig.viewer.animationTime + 0.1);
-        console.log('Performance: Reduced non-quality settings');
+        performanceConfig.viewer.maxTilesPerFrame = Math.max(3, performanceConfig.viewer.maxTilesPerFrame - 1);
+        console.log('Performance: Reduced loading settings');
     } else if (currentFPS > 45) {
         // Restore settings
-        performanceConfig.viewer.imageLoaderLimit = Math.min(12, performanceConfig.viewer.imageLoaderLimit + 1);
-        performanceConfig.viewer.animationTime = Math.max(0.3, performanceConfig.viewer.animationTime - 0.05);
+        performanceConfig.viewer.imageLoaderLimit = Math.min(10, performanceConfig.viewer.imageLoaderLimit + 1);
+        performanceConfig.viewer.maxTilesPerFrame = Math.min(6, performanceConfig.viewer.maxTilesPerFrame + 1);
     }
-
-    // Never change these critical settings
-    performanceConfig.viewer.imageSmoothingEnabled = false;
-    performanceConfig.viewer.smoothTileEdgesMinZoom = Infinity;
-    performanceConfig.viewer.subPixelRendering = false;
 }

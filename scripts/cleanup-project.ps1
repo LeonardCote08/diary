@@ -17,11 +17,11 @@ Write-Host ""
 
 # Files to remove
 $filesToRemove = @(
-    # Old files in root (NOT index.html!)
+    # Old files in root
     "test-files",
     "test-tiles",
     "quick-test-tiles.ps1",
-    "test-png-quality.ps1", 
+    "test-png-quality.ps1",
     "generate-png-tiles.ps1",
     "generate-tiles-simple.ps1",
     "test-hq.ps1",
@@ -29,13 +29,22 @@ $filesToRemove = @(
     "regenerate-hq-tiles.ps1",
     "start-dev-server.bat",
     "folder-structure.sh",
+    "vips.config.js",
+    
     # Old scripts
     "scripts/test-vips-options.ps1",
     "scripts/generate-tiles-vips.js",
-    "scripts/quick-test-tiles.ps1"
+    "scripts/quick-test-tiles.ps1",
+    "scripts/generate-proper-hybrid-tiles.ps1",
+    "scripts/generate-hq-jpeg-tiles.ps1",
+    "scripts/generate-png-tiles.ps1",
+    "scripts/generate-ultra-quality-tiles.ps1",
+    "scripts/test-png-quality.ps1",
+    "scripts/batch-process-artworks.ps1",
+    
+    # Old source files no longer needed
+    "src/core/HybridTileSource.js"
 )
-
-# DO NOT REMOVE index.html or HybridTileSource.js - we need them!
 
 # Remove each file/folder
 foreach ($file in $filesToRemove) {
@@ -95,7 +104,7 @@ if ($removeTiles) {
 }
 
 # Check for old backup folders
-$backupFolders = Get-ChildItem -Path "public\images\tiles" -Filter "*_backup" -Directory -ErrorAction SilentlyContinue
+$backupFolders = Get-ChildItem -Path "public\images\tiles" -Filter "*_backup*" -Directory -ErrorAction SilentlyContinue
 if ($backupFolders) {
     Write-Host ""
     Write-Host "Found backup folders:" -ForegroundColor Yellow
@@ -121,6 +130,23 @@ Write-Host "- /assets (source files)" -ForegroundColor Gray
 Write-Host "- /public (web files)" -ForegroundColor Gray
 Write-Host "- /scripts (PowerShell & JS scripts)" -ForegroundColor Gray
 Write-Host "- /src (application code)" -ForegroundColor Gray
+
+# Show remaining scripts
+$remainingScripts = @(
+    "scripts\generate-optimized-tiles.ps1",
+    "scripts\verify-tiles.ps1",
+    "scripts\cleanup-project.ps1",
+    "scripts\cleanup-old-files.ps1",
+    "scripts\svg-converter.js"
+)
+
+Write-Host ""
+Write-Host "Active scripts:" -ForegroundColor Cyan
+foreach ($script in $remainingScripts) {
+    if (Test-Path $script) {
+        Write-Host "  ✓ $script" -ForegroundColor Gray
+    }
+}
 
 # Show tiles status
 if (Test-Path "public\images\tiles") {

@@ -5,12 +5,13 @@ import ViewportManager from '../core/ViewportManager';
 import SpatialIndex from '../core/SpatialIndex';
 import AudioEngine from '../core/AudioEngine';
 import PerformanceMonitor from '../core/PerformanceMonitor';
+import RenderOptimizer from '../core/RenderOptimizer';
 import performanceConfig from '../config/performanceConfig';
 
 let hotspotData = [];
 
 /**
- * ArtworkViewer - Optimized for perfect text clarity
+ * ArtworkViewer - Optimized for smooth zoom and perfect text clarity
  */
 function ArtworkViewer(props) {
     let viewerRef;
@@ -20,6 +21,7 @@ function ArtworkViewer(props) {
     let spatialIndex = null;
     let audioEngine = null;
     let performanceMonitor = null;
+    let renderOptimizer = null;
 
     const [isLoading, setIsLoading] = createSignal(true);
     const [hoveredHotspot, setHoveredHotspot] = createSignal(null);
@@ -51,37 +53,38 @@ function ArtworkViewer(props) {
             tileSources: dziUrl,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
-            // CRITICAL: Disable ALL smoothing for pixel-perfect text
-            imageSmoothingEnabled: false,
-            smoothTileEdgesMinZoom: Infinity,
-            alwaysBlend: false,
-            placeholderFillStyle: null,
+            // Start with smoothing enabled for initial load
+            imageSmoothingEnabled: true,
+            smoothTileEdgesMinZoom: 1.5,
+            alwaysBlend: true,
+            placeholderFillStyle: '#000000',
             opacity: 1,
             preload: true,
             compositeOperation: null,
 
-            // Tile loading optimization
-            immediateRender: true,
-            imageLoaderLimit: 12,
-            maxImageCacheCount: 2000,
+            // Optimized tile loading
+            immediateRender: false,
+            imageLoaderLimit: 10,
+            maxImageCacheCount: 1500,
             timeout: 120000,
             useCanvas: true,
 
             // Visibility and coverage
-            visibilityRatio: 1.0,
-            minPixelRatio: 1.0,
+            visibilityRatio: 0.9,
+            minPixelRatio: 0.9,
             defaultZoomLevel: 1,
             minZoomLevel: 0.5,
-            maxZoomPixelRatio: 5,
+            maxZoomPixelRatio: 4,
 
             // Navigation
             constrainDuringPan: true,
             wrapHorizontal: false,
             wrapVertical: false,
 
-            // Animation (faster for responsiveness)
-            animationTime: 0.3,
-            springStiffness: 10,
+            // Smoother animation settings
+            animationTime: 0.5,
+            springStiffness: 7,
+            blendTime: 0.1,
 
             // Controls
             showNavigationControl: true,
@@ -118,36 +121,15 @@ function ArtworkViewer(props) {
         viewportManager = new ViewportManager(viewer);
         audioEngine = new AudioEngine();
         performanceMonitor = new PerformanceMonitor(viewer);
+        renderOptimizer = new RenderOptimizer(viewer);
+
         performanceMonitor.start();
-
-        // Critical rendering optimizations
-        const forcePixelPerfect = () => {
-            if (!viewer.drawer || !viewer.drawer.context) return;
-
-            const context = viewer.drawer.context;
-            context.imageSmoothingEnabled = false;
-            context.msImageSmoothingEnabled = false;
-            context.webkitImageSmoothingEnabled = false;
-            context.mozImageSmoothingEnabled = false;
-
-            // Force pixelated rendering
-            const canvas = viewer.drawer.canvas;
-            if (canvas) {
-                canvas.style.imageRendering = 'pixelated';
-                canvas.style.imageRendering = 'crisp-edges';
-                canvas.style.imageRendering = '-moz-crisp-edges';
-                canvas.style.imageRendering = '-webkit-crisp-edges';
-            }
-        };
 
         // Viewer ready handler
         viewer.addHandler('open', () => {
-            console.log('Viewer ready - applying pixel-perfect rendering');
+            console.log('Viewer ready - initializing systems');
             setViewerReady(true);
             setIsLoading(false);
-
-            // Apply critical rendering settings
-            forcePixelPerfect();
 
             // Fit to screen
             const tiledImage = viewer.world.getItemAt(0);
@@ -155,7 +137,7 @@ function ArtworkViewer(props) {
             viewer.viewport.fitBounds(bounds, true);
             viewer.viewport.applyConstraints(true);
 
-            // Initialize hotspots
+            // Initialize hotspots after a short delay
             setTimeout(() => {
                 initializeHotspotSystem();
                 const viewport = viewportManager.getCurrentViewport();
@@ -164,43 +146,22 @@ function ArtworkViewer(props) {
             }, 100);
         });
 
-        // Ensure pixel-perfect on every draw
-        viewer.addHandler('update-viewport', forcePixelPerfect);
-        viewer.addHandler('animation-finish', forcePixelPerfect);
-        viewer.addHandler('resize', forcePixelPerfect);
-
-        // Optimize tile rendering
-        viewer.addHandler('tile-drawing', (event) => {
-            const context = event.context;
-
-            // Force nearest-neighbor for all tiles
-            context.imageSmoothingEnabled = false;
-            context.msImageSmoothingEnabled = false;
-            context.webkitImageSmoothingEnabled = false;
-            context.mozImageSmoothingEnabled = false;
-        });
-
-        // Apply rendering to loaded tiles
+        // Optimize tile rendering only when loaded
         viewer.addHandler('tile-loaded', (event) => {
-            if (event.tile && event.tile.element) {
+            if (event.tile && event.tile.element && renderOptimizer.getRenderMode() === 'static') {
                 const element = event.tile.element;
 
-                // Force pixel-perfect rendering
-                element.style.imageRendering = 'pixelated';
-                element.style.imageRendering = 'crisp-edges';
-                element.style.imageRendering = '-moz-crisp-edges';
-                element.style.imageRendering = '-webkit-crisp-edges';
-                element.style.imageRendering = '-webkit-optimize-contrast';
-
-                // Hardware acceleration
-                element.style.transform = 'translateZ(0)';
-                element.style.willChange = 'transform';
-                element.style.backfaceVisibility = 'hidden';
-                element.style.perspective = '1000px';
+                // Apply optimization based on current render mode
+                if (!renderOptimizer.isCurrentlyAnimating()) {
+                    element.style.imageRendering = 'pixelated';
+                    element.style.transform = 'translateZ(0)';
+                    element.style.willChange = 'transform';
+                    element.style.backfaceVisibility = 'hidden';
+                }
             }
         });
 
-        // Update visible content
+        // Update visible content with debouncing
         let updateTimer = null;
         const updateVisibleContent = () => {
             if (updateTimer) clearTimeout(updateTimer);
@@ -222,7 +183,6 @@ function ArtworkViewer(props) {
                     if (container && container.clientWidth > 0 && container.clientHeight > 0) {
                         viewer.viewport.resize();
                         viewer.viewport.applyConstraints();
-                        forcePixelPerfect();
                         viewer.forceRedraw();
                     }
                 } catch (error) {
@@ -248,7 +208,7 @@ function ArtworkViewer(props) {
                 'ArrowDown': () => viewer.viewport.panBy(new OpenSeadragon.Point(0, 0.1)),
                 'f': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
                 'F': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
-                'r': () => { forcePixelPerfect(); viewer.forceRedraw(); }
+                'r': () => viewer.forceRedraw()
             };
 
             const handler = handlers[event.key];
@@ -269,6 +229,9 @@ function ArtworkViewer(props) {
             if (performanceMonitor) {
                 performanceMonitor.stop();
                 performanceMonitor.disableDebugOverlay();
+            }
+            if (renderOptimizer) {
+                renderOptimizer.destroy();
             }
             if (viewer) viewer.destroy();
             if (renderer) renderer.destroy();
@@ -355,7 +318,6 @@ function ArtworkViewer(props) {
                             <div><kbd>-</kbd> Zoom out</div>
                             <div><kbd>0</kbd> Reset view</div>
                             <div><kbd>F</kbd> Fit to screen</div>
-                            <div><kbd>R</kbd> Refresh rendering</div>
                             <div><kbd>↑↓←→</kbd> Pan</div>
                         </div>
                     </details>

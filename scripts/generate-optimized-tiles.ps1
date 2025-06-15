@@ -1,9 +1,9 @@
-# Optimized tile generation based on research recommendations
-# Uses 512x512 tiles with 8px overlap for perfect text clarity
+# Optimized tile generation for smooth zoom performance
+# Uses 256x256 tiles with high-quality JPEG for better performance
 
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host " OPTIMIZED TILE GENERATION" -ForegroundColor Cyan
-Write-Host " 512x512 tiles with 8px overlap" -ForegroundColor Cyan
+Write-Host " 256x256 tiles for smooth zoom" -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -36,9 +36,9 @@ $inputFile = "assets\source\ZEBRA_for_MVP.tiff"
 $outputDir = "public\images\tiles\zebra"
 $outputBase = "$outputDir\zebra"
 
-# Tile parameters based on research
-$tileSize = 512  # Optimal for text clarity
-$overlap = 8     # Prevents text cut-off at boundaries
+# Optimized tile parameters
+$tileSize = 256  # Standard size for better performance
+$overlap = 2     # Minimal overlap
 
 # Check input
 if (-not (Test-Path $inputFile)) {
@@ -46,79 +46,45 @@ if (-not (Test-Path $inputFile)) {
     exit 1
 }
 
-# Get user choice
-Write-Host ""
-Write-Host "Select tile generation strategy:" -ForegroundColor Yellow
-Write-Host "1. PNG (Maximum quality, larger files)" -ForegroundColor White
-Write-Host "2. JPEG 4:4:4 (High quality, faster loading)" -ForegroundColor White
-Write-Host ""
-$choice = Read-Host "Enter choice [1-2]"
-
 # Clean and create output directory
 Write-Host ""
 Write-Host "Preparing output directory..." -ForegroundColor Yellow
 if (Test-Path $outputDir) {
-    Remove-Item -Path $outputDir -Recurse -Force
+    $backupDir = "$outputDir`_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+    Write-Host "Backing up existing tiles to: $backupDir" -ForegroundColor Gray
+    Move-Item $outputDir $backupDir -Force
 }
 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 
 $startTime = Get-Date
 
-if ($choice -eq "1") {
-    # PNG Generation - Maximum quality
-    Write-Host ""
-    Write-Host "Generating PNG tiles for maximum quality..." -ForegroundColor Yellow
-    Write-Host "  - Tile size: ${tileSize}px" -ForegroundColor Gray
-    Write-Host "  - Overlap: ${overlap}px" -ForegroundColor Gray
-    Write-Host "  - Compression: Level 6" -ForegroundColor Gray
-    Write-Host ""
+# High-quality JPEG generation
+Write-Host ""
+Write-Host "Generating optimized JPEG tiles..." -ForegroundColor Yellow
+Write-Host "  - Tile size: ${tileSize}px" -ForegroundColor Gray
+Write-Host "  - Overlap: ${overlap}px" -ForegroundColor Gray
+Write-Host "  - Quality: 95% with optimized encoding" -ForegroundColor Gray
+Write-Host ""
 
-    & $vipsPath dzsave `"$inputFile`" `"$outputBase`" `
-        --tile-size $tileSize `
-        --overlap $overlap `
-        --suffix ".png[compression=6]" `
-        --vips-progress
-
-    if ($LASTEXITCODE -eq 0) {
-        # Fix DZI format
-        $dziPath = "$outputBase.dzi"
-        if (Test-Path $dziPath) {
-            $dziContent = Get-Content $dziPath -Raw
-            $dziContent = $dziContent -replace 'Format="jpg"', 'Format="png"'
-            $dziContent = $dziContent -replace 'Format="jpeg"', 'Format="png"'
-            Set-Content -Path $dziPath -Value $dziContent -NoNewline
-        }
-    }
-    
-} else {
-    # JPEG 4:4:4 Generation - Optimized quality
-    Write-Host ""
-    Write-Host "Generating JPEG 4:4:4 tiles for optimized quality..." -ForegroundColor Yellow
-    Write-Host "  - Tile size: ${tileSize}px" -ForegroundColor Gray
-    Write-Host "  - Overlap: ${overlap}px" -ForegroundColor Gray
-    Write-Host "  - Quality: 98% with 4:4:4 chroma" -ForegroundColor Gray
-    Write-Host ""
-
-    # Use JPEG with no chroma subsampling for better text
-    & $vipsPath dzsave `"$inputFile`" `"$outputBase`" `
-        --tile-size $tileSize `
-        --overlap $overlap `
-        --suffix ".jpg[Q=98,subsample_mode=off]" `
-        --vips-progress
-}
+# Generate tiles with optimized settings
+& $vipsPath dzsave `"$inputFile`" `"$outputBase`" `
+    --tile-size $tileSize `
+    --overlap $overlap `
+    --suffix ".jpg[Q=95,optimize_coding=true,strip=true]" `
+    --depth onepixel `
+    --vips-progress
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "✓ Tiles generated successfully!" -ForegroundColor Green
     
-    # Generate preview with proper quality
+    # Generate high-quality preview
     Write-Host ""
     Write-Host "Generating preview..." -ForegroundColor Yellow
     $previewPath = "$outputDir\preview.jpg"
     
     & $vipsPath thumbnail `"$inputFile`" `"$previewPath`" 2048 `
-        --size down `
-        --export-profile srgb
+        --size down
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✓ Preview generated!" -ForegroundColor Green
@@ -147,19 +113,33 @@ if ($LASTEXITCODE -eq 0) {
         $totalSize = 0
         $totalFiles = 0
         
+        # Level details
+        Write-Host ""
+        Write-Host "Level details:" -ForegroundColor Cyan
         foreach ($level in $levels) {
-            $extension = if ($choice -eq "1") { "*.png" } else { "*.jpg" }
-            $tiles = Get-ChildItem $level.FullName -Filter $extension
+            $tiles = Get-ChildItem $level.FullName -Filter "*.jpg"
             $levelSize = ($tiles | Measure-Object -Property Length -Sum).Sum
             $totalSize += $levelSize
             $totalFiles += $tiles.Count
+            
+            $levelSizeMB = [Math]::Round($levelSize / 1MB, 2)
+            Write-Host "  Level $($level.Name): $($tiles.Count) tiles ($levelSizeMB MB)" -ForegroundColor Gray
         }
         
         $totalSizeMB = [Math]::Round($totalSize / 1MB, 2)
         
         Write-Host ""
-        Write-Host "  Total tiles: $totalFiles" -ForegroundColor Green
-        Write-Host "  Total size: $totalSizeMB MB" -ForegroundColor Green
+        Write-Host "Summary:" -ForegroundColor Green
+        Write-Host "  Total tiles: $totalFiles" -ForegroundColor White
+        Write-Host "  Total size: $totalSizeMB MB" -ForegroundColor White
+        
+        # Performance estimate
+        $avgTileSize = $totalSize / $totalFiles / 1024
+        Write-Host ""
+        Write-Host "Performance characteristics:" -ForegroundColor Cyan
+        Write-Host "  Average tile size: $([Math]::Round($avgTileSize, 1)) KB" -ForegroundColor White
+        Write-Host "  Estimated load time (10 Mbps): ~$([Math]::Round($totalSize / (10 * 1024 * 1024 / 8), 1)) seconds" -ForegroundColor White
+        Write-Host "  Tiles per request: 4x more than 512px tiles" -ForegroundColor White
     }
     
     Write-Host ""
@@ -169,13 +149,10 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "Time: $($duration.TotalSeconds.ToString('F2')) seconds" -ForegroundColor White
     Write-Host ""
     Write-Host "Optimizations applied:" -ForegroundColor Green
-    Write-Host "  ✓ 512x512 tiles (75% fewer requests)" -ForegroundColor White
-    Write-Host "  ✓ 8px overlap (no text cut-off)" -ForegroundColor White
-    if ($choice -eq "1") {
-        Write-Host "  ✓ PNG format (pixel-perfect)" -ForegroundColor White
-    } else {
-        Write-Host "  ✓ JPEG 4:4:4 (no chroma artifacts)" -ForegroundColor White
-    }
+    Write-Host "  ✓ 256x256 tiles (better zoom performance)" -ForegroundColor White
+    Write-Host "  ✓ JPEG 95% quality (smaller files)" -ForegroundColor White
+    Write-Host "  ✓ Optimized encoding (better compression)" -ForegroundColor White
+    Write-Host "  ✓ Metadata stripped (smaller files)" -ForegroundColor White
     
 } else {
     Write-Host ""
