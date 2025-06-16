@@ -6,12 +6,13 @@ import SpatialIndex from '../core/SpatialIndex';
 import AudioEngine from '../core/AudioEngine';
 import PerformanceMonitor from '../core/PerformanceMonitor';
 import RenderOptimizer from '../core/RenderOptimizer';
-import performanceConfig from '../config/performanceConfig';
+import TileOptimizer from '../core/TileOptimizer';
+import performanceConfig, { adjustSettingsForPerformance } from '../config/performanceConfig';
 
 let hotspotData = [];
 
 /**
- * ArtworkViewer - Optimized for smooth zoom and perfect text clarity
+ * ArtworkViewer - Optimized for 60 FPS with WebGL support
  */
 function ArtworkViewer(props) {
     let viewerRef;
@@ -22,6 +23,7 @@ function ArtworkViewer(props) {
     let audioEngine = null;
     let performanceMonitor = null;
     let renderOptimizer = null;
+    let tileOptimizer = null;
     let resizeObserver = null;
     let updateTimer = null;
 
@@ -33,6 +35,44 @@ function ArtworkViewer(props) {
 
     // Keyboard handler function
     let handleKeyPress = null;
+
+    // Create cleanup function
+    const cleanup = () => {
+        if (handleKeyPress) {
+            window.removeEventListener('keydown', handleKeyPress);
+        }
+        if (resizeObserver && viewerRef) {
+            resizeObserver.disconnect();
+        }
+        if (updateTimer) clearTimeout(updateTimer);
+        if (tileOptimizer) {
+            tileOptimizer.stop();
+        }
+        if (performanceMonitor) {
+            performanceMonitor.stop();
+            performanceMonitor.disableDebugOverlay();
+        }
+        if (renderOptimizer) {
+            renderOptimizer.destroy();
+        }
+        if (viewer) viewer.destroy();
+        if (renderer) renderer.destroy();
+        if (audioEngine) audioEngine.destroy();
+
+        // Clean up global references
+        if (window.performanceMonitor === performanceMonitor) {
+            delete window.performanceMonitor;
+        }
+        if (window.viewer === viewer) {
+            delete window.viewer;
+        }
+        if (window.tileOptimizer === tileOptimizer) {
+            delete window.tileOptimizer;
+        }
+        if (window.debugTileCache) {
+            delete window.debugTileCache;
+        }
+    };
 
     onMount(async () => {
         // Load hotspots data
@@ -50,7 +90,11 @@ function ArtworkViewer(props) {
         previewImg.onload = () => setPreviewLoaded(true);
         previewImg.src = `/images/tiles/${props.artworkId}/preview.jpg`;
 
-        // Initialize OpenSeadragon with optimized settings
+        // Get optimized configuration
+        const config = performanceConfig.viewer;
+        const deviceProfile = performanceConfig.deviceProfile;
+
+        // Initialize OpenSeadragon with 60 FPS optimizations
         const dziUrl = `/images/tiles/${props.artworkId}/${props.artworkId}.dzi`;
 
         viewer = OpenSeadragon({
@@ -58,40 +102,47 @@ function ArtworkViewer(props) {
             tileSources: dziUrl,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
-            // Start with smoothing enabled for initial load
-            imageSmoothingEnabled: true,
-            smoothTileEdgesMinZoom: 1.5,
-            alwaysBlend: true,
-            placeholderFillStyle: '#000000',
+            // Rendering - Use optimal drawer
+            drawer: config.drawer,
+            imageSmoothingEnabled: config.imageSmoothingEnabled,
+            smoothTileEdgesMinZoom: config.smoothTileEdgesMinZoom,
+            alwaysBlend: config.alwaysBlend,
+            placeholderFillStyle: config.placeholderFillStyle,
             opacity: 1,
-            preload: true,
-            compositeOperation: null,
+            preload: config.preload,
+            compositeOperation: config.compositeOperation,
+
+            // WebGL options if using WebGL
+            ...(config.drawer === 'webgl' ? {
+                webglOptions: config.webglOptions
+            } : {}),
 
             // Tile loading optimization
-            immediateRender: false,
-            imageLoaderLimit: 10,
-            maxImageCacheCount: 1500,
-            timeout: 120000,
+            immediateRender: config.immediateRender,
+            imageLoaderLimit: config.imageLoaderLimit,
+            maxImageCacheCount: config.maxImageCacheCount,
+            timeout: config.timeout,
 
-            // Specify drawer instead of useCanvas (deprecated)
-            drawer: 'canvas',
+            // Network optimization
+            loadTilesWithAjax: config.loadTilesWithAjax,
+            ajaxHeaders: config.ajaxHeaders,
 
             // Visibility and coverage
-            visibilityRatio: 0.9,
-            minPixelRatio: 0.9,
-            defaultZoomLevel: 1,
-            minZoomLevel: 0.5,
-            maxZoomPixelRatio: 4,
+            visibilityRatio: config.visibilityRatio,
+            minPixelRatio: config.minPixelRatio,
+            defaultZoomLevel: config.defaultZoomLevel,
+            minZoomLevel: config.minZoomLevel,
+            maxZoomPixelRatio: config.maxZoomPixelRatio,
 
             // Navigation
-            constrainDuringPan: true,
-            wrapHorizontal: false,
-            wrapVertical: false,
+            constrainDuringPan: config.constrainDuringPan,
+            wrapHorizontal: config.wrapHorizontal,
+            wrapVertical: config.wrapVertical,
 
-            // Smoother animation settings
-            animationTime: 0.5,
-            springStiffness: 7,
-            blendTime: 0.1,
+            // Animation settings for 60 FPS
+            animationTime: config.animationTime,
+            springStiffness: config.springStiffness,
+            blendTime: config.blendTime,
 
             // Controls
             showNavigationControl: true,
@@ -101,25 +152,33 @@ function ArtworkViewer(props) {
             showFullPageControl: false,
             showRotationControl: false,
 
-            // Input
+            // Input handling
             gestureSettingsMouse: {
                 scrollToZoom: true,
                 clickToZoom: false,
                 dblClickToZoom: true,
-                flickEnabled: true
+                flickEnabled: config.flickEnabled
             },
             gestureSettingsTouch: {
                 scrollToZoom: false,
                 clickToZoom: false,
                 dblClickToZoom: true,
-                flickEnabled: true,
+                flickEnabled: config.flickEnabled,
+                flickMinSpeed: config.flickMinSpeed,
+                flickMomentum: config.flickMomentum,
                 pinchToZoom: true
             },
 
             // Performance
-            debugMode: false,
+            debugMode: config.debugMode,
             crossOriginPolicy: 'Anonymous',
-            ajaxWithCredentials: false
+            ajaxWithCredentials: false,
+
+            // Additional performance settings
+            preserveViewport: config.preserveViewport,
+            preserveImageSizeOnResize: config.preserveImageSizeOnResize,
+            maxTilesPerFrame: config.maxTilesPerFrame,
+            smoothImageZoom: config.smoothImageZoom
         });
 
         // Initialize components
@@ -129,10 +188,12 @@ function ArtworkViewer(props) {
         audioEngine = new AudioEngine();
         performanceMonitor = new PerformanceMonitor(viewer);
         renderOptimizer = new RenderOptimizer(viewer);
+        tileOptimizer = new TileOptimizer(viewer);
 
         // Make viewer and performanceMonitor globally accessible for debugging
         window.viewer = viewer;
         window.performanceMonitor = performanceMonitor;
+        window.tileOptimizer = tileOptimizer;
 
         // Add debug helper functions
         window.debugTileCache = () => {
@@ -143,26 +204,17 @@ function ArtworkViewer(props) {
 
             const tiledImage = viewer.world.getItemAt(0);
             if (tiledImage && tiledImage._tileCache) {
-                console.log('Tile Cache Structure:', tiledImage._tileCache);
-                console.log('Cache type:', tiledImage._tileCache.constructor.name);
+                const cache = tiledImage._tileCache;
+                const cacheInfo = {
+                    type: cache.constructor.name,
+                    tilesLoaded: cache._tilesLoaded ? cache._tilesLoaded.length : 0,
+                    imagesLoaded: cache._imagesLoadedCount || 0
+                };
+                console.log('Tile Cache Info:', cacheInfo);
 
-                // Try different methods to count
-                if (tiledImage._tileCache._tiles) {
-                    console.log('Tiles in _tiles:', Object.keys(tiledImage._tileCache._tiles).length);
-                }
-                if (tiledImage._tileCache.length !== undefined) {
-                    console.log('Cache length:', tiledImage._tileCache.length);
-                }
-
-                // Show first few entries
-                let count = 0;
-                for (let key in tiledImage._tileCache) {
-                    if (count++ < 5) {
-                        console.log(`Cache[${key}]:`, tiledImage._tileCache[key]);
-                    }
-                }
-            } else {
-                console.log('No tile cache found');
+                // Memory usage estimate
+                const estimatedMemory = (cacheInfo.tilesLoaded * 256 * 256 * 4) / 1048576; // MB
+                console.log(`Estimated cache memory: ${estimatedMemory.toFixed(2)} MB`);
             }
         };
 
@@ -176,6 +228,7 @@ function ArtworkViewer(props) {
         // Viewer ready handler
         viewer.addHandler('open', () => {
             console.log('Viewer ready - initializing systems');
+            console.log('Using drawer:', viewer.drawer.getType ? viewer.drawer.getType() : 'canvas');
             setViewerReady(true);
             setIsLoading(false);
 
@@ -185,31 +238,78 @@ function ArtworkViewer(props) {
             viewer.viewport.fitBounds(bounds, true);
             viewer.viewport.applyConstraints(true);
 
+            // Initialize tile optimizer
+            tileOptimizer.start();
+
             // Initialize hotspots after a short delay
             setTimeout(() => {
                 initializeHotspotSystem();
-                const viewport = viewportManager.getCurrentViewport();
-                const visibleHotspots = spatialIndex.queryViewport(viewport.bounds, viewport.zoom);
-                audioEngine.preloadHotspots(visibleHotspots);
+                if (viewportManager && spatialIndex && audioEngine) {
+                    const viewport = viewportManager.getCurrentViewport();
+                    const visibleHotspots = spatialIndex.queryViewport(viewport.bounds, viewport.zoom);
+                    audioEngine.preloadHotspots(visibleHotspots);
+                }
             }, 100);
         });
 
-        // Optimize tile rendering only when loaded
+        // Optimize tile rendering based on render mode
         viewer.addHandler('tile-loaded', (event) => {
-            if (event.tile && event.tile.element && renderOptimizer.getRenderMode() === 'static') {
+            if (event.tile && event.tile.element && renderOptimizer && renderOptimizer.getRenderMode() === 'static') {
                 const element = event.tile.element;
 
                 // Apply optimization based on current render mode
                 if (!renderOptimizer.isCurrentlyAnimating()) {
+                    // Force integer positioning
+                    if (performanceConfig.renderOptimization.forceIntegerPositions) {
+                        const transform = element.style.transform;
+                        if (transform && transform.includes('translate')) {
+                            element.style.transform = transform.replace(
+                                /translate\(([^,]+),([^)]+)\)/,
+                                (match, x, y) => {
+                                    const intX = Math.round(parseFloat(x));
+                                    const intY = Math.round(parseFloat(y));
+                                    return `translate(${intX}px, ${intY}px)`;
+                                }
+                            );
+                        }
+                    }
+
                     element.style.imageRendering = 'pixelated';
-                    element.style.transform = 'translateZ(0)';
+                    element.style.transform += ' translateZ(0)';
                     element.style.willChange = 'transform';
                     element.style.backfaceVisibility = 'hidden';
                 }
             }
+
+            // Track tile load times for optimization
+            if (event.tile && tileOptimizer) {
+                const loadTime = event.tile.loadTime || event.tiledImage?.lastResetTime || 100;
+                tileOptimizer.trackLoadTime(loadTime);
+
+                // Remove from loading set
+                const level = event.tile.level || 0;
+                const x = event.tile.x || 0;
+                const y = event.tile.y || 0;
+                const tileKey = `${level}_${x}_${y}`;
+                tileOptimizer.loadingTiles.delete(tileKey);
+            }
         });
 
-        // Update visible content with debouncing
+        // Monitor performance and adjust settings
+        viewer.addHandler('animation', () => {
+            if (performanceMonitor) {
+                const metrics = performanceMonitor.getMetrics();
+                if (metrics.averageFPS < performanceConfig.debug.warnThreshold.fps) {
+                    // Dynamic quality adjustment
+                    adjustSettingsForPerformance(
+                        metrics.averageFPS,
+                        metrics.memoryUsage
+                    );
+                }
+            }
+        });
+
+        // Update visible content with optimized debouncing
         const updateVisibleContent = () => {
             if (updateTimer) clearTimeout(updateTimer);
             updateTimer = setTimeout(() => {
@@ -217,25 +317,27 @@ function ArtworkViewer(props) {
                 const viewport = viewportManager.getCurrentViewport();
                 const visibleHotspots = spatialIndex.queryViewport(viewport.bounds, viewport.zoom);
                 audioEngine.preloadHotspots(visibleHotspots);
-            }, 150);
+            }, performanceConfig.viewport.updateDebounce);
         };
 
         viewer.addHandler('viewport-change', updateVisibleContent);
 
-        // Resize handling
+        // Optimized resize handling
         resizeObserver = new ResizeObserver((entries) => {
             if (!viewer || !viewer.viewport || !viewer.isOpen()) return;
 
             for (let entry of entries) {
                 const { width, height } = entry.contentRect;
                 if (width > 0 && height > 0) {
-                    try {
-                        viewer.viewport.resize();
-                        viewer.viewport.applyConstraints();
-                        viewer.forceRedraw();
-                    } catch (error) {
-                        console.warn('Resize error:', error);
-                    }
+                    requestAnimationFrame(() => {
+                        try {
+                            viewer.viewport.resize();
+                            viewer.viewport.applyConstraints();
+                            viewer.forceRedraw();
+                        } catch (error) {
+                            console.warn('Resize error:', error);
+                        }
+                    });
                 }
             }
         });
@@ -246,10 +348,10 @@ function ArtworkViewer(props) {
             if (!viewer) return;
 
             const handlers = {
-                '+': () => viewer.viewport.zoomBy(1.3),
-                '=': () => viewer.viewport.zoomBy(1.3),
-                '-': () => viewer.viewport.zoomBy(0.77),
-                '_': () => viewer.viewport.zoomBy(0.77),
+                '+': () => viewer.viewport.zoomBy(performanceConfig.viewer.zoomPerScroll),
+                '=': () => viewer.viewport.zoomBy(performanceConfig.viewer.zoomPerScroll),
+                '-': () => viewer.viewport.zoomBy(1 / performanceConfig.viewer.zoomPerScroll),
+                '_': () => viewer.viewport.zoomBy(1 / performanceConfig.viewer.zoomPerScroll),
                 '0': () => viewer.viewport.goHome(),
                 'ArrowLeft': () => viewer.viewport.panBy(new OpenSeadragon.Point(-0.1, 0)),
                 'ArrowRight': () => viewer.viewport.panBy(new OpenSeadragon.Point(0.1, 0)),
@@ -257,7 +359,18 @@ function ArtworkViewer(props) {
                 'ArrowDown': () => viewer.viewport.panBy(new OpenSeadragon.Point(0, 0.1)),
                 'f': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
                 'F': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
-                'r': () => viewer.forceRedraw()
+                'r': () => viewer.forceRedraw(),
+                'd': () => {
+                    // Toggle debug mode
+                    const showFPS = !performanceConfig.debug.showFPS;
+                    performanceConfig.debug.showFPS = showFPS;
+                    performanceConfig.debug.showMetrics = showFPS;
+                    if (showFPS) {
+                        performanceMonitor.enableDebugOverlay();
+                    } else {
+                        performanceMonitor.disableDebugOverlay();
+                    }
+                }
             };
 
             const handler = handlers[event.key];
@@ -270,37 +383,26 @@ function ArtworkViewer(props) {
 
         window.addEventListener('keydown', handleKeyPress);
 
-        // Cleanup
-        onCleanup(() => {
-            if (handleKeyPress) {
-                window.removeEventListener('keydown', handleKeyPress);
-            }
-            if (resizeObserver && viewerRef) {
-                resizeObserver.disconnect();
-            }
-            if (updateTimer) clearTimeout(updateTimer);
-            if (performanceMonitor) {
-                performanceMonitor.stop();
-                performanceMonitor.disableDebugOverlay();
-            }
-            if (renderOptimizer) {
-                renderOptimizer.destroy();
-            }
-            if (viewer) viewer.destroy();
-            if (renderer) renderer.destroy();
-            if (audioEngine) audioEngine.destroy();
+        // Memory monitoring
+        if (performance.memory) {
+            setInterval(() => {
+                const memUsage = performance.memory.usedJSHeapSize / 1048576;
+                if (memUsage > performanceConfig.memory.criticalMemoryThreshold) {
+                    console.warn(`Critical memory usage: ${memUsage.toFixed(2)} MB`);
+                    // Force garbage collection if available
+                    if (viewer.world && viewer.world.getItemCount() > 0) {
+                        const tiledImage = viewer.world.getItemAt(0);
+                        if (tiledImage && tiledImage._tileCache) {
+                            // Clear old tiles
+                            tileOptimizer.clearOldTiles();
+                        }
+                    }
+                }
+            }, performanceConfig.memory.gcInterval);
+        }
 
-            // Clean up global references
-            if (window.performanceMonitor === performanceMonitor) {
-                delete window.performanceMonitor;
-            }
-            if (window.viewer === viewer) {
-                delete window.viewer;
-            }
-            if (window.debugTileCache) {
-                delete window.debugTileCache;
-            }
-        });
+        // Setup cleanup
+        onCleanup(cleanup);
     });
 
     const initializeHotspotSystem = () => {
@@ -330,12 +432,12 @@ function ArtworkViewer(props) {
 
     // Mobile controls
     const handleZoomIn = () => {
-        viewer.viewport.zoomBy(1.5);
+        viewer.viewport.zoomBy(performanceConfig.viewer.zoomPerClick);
         viewer.viewport.applyConstraints();
     };
 
     const handleZoomOut = () => {
-        viewer.viewport.zoomBy(0.67);
+        viewer.viewport.zoomBy(1 / performanceConfig.viewer.zoomPerClick);
         viewer.viewport.applyConstraints();
     };
 
@@ -369,6 +471,7 @@ function ArtworkViewer(props) {
                     <div>Selected: {selectedHotspot()?.id || 'none'}</div>
                     <div>Type: {hoveredHotspot()?.type || 'none'}</div>
                     <div>Total hotspots: {hotspotData.length}</div>
+                    <div>Drawer: {viewer?.drawer?.getType ? viewer.drawer.getType() : 'canvas'}</div>
                 </div>
             )}
 
@@ -383,6 +486,7 @@ function ArtworkViewer(props) {
                             <div><kbd>0</kbd> Reset view</div>
                             <div><kbd>F</kbd> Fit to screen</div>
                             <div><kbd>↑↓←→</kbd> Pan</div>
+                            <div><kbd>D</kbd> Toggle debug</div>
                         </div>
                     </details>
                 </div>

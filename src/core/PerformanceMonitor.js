@@ -1,6 +1,6 @@
 /**
- * PerformanceMonitor - Real-time performance tracking with adaptive optimization
- * Works with RenderOptimizer for smooth performance
+ * PerformanceMonitor - Enhanced with memory monitoring and 60 FPS targeting
+ * Provides real-time metrics and dynamic optimization recommendations
  */
 
 class PerformanceMonitor {
@@ -10,37 +10,69 @@ class PerformanceMonitor {
         this.lastTime = performance.now();
         this.fps = 60;
         this.fpsHistory = [];
-        this.maxHistorySize = 30;
+        this.maxHistorySize = 60; // 1 second at 60 FPS
 
         // Performance thresholds
-        this.targetFPS = 50;
-        this.minAcceptableFPS = 30;
+        this.targetFPS = 60;
+        this.goodFPS = 55;
+        this.acceptableFPS = 45;
+        this.poorFPS = 30;
         this.criticalFPS = 20;
 
         // Monitoring state
         this.isMonitoring = false;
         this.monitoringInterval = null;
+        this.rafId = null;
 
-        // Performance metrics
+        // Enhanced metrics
         this.metrics = {
+            // FPS metrics
+            currentFPS: 60,
             averageFPS: 60,
             minFPS: 60,
             maxFPS: 60,
+
+            // Frame timing
+            frameTime: 16.67,
+            maxFrameTime: 16.67,
+            droppedFrames: 0,
+
+            // Tile metrics
             tileLoadTime: 0,
             visibleTiles: 0,
             cachedTiles: 0,
+            tilesLoading: 0,
+
+            // Memory metrics
             memoryUsage: 0,
+            memoryLimit: 0,
+            gcCount: 0,
+
+            // Render metrics
             renderMode: 'static',
-            zoomLevel: 1
+            drawCalls: 0,
+            canvasSize: 0,
+
+            // System metrics
+            zoomLevel: 1,
+            viewportCoverage: 0,
+            hotspotCount: 0,
+
+            // Performance score (0-100)
+            performanceScore: 100
         };
 
         // Performance history for trend analysis
         this.performanceHistory = [];
-        this.maxPerformanceHistory = 10;
+        this.maxPerformanceHistory = 300; // 5 seconds at 60 FPS
 
-        // Track viewport changes
-        this.lastZoom = null;
-        this.lastCenter = null;
+        // Tracking for optimization
+        this.lastOptimization = Date.now();
+        this.optimizationCooldown = 1000; // 1 second between optimizations
+
+        // Frame timing analysis
+        this.frameTimes = [];
+        this.maxFrameTimes = 60;
     }
 
     /**
@@ -52,20 +84,29 @@ class PerformanceMonitor {
         this.isMonitoring = true;
         this.lastTime = performance.now();
 
-        // Monitor FPS
+        // Start frame monitoring
         this.measureFrame();
 
-        // Update metrics every second
+        // Update metrics every 250ms for smoother display
         this.monitoringInterval = setInterval(() => {
             this.updateMetrics();
             this.analyzePerformance();
-        }, 1000);
+        }, 250);
 
         // Track tile loading performance
         this.viewer.addHandler('tile-loaded', this.onTileLoaded.bind(this));
         this.viewer.addHandler('tile-load-failed', this.onTileLoadFailed.bind(this));
 
-        console.log('Performance monitoring started');
+        // Track animation state
+        this.viewer.addHandler('animation-start', () => {
+            this.metrics.renderMode = 'animating';
+        });
+
+        this.viewer.addHandler('animation-finish', () => {
+            this.metrics.renderMode = 'static';
+        });
+
+        console.log('Performance monitoring started - Target: 60 FPS');
     }
 
     /**
@@ -79,20 +120,31 @@ class PerformanceMonitor {
             this.monitoringInterval = null;
         }
 
-        this.viewer.removeHandler('tile-loaded', this.onTileLoaded);
-        this.viewer.removeHandler('tile-load-failed', this.onTileLoadFailed);
+        if (this.rafId) {
+            cancelAnimationFrame(this.rafId);
+            this.rafId = null;
+        }
+
+        this.viewer.removeHandler('tile-loaded', this.onTileLoaded.bind(this));
+        this.viewer.removeHandler('tile-load-failed', this.onTileLoadFailed.bind(this));
 
         console.log('Performance monitoring stopped');
     }
 
     /**
-     * Measure frame rate
+     * Measure frame rate with high precision
      */
     measureFrame() {
         if (!this.isMonitoring) return;
 
         const currentTime = performance.now();
         const deltaTime = currentTime - this.lastTime;
+
+        // Track frame time
+        this.frameTimes.push(deltaTime);
+        if (this.frameTimes.length > this.maxFrameTimes) {
+            this.frameTimes.shift();
+        }
 
         // Calculate instantaneous FPS
         if (deltaTime > 0) {
@@ -104,70 +156,100 @@ class PerformanceMonitor {
                 this.fpsHistory.shift();
             }
 
-            // Calculate average FPS
-            this.fps = this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length;
+            // Update current FPS
+            this.metrics.currentFPS = instantFPS;
+
+            // Track dropped frames (frame time > 20ms indicates dropped frame at 60 FPS)
+            if (deltaTime > 20) {
+                this.metrics.droppedFrames++;
+            }
         }
 
         this.lastTime = currentTime;
         this.frameCount++;
 
         // Schedule next measurement
-        requestAnimationFrame(() => this.measureFrame());
+        this.rafId = requestAnimationFrame(() => this.measureFrame());
     }
 
     /**
-     * Update performance metrics
+     * Update comprehensive performance metrics
      */
     updateMetrics() {
-        // FPS metrics
-        this.metrics.averageFPS = Math.round(this.fps);
-        this.metrics.minFPS = Math.round(Math.min(...this.fpsHistory));
-        this.metrics.maxFPS = Math.round(Math.max(...this.fpsHistory));
+        // FPS calculations
+        if (this.fpsHistory.length > 0) {
+            this.metrics.averageFPS = Math.round(
+                this.fpsHistory.reduce((a, b) => a + b, 0) / this.fpsHistory.length
+            );
+            this.metrics.minFPS = Math.round(Math.min(...this.fpsHistory));
+            this.metrics.maxFPS = Math.round(Math.max(...this.fpsHistory));
+        }
+
+        // Frame timing
+        if (this.frameTimes.length > 0) {
+            const avgFrameTime = this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length;
+            this.metrics.frameTime = avgFrameTime.toFixed(2);
+            this.metrics.maxFrameTime = Math.max(...this.frameTimes).toFixed(2);
+        }
 
         // Zoom level
-        this.metrics.zoomLevel = this.viewer.viewport.getZoom(true);
+        this.metrics.zoomLevel = this.viewer.viewport.getZoom(true).toFixed(2);
 
         // Tile metrics
         const world = this.viewer.world;
         if (world.getItemCount() > 0) {
             const tiledImage = world.getItemAt(0);
             if (tiledImage) {
-                // Count visible tiles
+                // Visible tiles
                 this.metrics.visibleTiles = tiledImage._tilesToDraw ? tiledImage._tilesToDraw.length : 0;
 
-                // Count cached tiles correctly
+                // Cached tiles
                 if (tiledImage._tileCache) {
-                    try {
-                        const cache = tiledImage._tileCache;
-
-                        // OpenSeadragon 5.x uses _tilesLoaded array
-                        if (cache._tilesLoaded && Array.isArray(cache._tilesLoaded)) {
-                            this.metrics.cachedTiles = cache._tilesLoaded.length;
-                        } else if (cache._imagesLoadedCount !== undefined) {
-                            this.metrics.cachedTiles = cache._imagesLoadedCount;
-                        } else {
-                            this.metrics.cachedTiles = 0;
-                        }
-                    } catch (e) {
-                        this.metrics.cachedTiles = 0;
+                    const cache = tiledImage._tileCache;
+                    if (cache._tilesLoaded && Array.isArray(cache._tilesLoaded)) {
+                        this.metrics.cachedTiles = cache._tilesLoaded.length;
+                    } else if (cache._imagesLoadedCount !== undefined) {
+                        this.metrics.cachedTiles = cache._imagesLoadedCount;
                     }
-                } else {
-                    this.metrics.cachedTiles = 0;
+                }
+
+                // Loading tiles (if TileOptimizer is available)
+                if (window.tileOptimizer) {
+                    const stats = window.tileOptimizer.getStats();
+                    this.metrics.tilesLoading = stats.loadingCount;
                 }
             }
         }
 
-        // Memory usage (if available)
+        // Memory metrics
         if (performance.memory) {
-            this.metrics.memoryUsage = Math.round(performance.memory.usedJSHeapSize / 1048576); // MB
+            this.metrics.memoryUsage = Math.round(performance.memory.usedJSHeapSize / 1048576);
+            this.metrics.memoryLimit = Math.round(performance.memory.jsHeapSizeLimit / 1048576);
         }
+
+        // Canvas size
+        const canvas = this.viewer.drawer.canvas;
+        if (canvas) {
+            this.metrics.canvasSize = `${canvas.width}×${canvas.height}`;
+        }
+
+        // Viewport coverage
+        const viewport = this.viewer.viewport;
+        const bounds = viewport.getBounds();
+        const homeBounds = this.viewer.world.getHomeBounds();
+        const coverage = (bounds.width * bounds.height) / (homeBounds.width * homeBounds.height);
+        this.metrics.viewportCoverage = Math.min(100, coverage * 100).toFixed(1);
+
+        // Calculate performance score
+        this.calculatePerformanceScore();
 
         // Store performance history
         this.performanceHistory.push({
             timestamp: Date.now(),
             fps: this.metrics.averageFPS,
+            memory: this.metrics.memoryUsage,
             tiles: this.metrics.visibleTiles,
-            memory: this.metrics.memoryUsage
+            score: this.metrics.performanceScore
         });
 
         if (this.performanceHistory.length > this.maxPerformanceHistory) {
@@ -176,106 +258,172 @@ class PerformanceMonitor {
     }
 
     /**
-     * Analyze performance and suggest optimizations
+     * Calculate overall performance score (0-100)
+     */
+    calculatePerformanceScore() {
+        let score = 100;
+
+        // FPS impact (50% weight)
+        const fpsRatio = this.metrics.averageFPS / this.targetFPS;
+        const fpsScore = Math.min(100, fpsRatio * 100);
+        score = score * 0.5 + fpsScore * 0.5;
+
+        // Frame time consistency (20% weight)
+        const targetFrameTime = 1000 / this.targetFPS; // 16.67ms for 60 FPS
+        const frameTimeRatio = targetFrameTime / parseFloat(this.metrics.frameTime);
+        const frameTimeScore = Math.min(100, frameTimeRatio * 100);
+        score = score * 0.8 + frameTimeScore * 0.2;
+
+        // Memory usage (20% weight)
+        if (this.metrics.memoryLimit > 0) {
+            const memoryRatio = 1 - (this.metrics.memoryUsage / this.metrics.memoryLimit);
+            const memoryScore = Math.max(0, Math.min(100, memoryRatio * 100));
+            score = score * 0.8 + memoryScore * 0.2;
+        }
+
+        // Dropped frames penalty (10% weight)
+        const droppedFramePenalty = Math.min(100, this.metrics.droppedFrames * 2);
+        score = score * 0.9 + (100 - droppedFramePenalty) * 0.1;
+
+        this.metrics.performanceScore = Math.round(score);
+    }
+
+    /**
+     * Analyze performance and recommend optimizations
      */
     analyzePerformance() {
+        const now = Date.now();
+        if (now - this.lastOptimization < this.optimizationCooldown) return;
+
         const avgFPS = this.metrics.averageFPS;
+        const memory = this.metrics.memoryUsage;
+        const score = this.metrics.performanceScore;
 
-        // Don't optimize during zoom/pan animations
-        const viewport = this.viewer.viewport;
-        const zoom = viewport.getZoom();
-        const center = viewport.getCenter();
-
-        // Skip if viewport is changing
-        if (this.lastZoom && Math.abs(zoom - this.lastZoom) > 0.001) {
-            this.lastZoom = zoom;
-            return;
-        }
-        if (this.lastCenter && (Math.abs(center.x - this.lastCenter.x) > 0.001 ||
-            Math.abs(center.y - this.lastCenter.y) > 0.001)) {
-            this.lastCenter = center;
-            return;
-        }
-
-        this.lastZoom = zoom;
-        this.lastCenter = center;
+        // Performance trend analysis
+        const trend = this.getPerformanceTrend();
 
         // Critical performance issues
-        if (avgFPS < this.criticalFPS) {
-            console.warn(`Critical performance: ${avgFPS} FPS`);
+        if (avgFPS < this.criticalFPS || score < 30) {
+            console.error(`CRITICAL: Performance score ${score}, FPS: ${avgFPS}`);
             this.applyCriticalOptimizations();
+            this.lastOptimization = now;
         }
         // Poor performance
-        else if (avgFPS < this.minAcceptableFPS) {
-            console.warn(`Low performance: ${avgFPS} FPS`);
-            this.applyModerateOptimizations();
+        else if (avgFPS < this.poorFPS || score < 50) {
+            console.warn(`Poor performance: Score ${score}, FPS: ${avgFPS}`);
+            if (trend === 'declining') {
+                this.applyAggressiveOptimizations();
+                this.lastOptimization = now;
+            }
         }
-        // Good performance - restore settings
-        else if (avgFPS > this.targetFPS) {
-            this.restoreOptimalSettings();
+        // Below target
+        else if (avgFPS < this.goodFPS || score < 80) {
+            if (trend === 'declining' || trend === 'stable') {
+                this.applyModerateOptimizations();
+                this.lastOptimization = now;
+            }
+        }
+        // Good performance - try to restore quality
+        else if (avgFPS > this.targetFPS && score > 90) {
+            if (trend === 'improving' || trend === 'stable') {
+                this.restoreQualitySettings();
+            }
         }
     }
 
     /**
-     * Apply critical optimizations for very low FPS
+     * Get performance trend
+     */
+    getPerformanceTrend() {
+        if (this.performanceHistory.length < 10) return 'stable';
+
+        const recent = this.performanceHistory.slice(-10);
+        const older = this.performanceHistory.slice(-20, -10);
+
+        if (older.length === 0) return 'stable';
+
+        const recentAvg = recent.reduce((sum, p) => sum + p.score, 0) / recent.length;
+        const olderAvg = older.reduce((sum, p) => sum + p.score, 0) / older.length;
+
+        const diff = recentAvg - olderAvg;
+
+        if (diff > 5) return 'improving';
+        if (diff < -5) return 'declining';
+        return 'stable';
+    }
+
+    /**
+     * Apply critical optimizations
      */
     applyCriticalOptimizations() {
-        // Reduce concurrent loads significantly
-        if (this.viewer.imageLoaderLimit > 4) {
-            this.viewer.imageLoaderLimit = 4;
-        }
+        // Immediately reduce load
+        this.viewer.imageLoaderLimit = 2;
+        this.viewer.maxImageCacheCount = 100;
 
-        // Reduce cache to free memory
-        if (this.viewer.maxImageCacheCount > 500) {
-            this.viewer.maxImageCacheCount = 500;
-        }
+        // Disable expensive features
+        this.viewer.smoothTileEdgesMinZoom = Infinity;
+        this.viewer.alwaysBlend = false;
+        this.viewer.immediateRender = true;
 
-        // Slower animations
-        if (this.viewer.animationTime < 0.8) {
-            this.viewer.animationTime = 0.8;
-        }
+        // Faster animations
+        this.viewer.animationTime = 0.5;
+        this.viewer.springStiffness = 10;
+
+        // Force garbage collection if available
+        if (window.gc) window.gc();
 
         console.log('Applied critical performance optimizations');
+    }
+
+    /**
+     * Apply aggressive optimizations
+     */
+    applyAggressiveOptimizations() {
+        this.viewer.imageLoaderLimit = Math.max(3, this.viewer.imageLoaderLimit - 1);
+        this.viewer.maxImageCacheCount = Math.max(200, this.viewer.maxImageCacheCount - 50);
+        this.viewer.animationTime = Math.max(0.8, this.viewer.animationTime - 0.1);
+
+        console.log('Applied aggressive performance optimizations');
     }
 
     /**
      * Apply moderate optimizations
      */
     applyModerateOptimizations() {
-        // Reduce concurrent tile loads
-        if (this.viewer.imageLoaderLimit > 6) {
-            this.viewer.imageLoaderLimit = Math.max(6, this.viewer.imageLoaderLimit - 2);
-        }
-
-        // Slightly slower animations
-        if (this.viewer.animationTime < 0.6) {
-            this.viewer.animationTime = Math.min(0.6, this.viewer.animationTime + 0.1);
+        if (this.viewer.imageLoaderLimit > 4) {
+            this.viewer.imageLoaderLimit--;
         }
 
         console.log('Applied moderate performance optimizations');
     }
 
     /**
-     * Restore optimal settings when performance is good
+     * Restore quality settings when performance is good
      */
-    restoreOptimalSettings() {
-        // Only restore if performance has been good for multiple samples
-        const recentPerformance = this.performanceHistory.slice(-3);
-        const allGood = recentPerformance.every(p => p.fps > this.targetFPS);
-
-        if (!allGood) return;
+    restoreQualitySettings() {
+        const config = window.performanceConfig?.viewer;
+        if (!config) return;
 
         // Gradually restore settings
-        if (this.viewer.imageLoaderLimit < 10) {
-            this.viewer.imageLoaderLimit = Math.min(10, this.viewer.imageLoaderLimit + 1);
+        if (this.viewer.imageLoaderLimit < config.imageLoaderLimit) {
+            this.viewer.imageLoaderLimit = Math.min(
+                config.imageLoaderLimit,
+                this.viewer.imageLoaderLimit + 1
+            );
         }
 
-        if (this.viewer.animationTime > 0.5) {
-            this.viewer.animationTime = Math.max(0.5, this.viewer.animationTime - 0.05);
+        if (this.viewer.maxImageCacheCount < config.maxImageCacheCount) {
+            this.viewer.maxImageCacheCount = Math.min(
+                config.maxImageCacheCount,
+                this.viewer.maxImageCacheCount + 50
+            );
         }
 
-        if (this.viewer.maxImageCacheCount < 1500) {
-            this.viewer.maxImageCacheCount = Math.min(1500, this.viewer.maxImageCacheCount + 100);
+        if (this.viewer.animationTime > config.animationTime) {
+            this.viewer.animationTime = Math.max(
+                config.animationTime,
+                this.viewer.animationTime - 0.1
+            );
         }
     }
 
@@ -283,10 +431,9 @@ class PerformanceMonitor {
      * Handle tile loaded event
      */
     onTileLoaded(event) {
-        // Track tile loading performance
-        if (event.tiledImage && event.tile) {
-            const loadTime = event.tile.loadTime || 0;
-            this.metrics.tileLoadTime = (this.metrics.tileLoadTime + loadTime) / 2;
+        if (event.tile && event.tile.loadTime) {
+            // Rolling average of tile load times
+            this.metrics.tileLoadTime = (this.metrics.tileLoadTime * 0.9) + (event.tile.loadTime * 0.1);
         }
     }
 
@@ -294,11 +441,10 @@ class PerformanceMonitor {
      * Handle tile load failed event
      */
     onTileLoadFailed(event) {
-        // Log errors except for expected missing levels
-        if (event.tile && !(event.tile.level >= 9 && event.tile.level <= 11)) {
-            console.warn('Tile load failed:', event.tile);
-        }
+        console.warn('Tile load failed:', event.tile);
     }
+
+
 
     /**
      * Get current metrics
@@ -306,9 +452,10 @@ class PerformanceMonitor {
     getMetrics() {
         return {
             ...this.metrics,
-            isOptimal: this.metrics.averageFPS >= this.targetFPS,
             performanceLevel: this.getPerformanceLevel(),
-            warnings: this.getWarnings()
+            trend: this.getPerformanceTrend(),
+            warnings: this.getWarnings(),
+            recommendations: this.getRecommendations()
         };
     }
 
@@ -317,9 +464,12 @@ class PerformanceMonitor {
      */
     getPerformanceLevel() {
         const fps = this.metrics.averageFPS;
-        if (fps >= this.targetFPS) return 'optimal';
-        if (fps >= this.minAcceptableFPS) return 'good';
-        if (fps >= this.criticalFPS) return 'poor';
+        const score = this.metrics.performanceScore;
+
+        if (fps >= this.targetFPS && score >= 90) return 'excellent';
+        if (fps >= this.goodFPS && score >= 80) return 'good';
+        if (fps >= this.acceptableFPS && score >= 60) return 'acceptable';
+        if (fps >= this.poorFPS && score >= 40) return 'poor';
         return 'critical';
     }
 
@@ -328,28 +478,67 @@ class PerformanceMonitor {
      */
     getWarnings() {
         const warnings = [];
+        const m = this.metrics;
 
-        if (this.metrics.averageFPS < this.minAcceptableFPS) {
-            warnings.push(`Low FPS: ${this.metrics.averageFPS}`);
+        if (m.averageFPS < this.acceptableFPS) {
+            warnings.push(`Low FPS: ${m.averageFPS} (target: ${this.targetFPS})`);
         }
 
-        if (this.metrics.tileLoadTime > 500) {
-            warnings.push(`Slow tile loading: ${Math.round(this.metrics.tileLoadTime)}ms`);
+        if (m.droppedFrames > 100) {
+            warnings.push(`Dropped frames: ${m.droppedFrames}`);
         }
 
-        if (this.metrics.memoryUsage > 500) {
-            warnings.push(`High memory usage: ${this.metrics.memoryUsage}MB`);
+        if (parseFloat(m.frameTime) > 20) {
+            warnings.push(`High frame time: ${m.frameTime}ms`);
         }
 
-        if (this.metrics.cachedTiles > 3000) {
-            warnings.push(`Large tile cache: ${this.metrics.cachedTiles} tiles`);
+        if (m.memoryUsage > 300) {
+            warnings.push(`High memory: ${m.memoryUsage}MB`);
+        }
+
+        if (m.cachedTiles > 2000) {
+            warnings.push(`Large cache: ${m.cachedTiles} tiles`);
+        }
+
+        if (m.tileLoadTime > 300) {
+            warnings.push(`Slow tile loading: ${Math.round(m.tileLoadTime)}ms`);
         }
 
         return warnings;
     }
 
     /**
-     * Enable debug overlay
+     * Get optimization recommendations
+     */
+    getRecommendations() {
+        const recs = [];
+        const m = this.metrics;
+
+        if (m.averageFPS < this.acceptableFPS) {
+            if (m.renderMode === 'animating') {
+                recs.push('Reduce animation time for smoother transitions');
+            }
+            if (m.cachedTiles > 1000) {
+                recs.push('Clear tile cache to free memory');
+            }
+            if (m.visibleTiles > 50) {
+                recs.push('Zoom in to reduce visible tiles');
+            }
+        }
+
+        if (m.memoryUsage > 250) {
+            recs.push('Consider reloading the page to clear memory');
+        }
+
+        if (m.tileLoadTime > 200) {
+            recs.push('Check network connection or reduce concurrent tile loads');
+        }
+
+        return recs;
+    }
+
+    /**
+     * Enable debug overlay with enhanced metrics
      */
     enableDebugOverlay() {
         if (this.debugOverlay) return;
@@ -359,41 +548,123 @@ class PerformanceMonitor {
             position: fixed;
             top: 10px;
             right: 10px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             color: white;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            border-radius: 4px;
+            padding: 12px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 11px;
+            border-radius: 6px;
             z-index: 9999;
-            min-width: 200px;
+            min-width: 250px;
+            max-width: 300px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         `;
 
         document.body.appendChild(this.debugOverlay);
 
-        // Update overlay
+        // Update overlay more frequently for smoother display
         this.debugInterval = setInterval(() => {
             if (this.isMonitoring && this.debugOverlay) {
-                const metrics = this.getMetrics();
-                const performanceColor = {
-                    optimal: '#4CAF50',
-                    good: '#8BC34A',
-                    poor: '#FF9800',
-                    critical: '#F44336'
-                }[metrics.performanceLevel];
-
-                this.debugOverlay.innerHTML = `
-                    <div style="font-weight: bold; margin-bottom: 5px;">Performance Monitor</div>
-                    <div style="color: ${performanceColor};">FPS: ${metrics.averageFPS} (${metrics.minFPS}-${metrics.maxFPS})</div>
-                    <div>Zoom: ${metrics.zoomLevel.toFixed(2)}x</div>
-                    <div>Memory: ${metrics.memoryUsage}MB</div>
-                    <div>Status: <span style="color: ${performanceColor};">${metrics.performanceLevel}</span></div>
-                    ${metrics.warnings.length > 0 ? `<div style="color: #ff6b6b; margin-top: 5px;">${metrics.warnings.join('<br>')}</div>` : ''}
-                `;
+                this.updateDebugOverlay();
             }
-        }, 250);
+        }, 100); // 10 FPS update rate
+    }
+
+    /**
+     * Update debug overlay content
+     */
+    updateDebugOverlay() {
+        const m = this.getMetrics();
+        const level = m.performanceLevel;
+        const trend = m.trend;
+
+        const levelColors = {
+            excellent: '#4CAF50',
+            good: '#8BC34A',
+            acceptable: '#FFC107',
+            poor: '#FF9800',
+            critical: '#F44336'
+        };
+
+        const trendIcons = {
+            improving: '↑',
+            stable: '→',
+            declining: '↓'
+        };
+
+        const levelColor = levelColors[level];
+        const trendIcon = trendIcons[trend] || '';
+
+        // Build overlay HTML
+        let html = `
+            <div style="font-weight: bold; margin-bottom: 8px; font-size: 12px;">
+                Performance Monitor
+                <span style="float: right; color: ${levelColor};">${m.performanceScore}% ${trendIcon}</span>
+            </div>
+            <div style="border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 6px; padding-bottom: 6px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>FPS:</span>
+                    <span style="color: ${m.currentFPS < 55 ? '#FF9800' : '#4CAF50'};">
+                        ${m.currentFPS.toFixed(0)} (avg: ${m.averageFPS})
+                    </span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Frame Time:</span>
+                    <span>${m.frameTime}ms</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Dropped:</span>
+                    <span style="color: ${m.droppedFrames > 50 ? '#FF9800' : '#999'};">
+                        ${m.droppedFrames} frames
+                    </span>
+                </div>
+            </div>
+            <div style="border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 6px; padding-bottom: 6px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Zoom:</span>
+                    <span>${m.zoomLevel}x</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Tiles:</span>
+                    <span>${m.visibleTiles} / ${m.cachedTiles}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Loading:</span>
+                    <span>${m.tilesLoading} tiles</span>
+                </div>
+            </div>
+            <div style="border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 6px; padding-bottom: 6px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Memory:</span>
+                    <span style="color: ${m.memoryUsage > 250 ? '#FF9800' : '#999'};">
+                        ${m.memoryUsage}MB
+                    </span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Canvas:</span>
+                    <span style="font-size: 10px;">${m.canvasSize}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Status:</span>
+                    <span style="color: ${levelColor}; font-weight: 500;">
+                        ${level}
+                    </span>
+                </div>
+            </div>
+        `;
+
+        // Add warnings if any
+        if (m.warnings.length > 0) {
+            html += `
+                <div style="color: #ff6b6b; font-size: 10px; margin-top: 4px;">
+                    ⚠ ${m.warnings[0]}
+                </div>
+            `;
+        }
+
+        this.debugOverlay.innerHTML = html;
     }
 
     /**

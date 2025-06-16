@@ -1,0 +1,16 @@
+# Production repository .gitignore
+# Copy this to .gitignore in your diary-production repo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Nothing else should be ignored in production repo
+# We WANT to commit the built files and tiles!

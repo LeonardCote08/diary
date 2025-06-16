@@ -2,7 +2,7 @@
 .app-container {
     width: 100vw;
     height: 100vh;
-    background-color: #000;
+    background-color: #1a1a1a;
     color: #fff;
     margin: 0;
     padding: 0;
@@ -18,7 +18,7 @@
     align-items: center;
     justify-content: center;
     height: 100vh;
-    background: #000;
+    background: #1a1a1a;
 }
 
     .loading-screen p {
@@ -45,7 +45,7 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    background: #000;
+    background: #1a1a1a;
     z-index: 1;
 }
 
@@ -54,12 +54,12 @@
     width: 100%;
     height: 100%;
     position: relative;
-    background: #000;
+    background: #1a1a1a;
     overflow: hidden;
     touch-action: none;
 }
 
-/* CRITICAL: OpenSeadragon viewer - PIXEL-PERFECT RENDERING */
+/* OpenSeadragon viewer - OPTIMIZED FOR SMOOTH LOADING */
 .openseadragon-viewer {
     position: absolute;
     top: 0;
@@ -67,14 +67,7 @@
     width: 100%;
     height: 100%;
     cursor: grab;
-    /* CRITICAL: Pixel-perfect rendering for text */
-    image-rendering: crisp-edges !important;
-    image-rendering: -moz-crisp-edges !important;
-    image-rendering: -webkit-crisp-edges !important;
-    image-rendering: pixelated !important;
-    /* Disable ALL smoothing */
-    -webkit-font-smoothing: none !important;
-    font-smooth: never !important;
+    background: #1a1a1a;
     /* Force GPU acceleration */
     transform: translateZ(0);
     will-change: transform;
@@ -84,45 +77,52 @@
     perspective: 1000;
 }
 
-    /* CRITICAL: Apply to ALL images in viewer */
-    .openseadragon-viewer img {
-        /* Pixel-perfect rendering */
-        image-rendering: crisp-edges !important;
-        image-rendering: -moz-crisp-edges !important;
-        image-rendering: -webkit-crisp-edges !important;
-        image-rendering: pixelated !important;
-        /* No interpolation */
-        -ms-interpolation-mode: nearest-neighbor !important;
+    /* Smooth tile loading transitions */
+    .openseadragon-viewer .openseadragon-tile {
+        /* Fade in animation for new tiles */
+        opacity: 0;
+        animation: tileFadeIn 0.15s ease-out forwards;
         /* GPU acceleration */
-        transform: translateZ(0) scale(1.0);
-        will-change: transform;
+        transform: translateZ(0);
+        will-change: opacity, transform;
         -webkit-backface-visibility: hidden;
         backface-visibility: hidden;
-        /* No filtering */
-        filter: none !important;
-        -webkit-filter: none !important;
     }
 
-/* OpenSeadragon canvas - PIXEL PERFECT */
+@keyframes tileFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* OpenSeadragon canvas */
 .openseadragon-canvas {
-    image-rendering: crisp-edges !important;
-    image-rendering: pixelated !important;
+    background: #1a1a1a !important;
     -webkit-transform-style: preserve-3d;
     transform-style: preserve-3d;
 }
 
-    /* Canvas element - NO SMOOTHING */
+    /* Canvas element */
     .openseadragon-canvas canvas {
-        image-rendering: crisp-edges !important;
-        image-rendering: pixelated !important;
-        shape-rendering: crispEdges !important;
-        filter: none !important;
+        /* Smooth rendering during animations */
+        transition: none;
+        /* GPU acceleration */
+        transform: translateZ(0);
+        will-change: transform;
     }
 
-/* Override ANY OpenSeadragon defaults */
-.openseadragon-container * {
-    image-rendering: crisp-edges !important;
-    image-rendering: pixelated !important;
+/* Override OpenSeadragon tile styles for smooth loading */
+.openseadragon-tile-loading {
+    opacity: 0 !important;
+}
+
+.openseadragon-tile-loaded {
+    opacity: 1 !important;
+    transition: opacity 0.15s ease-out;
 }
 
 /* Browser-specific optimizations */
@@ -156,7 +156,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(26, 26, 26, 0.9);
     padding: 2rem;
     border-radius: 8px;
     z-index: 100;
@@ -491,6 +491,10 @@
     }
 
     .openseadragon-viewer {
+        transition: none !important;
+    }
+
+    .openseadragon-tile-loaded {
         transition: none !important;
     }
 }
