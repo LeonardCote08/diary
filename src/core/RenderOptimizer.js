@@ -8,6 +8,9 @@ class RenderOptimizer {
 
         // State
         this.state = {
+            isZoomingActive: false,
+            lastBlendTime: null,
+            lastStiffness: null,
             isAnimating: false,
             isZooming: false,
             isPanning: false,
@@ -135,6 +138,10 @@ class RenderOptimizer {
             this.state.isZooming = zoomDelta > this.config.zoomThreshold ||
                 this.zoomVelocity > this.config.zoomVelocityThreshold;
 
+            // Apply zoom-specific optimizations
+            this.applyZoomOptimizations(this.state.isZooming);
+
+
             if (this.state.isZooming) {
                 this.lastInteraction = Date.now();
                 if (!this.zoomStartLevel) {
@@ -162,6 +169,54 @@ class RenderOptimizer {
 
         this.lastZoomLevel = currentZoom;
         this.lastCenter = currentCenter;
+    }
+
+    applyZoomOptimizations(isZooming) {
+        const config = window.performanceConfig?.renderOptimization?.zoomOptimizations;
+        if (!config) return;
+
+        if (isZooming && !this.state.isZoomingActive) {
+            // Starting zoom - save current values and apply optimizations
+            this.state.isZoomingActive = true;
+
+            if (this.viewer.world.getItemCount() > 0) {
+                const tiledImage = this.viewer.world.getItemAt(0);
+                if (tiledImage) {
+                    this.state.lastBlendTime = tiledImage.blendTime;
+                    tiledImage.blendTime = 0; // Instant tile switching
+                }
+            }
+
+            // Increase spring stiffness for snappier zoom
+            this.state.lastStiffness = this.viewer.viewport.zoomSpring.springStiffness;
+            this.viewer.viewport.zoomSpring.springStiffness = 10.0;
+            this.viewer.viewport.centerSpringX.springStiffness = 10.0;
+            this.viewer.viewport.centerSpringY.springStiffness = 10.0;
+
+            // Force immediate render during zoom
+            this.viewer.immediateRender = true;
+
+        } else if (!isZooming && this.state.isZoomingActive) {
+            // Ending zoom - restore values
+            this.state.isZoomingActive = false;
+
+            if (this.viewer.world.getItemCount() > 0) {
+                const tiledImage = this.viewer.world.getItemAt(0);
+                if (tiledImage && this.state.lastBlendTime !== null) {
+                    tiledImage.blendTime = this.state.lastBlendTime;
+                }
+            }
+
+            // Restore spring stiffness
+            if (this.state.lastStiffness !== null) {
+                this.viewer.viewport.zoomSpring.springStiffness = this.state.lastStiffness;
+                this.viewer.viewport.centerSpringX.springStiffness = this.state.lastStiffness;
+                this.viewer.viewport.centerSpringY.springStiffness = this.state.lastStiffness;
+            }
+
+            // Restore immediate render setting
+            this.viewer.immediateRender = false;
+        }
     }
 
     handleInteraction(type) {

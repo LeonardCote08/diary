@@ -1,6 +1,9 @@
 /**
- * TileOptimizer - Advanced tile management for 60 FPS performance
+ * TileOptimizer - Advanced tile management with Web Worker support
+ * Achieves 60 FPS by offloading processing to background threads
  */
+import TileWorkerManager from './TileWorkerManager';
+
 class TileOptimizer {
     constructor(viewer) {
         this.viewer = viewer;
@@ -12,24 +15,54 @@ class TileOptimizer {
             tilePriorities: new Map(),
             loadTimes: [],
             averageLoadTime: 0,
-            lastCleanup: Date.now()
+            lastCleanup: Date.now(),
+            useWorker: true, // Enable Web Worker by default
+            workerReady: false
         };
 
         this.config = {
             predictiveRadius: 1.5,
-            priorityLevels: 3,
+            priorityLevels: 5,
             maxConcurrentLoads: 6,
             cleanupInterval: 30000,
             tileTimeout: 10000,
             maxLoadTimeHistory: 50,
             adaptiveLoading: true,
-            webpSupport: this.detectWebPSupport()
+            webpSupport: this.detectWebPSupport(),
+            workerBatchSize: 10, // Process tiles in batches
+            workerEnabled: true
         };
 
         this.intervals = {};
 
+        // Initialize Web Worker manager
+        this.workerManager = null;
+        if (this.config.workerEnabled) {
+            this.initializeWorker();
+        }
+
+        // Performance tracking
+        this.workerMetrics = {
+            tilesProcessedByWorker: 0,
+            workerProcessingTime: 0,
+            workerErrors: 0
+        };
+
         // Bind handlers once
         this.handleViewportChange = this.handleViewportChange.bind(this);
+    }
+
+    async initializeWorker() {
+        try {
+            this.workerManager = new TileWorkerManager(this.viewer);
+            await this.workerManager.initialize();
+            this.state.workerReady = true;
+            console.log('TileOptimizer: Web Worker initialized successfully');
+        } catch (error) {
+            console.warn('TileOptimizer: Failed to initialize Web Worker, falling back to main thread', error);
+            this.state.useWorker = false;
+            this.state.workerReady = false;
+        }
     }
 
     start() {
@@ -40,9 +73,10 @@ class TileOptimizer {
         this.viewer.addHandler('viewport-change', this.handleViewportChange);
 
         this.intervals.cleanup = setInterval(() => this.performCleanup(), this.config.cleanupInterval);
-        this.intervals.queue = setInterval(() => this.processQueue(), 100);
+        this.intervals.queue = setInterval(() => this.processQueue(), 50); // Faster processing
+        this.intervals.worker = setInterval(() => this.processWorkerBatch(), 100);
 
-        console.log('TileOptimizer started');
+        console.log('TileOptimizer started with Web Worker support:', this.state.workerReady);
     }
 
     stop() {
@@ -57,11 +91,60 @@ class TileOptimizer {
         this.state.loadingTiles.clear();
         this.state.tilePriorities.clear();
 
+        if (this.workerManager) {
+            this.workerManager.destroy();
+            this.workerManager = null;
+        }
+
         console.log('TileOptimizer stopped');
     }
 
     handleViewportChange() {
         this.predictiveLoad();
+
+        // Update worker priorities if ready
+        if (this.state.workerReady && this.state.tileQueue.length > 0) {
+            this.updateWorkerPriorities();
+        }
+    }
+
+    async updateWorkerPriorities() {
+        try {
+            const viewport = this.viewer.viewport;
+            const bounds = viewport.getBounds();
+
+            const viewportData = {
+                bounds: {
+                    minX: bounds.x,
+                    minY: bounds.y,
+                    maxX: bounds.x + bounds.width,
+                    maxY: bounds.y + bounds.height
+                },
+                zoom: viewport.getZoom()
+            };
+
+            const tiles = this.state.tileQueue.slice(0, 50); // Limit to 50 tiles
+            const result = await this.workerManager.prioritizeTiles(tiles, viewportData);
+
+            // Update queue with new priorities
+            if (result.tiles && result.priorities) {
+                result.tiles.forEach((tile, index) => {
+                    const priority = result.priorities[index];
+                    const queueItem = this.state.tileQueue.find(item =>
+                        item.level === tile.level &&
+                        item.x === tile.x &&
+                        item.y === tile.y
+                    );
+                    if (queueItem) {
+                        queueItem.priority = priority;
+                    }
+                });
+
+                this.sortQueue();
+            }
+        } catch (error) {
+            console.warn('Failed to update worker priorities:', error);
+        }
     }
 
     calculateTilePriority(level, x, y) {
@@ -113,12 +196,64 @@ class TileOptimizer {
             return;
         }
 
-        this.state.tileQueue.push({
+        const tileItem = {
             level, x, y, key: tileKey, priority,
-            timestamp: Date.now()
-        });
+            timestamp: Date.now(),
+            bounds: this.calculateTileBounds(level, x, y)
+        };
 
+        this.state.tileQueue.push(tileItem);
         this.sortQueue();
+    }
+
+    calculateTileBounds(level, x, y) {
+        const tileWidth = this.viewer.source.getTileWidth(level);
+        const tileHeight = this.viewer.source.getTileHeight ?
+            this.viewer.source.getTileHeight(level) : tileWidth;
+        const sourceWidth = this.viewer.source.width;
+        const sourceHeight = this.viewer.source.height;
+
+        return {
+            minX: x * tileWidth / sourceWidth,
+            minY: y * tileHeight / sourceHeight,
+            maxX: (x + 1) * tileWidth / sourceWidth,
+            maxY: (y + 1) * tileHeight / sourceHeight
+        };
+    }
+
+    async processWorkerBatch() {
+        if (!this.state.isActive || !this.state.workerReady || this.state.tileQueue.length === 0) return;
+
+        // Get high priority tiles for worker processing
+        const highPriorityTiles = this.state.tileQueue
+            .filter(tile => tile.priority <= 1)
+            .slice(0, this.config.workerBatchSize);
+
+        if (highPriorityTiles.length === 0) return;
+
+        try {
+            // Process tiles through worker
+            const priorities = highPriorityTiles.map(t => t.priority);
+            const startTime = performance.now();
+
+            await this.workerManager.processBatch(highPriorityTiles, priorities);
+
+            const processingTime = performance.now() - startTime;
+            this.workerMetrics.tilesProcessedByWorker += highPriorityTiles.length;
+            this.workerMetrics.workerProcessingTime += processingTime;
+
+            // Remove processed tiles from queue
+            highPriorityTiles.forEach(tile => {
+                const index = this.state.tileQueue.findIndex(t => t.key === tile.key);
+                if (index >= 0) {
+                    this.state.tileQueue.splice(index, 1);
+                }
+            });
+
+        } catch (error) {
+            console.error('Worker batch processing failed:', error);
+            this.workerMetrics.workerErrors++;
+        }
     }
 
     processQueue() {
@@ -136,13 +271,21 @@ class TileOptimizer {
             if (Date.now() - item.timestamp > this.config.tileTimeout) continue;
 
             this.state.loadingTiles.add(item.key);
+
             // Force a redraw to trigger tile loading
             this.viewer.forceRedraw();
         }
     }
 
     sortQueue() {
-        this.state.tileQueue.sort((a, b) => a.priority - b.priority);
+        this.state.tileQueue.sort((a, b) => {
+            // First sort by priority
+            if (a.priority !== b.priority) {
+                return a.priority - b.priority;
+            }
+            // Then by timestamp (older first)
+            return a.timestamp - b.timestamp;
+        });
     }
 
     predictiveLoad() {
@@ -235,6 +378,11 @@ class TileOptimizer {
 
         this.state.loadingTiles.clear();
         this.state.lastCleanup = now;
+
+        // Clear worker cache periodically
+        if (this.workerManager) {
+            this.workerManager.clearCache(true, 60000); // Clear tiles older than 1 minute
+        }
     }
 
     clearOldTiles() {
@@ -256,13 +404,23 @@ class TileOptimizer {
         }
     }
 
-    getStats() {
+    async getStats() {
+        const workerStats = this.workerManager ? await this.workerManager.getStats() : null;
+
         return {
             queueLength: this.state.tileQueue.length,
             loadingCount: this.state.loadingTiles.size,
             averageLoadTime: this.state.averageLoadTime.toFixed(0) + 'ms',
             maxConcurrentLoads: this.config.maxConcurrentLoads,
-            webpSupported: this.config.webpSupport
+            webpSupported: this.config.webpSupport,
+            workerEnabled: this.state.workerReady,
+            workerMetrics: {
+                ...this.workerMetrics,
+                averageWorkerTime: this.workerMetrics.tilesProcessedByWorker > 0 ?
+                    (this.workerMetrics.workerProcessingTime / this.workerMetrics.tilesProcessedByWorker).toFixed(2) + 'ms' :
+                    '0ms'
+            },
+            workerStats
         };
     }
 }

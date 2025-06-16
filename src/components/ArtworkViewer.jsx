@@ -7,9 +7,27 @@ import AudioEngine from '../core/AudioEngine';
 import PerformanceMonitor from '../core/PerformanceMonitor';
 import RenderOptimizer from '../core/RenderOptimizer';
 import TileOptimizer from '../core/TileOptimizer';
+import MemoryManager from '../core/MemoryManager';
+import TileCleanupManager from '../core/TileCleanupManager';
 import performanceConfig, { adjustSettingsForPerformance } from '../config/performanceConfig';
 
 let hotspotData = [];
+
+// Browser detection for optimal drawer selection
+const getBrowserOptimalDrawer = () => {
+    const ua = navigator.userAgent;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+
+    // Safari and iOS MUST use canvas for performance
+    if (isSafari || isIOS) {
+        console.log('Safari/iOS detected - using canvas drawer for optimal performance');
+        return 'canvas';
+    }
+
+    // All other browsers can use webgl
+    return 'webgl';
+};
 
 /**
  * ArtworkViewer - Main viewer component optimized for 60 FPS
@@ -70,7 +88,7 @@ function ArtworkViewer(props) {
         previewImg.onload = () => setPreviewLoaded(true);
         previewImg.src = `/images/tiles/${props.artworkId}_1024/preview.jpg`;
 
-        // Initialize viewer
+        // Initialize viewer with optimized configuration
         const config = performanceConfig.viewer;
         const dziUrl = `/images/tiles/${props.artworkId}_1024/${props.artworkId}.dzi`;
 
@@ -79,8 +97,8 @@ function ArtworkViewer(props) {
             tileSources: dziUrl,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
-            // Rendering
-            drawer: config.drawer,
+            // Rendering - use browser-specific drawer
+            drawer: getBrowserOptimalDrawer(),
             imageSmoothingEnabled: config.imageSmoothingEnabled,
             smoothTileEdgesMinZoom: config.smoothTileEdgesMinZoom,
             alwaysBlend: config.alwaysBlend,
@@ -157,7 +175,9 @@ function ArtworkViewer(props) {
             audioEngine: new AudioEngine(),
             performanceMonitor: new PerformanceMonitor(viewer),
             renderOptimizer: new RenderOptimizer(viewer),
-            tileOptimizer: new TileOptimizer(viewer)
+            tileOptimizer: new TileOptimizer(viewer),
+            memoryManager: new MemoryManager(viewer),
+            tileCleanupManager: new TileCleanupManager(viewer)
         };
 
         components.spatialIndex.loadHotspots(hotspotData);
@@ -166,7 +186,8 @@ function ArtworkViewer(props) {
         window.viewer = viewer;
         window.performanceMonitor = components.performanceMonitor;
         window.tileOptimizer = components.tileOptimizer;
-        window.debugTileCache = () => {
+        window.tileCleanupManager = components.tileCleanupManager;
+        window.debugTileCache = async () => {
             if (!viewer?.world || viewer.world.getItemCount() === 0) {
                 console.log('Viewer not ready');
                 return;
@@ -182,10 +203,23 @@ function ArtworkViewer(props) {
                 };
                 console.log('Tile Cache Info:', cacheInfo);
                 console.log(`Estimated cache memory: ${(cacheInfo.tilesLoaded * 256 * 256 * 4 / 1048576).toFixed(2)} MB`);
+
+                // Also show cleanup manager metrics
+                const cleanupMetrics = components.tileCleanupManager.getMetrics();
+                console.log('Cleanup Manager:', cleanupMetrics);
+
+                // Show tile optimizer stats including worker info
+                const optimizerStats = await components.tileOptimizer.getStats();
+                console.log('Tile Optimizer Stats:', optimizerStats);
             }
         };
 
+        // Start all performance systems
         components.performanceMonitor.start();
+        components.memoryManager.start();
+        components.tileOptimizer.start();
+        components.tileCleanupManager.start();
+
         if (performanceConfig.debug.showFPS || performanceConfig.debug.showMetrics) {
             components.performanceMonitor.enableDebugOverlay();
         }
@@ -194,7 +228,6 @@ function ArtworkViewer(props) {
         setupViewerEventHandlers();
         setupKeyboardHandler();
         setupResizeObserver();
-        startMemoryMonitoring();
 
         onCleanup(cleanup);
     });
@@ -211,7 +244,6 @@ function ArtworkViewer(props) {
             viewer.viewport.fitBounds(bounds, true);
             viewer.viewport.applyConstraints(true);
 
-            components.tileOptimizer.start();
             setTimeout(() => initializeHotspotSystem(), 100);
         });
 
@@ -233,7 +265,19 @@ function ArtworkViewer(props) {
             if (components.performanceMonitor) {
                 const metrics = components.performanceMonitor.getMetrics();
                 if (metrics.averageFPS < performanceConfig.debug.warnThreshold.fps) {
-                    adjustSettingsForPerformance(metrics.averageFPS, metrics.memoryUsage);
+                    const performanceMode = adjustSettingsForPerformance(metrics.averageFPS, metrics.memoryUsage);
+
+                    // Adjust tile cleanup pressure based on performance mode
+                    if (components.tileCleanupManager) {
+                        const pressureMap = {
+                            'emergency': 'critical',
+                            'critical': 'critical',
+                            'reduced': 'high',
+                            'memory-limited': 'high',
+                            'normal': 'normal'
+                        };
+                        components.tileCleanupManager.setPressure(pressureMap[performanceMode] || 'normal');
+                    }
                 }
             }
         });
@@ -293,6 +337,24 @@ function ArtworkViewer(props) {
                 } else {
                     components.performanceMonitor.disableDebugOverlay();
                 }
+            },
+            'c': () => {
+                // Force tile cleanup
+                if (components.tileCleanupManager) {
+                    components.tileCleanupManager.forceCleanup();
+                    console.log('Forced tile cleanup');
+                }
+            },
+            'w': async () => {
+                // Show Web Worker status
+                if (components.tileOptimizer) {
+                    const stats = await components.tileOptimizer.getStats();
+                    console.log('Web Worker Status:', {
+                        enabled: stats.workerEnabled,
+                        metrics: stats.workerMetrics,
+                        details: stats.workerStats
+                    });
+                }
             }
         };
 
@@ -329,20 +391,6 @@ function ArtworkViewer(props) {
             }
         });
         components.resizeObserver.observe(viewerRef);
-    };
-
-    const startMemoryMonitoring = () => {
-        if (performance.memory) {
-            intervals.memory = setInterval(() => {
-                const memUsage = performance.memory.usedJSHeapSize / 1048576;
-                if (memUsage > performanceConfig.memory.criticalMemoryThreshold) {
-                    console.warn(`Critical memory usage: ${memUsage.toFixed(2)} MB`);
-                    if (viewer.world?.getItemCount() > 0) {
-                        components.tileOptimizer?.clearOldTiles();
-                    }
-                }
-            }, performanceConfig.memory.gcInterval);
-        }
     };
 
     const initializeHotspotSystem = () => {
@@ -388,7 +436,7 @@ function ArtworkViewer(props) {
         <div class="viewer-container">
             {previewLoaded() && !viewerReady() && (
                 <img
-                    src={`/images/tiles/${props.artworkId}/preview.jpg`}
+                    src={`/images/tiles/${props.artworkId}_1024/preview.jpg`}
                     class="preview-image"
                     alt="Loading preview"
                 />
@@ -423,6 +471,8 @@ function ArtworkViewer(props) {
                             <div><kbd>F</kbd> Fit to screen</div>
                             <div><kbd>↑↓←→</kbd> Pan</div>
                             <div><kbd>D</kbd> Toggle debug</div>
+                            <div><kbd>C</kbd> Force cleanup</div>
+                            <div><kbd>W</kbd> Worker status</div>
                         </div>
                     </details>
                 </div>
