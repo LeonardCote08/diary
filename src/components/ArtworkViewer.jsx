@@ -68,11 +68,11 @@ function ArtworkViewer(props) {
         // Preload preview
         const previewImg = new Image();
         previewImg.onload = () => setPreviewLoaded(true);
-        previewImg.src = `/images/tiles/${props.artworkId}/preview.jpg`;
+        previewImg.src = `/images/tiles/${props.artworkId}_1024/preview.jpg`;
 
         // Initialize viewer
         const config = performanceConfig.viewer;
-        const dziUrl = `/images/tiles/${props.artworkId}/${props.artworkId}.dzi`;
+        const dziUrl = `/images/tiles/${props.artworkId}_1024/${props.artworkId}.dzi`;
 
         viewer = OpenSeadragon({
             element: viewerRef,

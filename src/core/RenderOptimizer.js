@@ -1,5 +1,6 @@
 /**
  * RenderOptimizer - Adaptive rendering for 60 FPS performance
+ * FIXED: Removed aggressive optimizations that cause tiles to disappear
  */
 class RenderOptimizer {
     constructor(viewer) {
@@ -12,7 +13,9 @@ class RenderOptimizer {
             isPanning: false,
             renderMode: 'static',
             consecutiveStaticFrames: 0,
-            canvasOptimized: false
+            canvasOptimized: false,
+            lastFrameTime: performance.now(),
+            frameSkipCount: 0
         };
 
         // Tracking
@@ -20,18 +23,21 @@ class RenderOptimizer {
         this.lastZoomLevel = null;
         this.lastCenter = null;
         this.lastOptimizationTime = 0;
+        this.zoomStartLevel = null;
+        this.zoomVelocity = 0;
 
-        // Configuration
+        // Configuration - balanced for stability
         this.config = {
-            animationEndDelay: 150,
-            pixelPerfectDelay: 100,
-            zoomThreshold: 0.01,
-            panThreshold: 0.01,
-            smoothTransitionDuration: 200,
-            staticFramesBeforeOptimize: 10,
+            animationEndDelay: 80,          // Slightly longer for stability
+            pixelPerfectDelay: 50,
+            zoomThreshold: 0.005,           // Less sensitive to avoid flickering
+            panThreshold: 0.005,
+            smoothTransitionDuration: 150,
+            staticFramesBeforeOptimize: 5,
             optimizationCooldown: 100,
             forceGPU: true,
-            useWebGL: this.detectWebGLSupport()
+            frameSkipThreshold: 33,         // Only skip if > 33ms (30 FPS)
+            zoomVelocityThreshold: 0.03
         };
 
         // Timers
@@ -39,16 +45,6 @@ class RenderOptimizer {
 
         this.setupEventHandlers();
         this.applyInitialOptimizations();
-    }
-
-    detectWebGLSupport() {
-        try {
-            const canvas = document.createElement('canvas');
-            return !!(window.WebGLRenderingContext &&
-                (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
-        } catch (e) {
-            return false;
-        }
     }
 
     setupEventHandlers() {
@@ -60,7 +56,8 @@ class RenderOptimizer {
             'canvas-press': () => this.handleInteraction('press'),
             'canvas-drag': () => this.handleInteraction('drag'),
             'canvas-drag-end': () => this.handleInteraction('drag-end'),
-            'canvas-scroll': () => this.handleInteraction('scroll')
+            'canvas-scroll': () => this.handleInteraction('scroll'),
+            'canvas-pinch': () => this.handleInteraction('pinch')
         };
 
         Object.entries(handlers).forEach(([event, handler]) =>
@@ -79,7 +76,8 @@ class RenderOptimizer {
             });
         }
 
-        requestAnimationFrame(() => this.applyCanvasOptimizations());
+        // Apply canvas optimizations after a delay to ensure viewer is ready
+        setTimeout(() => this.applyCanvasOptimizations(), 100);
     }
 
     handleAnimationStart() {
@@ -100,6 +98,17 @@ class RenderOptimizer {
     }
 
     handleAnimation() {
+        const now = performance.now();
+        const frameTime = now - this.state.lastFrameTime;
+        this.state.lastFrameTime = now;
+
+        // Only track frame skips, don't apply emergency optimizations
+        if (frameTime > this.config.frameSkipThreshold && this.state.renderMode !== 'static') {
+            this.state.frameSkipCount++;
+        } else {
+            this.state.frameSkipCount = 0;
+        }
+
         const timeSinceInteraction = Date.now() - this.lastInteraction;
 
         if (timeSinceInteraction > 100 && !this.isCurrentlyAnimating()) {
@@ -117,15 +126,29 @@ class RenderOptimizer {
         const currentZoom = this.viewer.viewport.getZoom(true);
         const currentCenter = this.viewer.viewport.getCenter(true);
 
+        // Track zoom velocity
         if (this.lastZoomLevel !== null) {
             const zoomDelta = Math.abs(currentZoom - this.lastZoomLevel);
-            this.state.isZooming = zoomDelta > this.config.zoomThreshold;
+            this.zoomVelocity = this.zoomVelocity * 0.7 + zoomDelta * 0.3;
+
+            // Detect zooming
+            this.state.isZooming = zoomDelta > this.config.zoomThreshold ||
+                this.zoomVelocity > this.config.zoomVelocityThreshold;
+
             if (this.state.isZooming) {
                 this.lastInteraction = Date.now();
-                this.handleAnimationStart();
+                if (!this.zoomStartLevel) {
+                    this.zoomStartLevel = this.lastZoomLevel;
+                }
+                // Don't immediately switch modes - let animation handlers do it
+            } else if (this.zoomStartLevel) {
+                // Zoom ended
+                this.zoomStartLevel = null;
+                this.scheduleStaticMode();
             }
         }
 
+        // Detect panning
         if (this.lastCenter !== null) {
             const panDelta = Math.sqrt(
                 Math.pow(currentCenter.x - this.lastCenter.x, 2) +
@@ -146,12 +169,19 @@ class RenderOptimizer {
 
         const actions = {
             'press': () => this.setRenderMode('animation'),
-            'drag': () => this.state.isPanning = true,
+            'drag': () => {
+                this.state.isPanning = true;
+                this.setRenderMode('animation');
+            },
             'drag-end': () => {
                 this.state.isPanning = false;
                 this.scheduleStaticMode();
             },
             'scroll': () => {
+                this.state.isZooming = true;
+                this.setRenderMode('animation');
+            },
+            'pinch': () => {
                 this.state.isZooming = true;
                 this.setRenderMode('animation');
             }
@@ -200,23 +230,16 @@ class RenderOptimizer {
 
         if (!canvas || !context) return;
 
+        // GPU acceleration
         Object.assign(canvas.style, {
             transform: 'translateZ(0)',
             willChange: 'transform',
             backfaceVisibility: 'hidden'
         });
 
-        if (window.devicePixelRatio > 1) {
-            const ratio = Math.round(window.devicePixelRatio);
-            if (canvas.width !== canvas.clientWidth * ratio) {
-                canvas.width = canvas.clientWidth * ratio;
-                canvas.height = canvas.clientHeight * ratio;
-                context.scale(ratio, ratio);
-            }
-        }
-
-        this.setContextSmoothing(context, false);
-        context.globalCompositeOperation = 'source-over';
+        // Smooth rendering for better quality
+        this.setContextSmoothing(context, true);
+        context.imageSmoothingQuality = 'high';
 
         this.state.canvasOptimized = true;
         this.lastOptimizationTime = now;
@@ -224,12 +247,12 @@ class RenderOptimizer {
 
     removeCanvasOptimizations() {
         const context = this.viewer.drawer?.context;
-        const canvas = this.viewer.drawer?.canvas;
 
-        if (!context || !canvas) return;
+        if (!context) return;
 
+        // Keep smoothing enabled during animations for better quality
         this.setContextSmoothing(context, true);
-        canvas.style.transform = 'translateZ(0)';
+        context.imageSmoothingQuality = 'medium';
 
         this.state.canvasOptimized = false;
     }
@@ -255,10 +278,6 @@ class RenderOptimizer {
             filter: 'none',
             transform: 'translateZ(0)'
         });
-
-        if (this.viewer.drawer?.context) {
-            this.setContextSmoothing(this.viewer.drawer.context, true);
-        }
     }
 
     enablePixelPerfect() {
@@ -266,36 +285,17 @@ class RenderOptimizer {
 
         requestAnimationFrame(() => {
             this.applyTileStyles({
-                imageRendering: 'pixelated',
+                imageRendering: 'auto', // Let browser decide
                 transform: 'translateZ(0)',
-                willChange: 'transform',
-                backfaceVisibility: 'hidden',
-                filter: 'contrast(1.01)'
+                willChange: 'auto',
+                backfaceVisibility: 'hidden'
             });
-
-            if (this.viewer.drawer?.context) {
-                this.setContextSmoothing(this.viewer.drawer.context, false);
-            }
-
-            this.viewer.forceRedraw();
         });
     }
 
     applyTileStyles(styles) {
         const tiles = this.viewer.container.querySelectorAll('.openseadragon-tile');
         tiles.forEach(tile => Object.assign(tile.style, styles));
-    }
-
-    forceGPUCompositing() {
-        const container = this.viewer.container;
-        if (!container) return;
-
-        container.style.transformStyle = 'preserve-3d';
-        container.style.perspective = '1000px';
-
-        container.querySelectorAll('*').forEach(child => {
-            if (child.style) child.style.transform = 'translateZ(0)';
-        });
     }
 
     isCurrentlyAnimating() {
@@ -310,7 +310,8 @@ class RenderOptimizer {
         return {
             ...this.state,
             timeSinceInteraction: Date.now() - this.lastInteraction,
-            webGLSupported: this.config.useWebGL
+            zoomVelocity: this.zoomVelocity.toFixed(4),
+            isOptimized: this.state.canvasOptimized
         };
     }
 
@@ -322,7 +323,8 @@ class RenderOptimizer {
         this.clearTimers();
 
         ['animation-start', 'animation-finish', 'animation', 'viewport-change',
-            'canvas-press', 'canvas-drag', 'canvas-drag-end', 'canvas-scroll']
+            'canvas-press', 'canvas-drag', 'canvas-drag-end', 'canvas-scroll',
+            'canvas-pinch']
             .forEach(event => this.viewer.removeAllHandlers(event));
 
         this.removeCanvasOptimizations();
