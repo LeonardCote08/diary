@@ -25,29 +25,29 @@ const config = {
 
 // Message handler
 self.onmessage = function (e) {
-    const { type, data } = e.data;
+    const { type, data, requestId } = e.data;
 
     switch (type) {
         case 'init':
-            handleInit(data);
+            handleInit(data, requestId);
             break;
         case 'process-tile':
-            handleProcessTile(data);
+            handleProcessTile(data, requestId);
             break;
         case 'batch-process':
-            handleBatchProcess(data);
+            handleBatchProcess(data, requestId);
             break;
         case 'clear-cache':
-            handleClearCache(data);
+            handleClearCache(data, requestId);
             break;
         case 'get-stats':
-            handleGetStats();
+            handleGetStats(requestId);
             break;
         case 'prioritize':
-            handlePrioritize(data);
+            handlePrioritize(data, requestId);
             break;
         case 'cancel':
-            handleCancel(data);
+            handleCancel(data, requestId);
             break;
         default:
             console.error('Unknown message type:', type);
@@ -55,13 +55,14 @@ self.onmessage = function (e) {
 };
 
 // Initialize worker
-function handleInit(data) {
+function handleInit(data, requestId) {
     if (data.config) {
         Object.assign(config, data.config);
     }
 
     self.postMessage({
         type: 'initialized',
+        requestId: requestId,
         data: {
             config,
             capabilities: {
@@ -74,7 +75,7 @@ function handleInit(data) {
 }
 
 // Process a single tile
-async function handleProcessTile(data) {
+async function handleProcessTile(data, requestId) {
     const { tile, priority = 2 } = data;
     const tileKey = getTileKey(tile);
 
@@ -83,6 +84,7 @@ async function handleProcessTile(data) {
         state.stats.cached++;
         self.postMessage({
             type: 'tile-ready',
+            requestId: requestId,
             data: {
                 tile,
                 cached: true,
@@ -114,6 +116,7 @@ async function handleProcessTile(data) {
         // Send result
         self.postMessage({
             type: 'tile-ready',
+            requestId: requestId,
             data: {
                 tile,
                 cached: false,
@@ -125,6 +128,7 @@ async function handleProcessTile(data) {
         state.stats.errors++;
         self.postMessage({
             type: 'tile-error',
+            requestId: requestId,
             data: {
                 tile,
                 error: error.message
@@ -136,7 +140,7 @@ async function handleProcessTile(data) {
 }
 
 // Batch process multiple tiles
-async function handleBatchProcess(data) {
+async function handleBatchProcess(data, requestId) {
     const { tiles, priorities } = data;
 
     // Sort tiles by priority
@@ -152,6 +156,7 @@ async function handleBatchProcess(data) {
 
     self.postMessage({
         type: 'batch-complete',
+        requestId: requestId,
         data: {
             processed: tiles.length,
             stats: state.stats
@@ -229,7 +234,7 @@ async function processLowPriority(tile) {
 }
 
 // Prioritize tiles in queue
-function handlePrioritize(data) {
+function handlePrioritize(data, requestId) {
     const { tiles, viewport } = data;
 
     // Calculate priorities based on viewport
@@ -243,6 +248,7 @@ function handlePrioritize(data) {
 
     self.postMessage({
         type: 'priorities-calculated',
+        requestId: requestId,
         data: {
             tiles: prioritized.map(p => p.tile),
             priorities: prioritized.map(p => p.priority)
@@ -295,7 +301,7 @@ function boundsIntersect(a, b) {
 }
 
 // Cancel processing
-function handleCancel(data) {
+function handleCancel(data, requestId) {
     const { tiles } = data;
 
     if (tiles) {
@@ -310,6 +316,7 @@ function handleCancel(data) {
 
     self.postMessage({
         type: 'cancelled',
+        requestId: requestId,
         data: {
             cancelled: tiles ? tiles.length : state.processingTiles.size
         }
@@ -317,7 +324,7 @@ function handleCancel(data) {
 }
 
 // Clear cache
-function handleClearCache(data) {
+function handleClearCache(data, requestId) {
     const { selective, maxAge } = data || {};
 
     if (selective && maxAge) {
@@ -335,6 +342,7 @@ function handleClearCache(data) {
 
         self.postMessage({
             type: 'cache-cleared',
+            requestId: requestId,
             data: {
                 cleared: keysToDelete.length,
                 remaining: state.tileCache.size
@@ -347,6 +355,7 @@ function handleClearCache(data) {
 
         self.postMessage({
             type: 'cache-cleared',
+            requestId: requestId,
             data: {
                 cleared: size,
                 remaining: 0
@@ -356,9 +365,10 @@ function handleClearCache(data) {
 }
 
 // Get statistics
-function handleGetStats() {
+function handleGetStats(requestId) {
     self.postMessage({
         type: 'stats',
+        requestId: requestId,
         data: {
             ...state.stats,
             cacheSize: state.tileCache.size,
@@ -430,7 +440,7 @@ function checkWebGLSupport() {
     }
 }
 
-// Send ready message
+// Send ready message (no requestId because it's spontaneous)
 self.postMessage({
     type: 'ready',
     data: {
