@@ -12,20 +12,13 @@ import performanceConfig, { adjustSettingsForPerformance } from '../config/perfo
 let hotspotData = [];
 
 /**
- * ArtworkViewer - Optimized for 60 FPS with WebGL support
+ * ArtworkViewer - Main viewer component optimized for 60 FPS
  */
 function ArtworkViewer(props) {
     let viewerRef;
     let viewer = null;
-    let renderer = null;
-    let viewportManager = null;
-    let spatialIndex = null;
-    let audioEngine = null;
-    let performanceMonitor = null;
-    let renderOptimizer = null;
-    let tileOptimizer = null;
-    let resizeObserver = null;
-    let updateTimer = null;
+    let components = {};
+    let intervals = {};
 
     const [isLoading, setIsLoading] = createSignal(true);
     const [hoveredHotspot, setHoveredHotspot] = createSignal(null);
@@ -33,49 +26,36 @@ function ArtworkViewer(props) {
     const [viewerReady, setViewerReady] = createSignal(false);
     const [previewLoaded, setPreviewLoaded] = createSignal(false);
 
-    // Keyboard handler function
-    let handleKeyPress = null;
-
-    // Create cleanup function
     const cleanup = () => {
-        if (handleKeyPress) {
-            window.removeEventListener('keydown', handleKeyPress);
+        if (intervals.handleKeyPress) {
+            window.removeEventListener('keydown', intervals.handleKeyPress);
         }
-        if (resizeObserver && viewerRef) {
-            resizeObserver.disconnect();
-        }
-        if (updateTimer) clearTimeout(updateTimer);
-        if (tileOptimizer) {
-            tileOptimizer.stop();
-        }
-        if (performanceMonitor) {
-            performanceMonitor.stop();
-            performanceMonitor.disableDebugOverlay();
-        }
-        if (renderOptimizer) {
-            renderOptimizer.destroy();
-        }
-        if (viewer) viewer.destroy();
-        if (renderer) renderer.destroy();
-        if (audioEngine) audioEngine.destroy();
 
-        // Clean up global references
-        if (window.performanceMonitor === performanceMonitor) {
-            delete window.performanceMonitor;
+        Object.values(intervals).forEach(interval => {
+            if (typeof interval === 'number') clearInterval(interval);
+        });
+
+        if (components.resizeObserver && viewerRef) {
+            components.resizeObserver.disconnect();
         }
-        if (window.viewer === viewer) {
-            delete window.viewer;
-        }
-        if (window.tileOptimizer === tileOptimizer) {
-            delete window.tileOptimizer;
-        }
-        if (window.debugTileCache) {
-            delete window.debugTileCache;
-        }
+
+        Object.values(components).forEach(component => {
+            if (component && typeof component.destroy === 'function') {
+                component.destroy();
+            }
+        });
+
+        if (viewer) viewer.destroy();
+
+        ['performanceMonitor', 'viewer', 'tileOptimizer', 'debugTileCache'].forEach(prop => {
+            if (window[prop] === components[prop] || window[prop] === viewer) {
+                delete window[prop];
+            }
+        });
     };
 
     onMount(async () => {
-        // Load hotspots data
+        // Load hotspots
         try {
             const response = await fetch('/data/hotspots.json');
             hotspotData = await response.json();
@@ -85,16 +65,13 @@ function ArtworkViewer(props) {
             hotspotData = [];
         }
 
-        // Load preview image
+        // Preload preview
         const previewImg = new Image();
         previewImg.onload = () => setPreviewLoaded(true);
         previewImg.src = `/images/tiles/${props.artworkId}/preview.jpg`;
 
-        // Get optimized configuration
+        // Initialize viewer
         const config = performanceConfig.viewer;
-        const deviceProfile = performanceConfig.deviceProfile;
-
-        // Initialize OpenSeadragon with 60 FPS optimizations
         const dziUrl = `/images/tiles/${props.artworkId}/${props.artworkId}.dzi`;
 
         viewer = OpenSeadragon({
@@ -102,7 +79,7 @@ function ArtworkViewer(props) {
             tileSources: dziUrl,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
-            // Rendering - Use optimal drawer
+            // Rendering
             drawer: config.drawer,
             imageSmoothingEnabled: config.imageSmoothingEnabled,
             smoothTileEdgesMinZoom: config.smoothTileEdgesMinZoom,
@@ -111,23 +88,17 @@ function ArtworkViewer(props) {
             opacity: 1,
             preload: config.preload,
             compositeOperation: config.compositeOperation,
+            ...(config.drawer === 'webgl' ? { webglOptions: config.webglOptions } : {}),
 
-            // WebGL options if using WebGL
-            ...(config.drawer === 'webgl' ? {
-                webglOptions: config.webglOptions
-            } : {}),
-
-            // Tile loading optimization
+            // Tile loading
             immediateRender: config.immediateRender,
             imageLoaderLimit: config.imageLoaderLimit,
             maxImageCacheCount: config.maxImageCacheCount,
             timeout: config.timeout,
-
-            // Network optimization
             loadTilesWithAjax: config.loadTilesWithAjax,
             ajaxHeaders: config.ajaxHeaders,
 
-            // Visibility and coverage
+            // Visibility
             visibilityRatio: config.visibilityRatio,
             minPixelRatio: config.minPixelRatio,
             defaultZoomLevel: config.defaultZoomLevel,
@@ -139,7 +110,7 @@ function ArtworkViewer(props) {
             wrapHorizontal: config.wrapHorizontal,
             wrapVertical: config.wrapVertical,
 
-            // Animation settings for 60 FPS
+            // Animation
             animationTime: config.animationTime,
             springStiffness: config.springStiffness,
             blendTime: config.blendTime,
@@ -152,7 +123,7 @@ function ArtworkViewer(props) {
             showFullPageControl: false,
             showRotationControl: false,
 
-            // Input handling
+            // Input
             gestureSettingsMouse: {
                 scrollToZoom: true,
                 clickToZoom: false,
@@ -173,8 +144,6 @@ function ArtworkViewer(props) {
             debugMode: config.debugMode,
             crossOriginPolicy: 'Anonymous',
             ajaxWithCredentials: false,
-
-            // Additional performance settings
             preserveViewport: config.preserveViewport,
             preserveImageSizeOnResize: config.preserveImageSizeOnResize,
             maxTilesPerFrame: config.maxTilesPerFrame,
@@ -182,138 +151,99 @@ function ArtworkViewer(props) {
         });
 
         // Initialize components
-        spatialIndex = new SpatialIndex();
-        spatialIndex.loadHotspots(hotspotData);
-        viewportManager = new ViewportManager(viewer);
-        audioEngine = new AudioEngine();
-        performanceMonitor = new PerformanceMonitor(viewer);
-        renderOptimizer = new RenderOptimizer(viewer);
-        tileOptimizer = new TileOptimizer(viewer);
+        components = {
+            spatialIndex: new SpatialIndex(),
+            viewportManager: new ViewportManager(viewer),
+            audioEngine: new AudioEngine(),
+            performanceMonitor: new PerformanceMonitor(viewer),
+            renderOptimizer: new RenderOptimizer(viewer),
+            tileOptimizer: new TileOptimizer(viewer)
+        };
 
-        // Make viewer and performanceMonitor globally accessible for debugging
+        components.spatialIndex.loadHotspots(hotspotData);
+
+        // Global access for debugging
         window.viewer = viewer;
-        window.performanceMonitor = performanceMonitor;
-        window.tileOptimizer = tileOptimizer;
-
-        // Add debug helper functions
+        window.performanceMonitor = components.performanceMonitor;
+        window.tileOptimizer = components.tileOptimizer;
         window.debugTileCache = () => {
-            if (!viewer || !viewer.world || viewer.world.getItemCount() === 0) {
+            if (!viewer?.world || viewer.world.getItemCount() === 0) {
                 console.log('Viewer not ready');
                 return;
             }
 
             const tiledImage = viewer.world.getItemAt(0);
-            if (tiledImage && tiledImage._tileCache) {
+            if (tiledImage?._tileCache) {
                 const cache = tiledImage._tileCache;
                 const cacheInfo = {
                     type: cache.constructor.name,
-                    tilesLoaded: cache._tilesLoaded ? cache._tilesLoaded.length : 0,
+                    tilesLoaded: cache._tilesLoaded?.length || 0,
                     imagesLoaded: cache._imagesLoadedCount || 0
                 };
                 console.log('Tile Cache Info:', cacheInfo);
-
-                // Memory usage estimate
-                const estimatedMemory = (cacheInfo.tilesLoaded * 256 * 256 * 4) / 1048576; // MB
-                console.log(`Estimated cache memory: ${estimatedMemory.toFixed(2)} MB`);
+                console.log(`Estimated cache memory: ${(cacheInfo.tilesLoaded * 256 * 256 * 4 / 1048576).toFixed(2)} MB`);
             }
         };
 
-        performanceMonitor.start();
-
-        // Enable debug overlay if configured
+        components.performanceMonitor.start();
         if (performanceConfig.debug.showFPS || performanceConfig.debug.showMetrics) {
-            performanceMonitor.enableDebugOverlay();
+            components.performanceMonitor.enableDebugOverlay();
         }
 
-        // Viewer ready handler
+        // Setup event handlers
+        setupViewerEventHandlers();
+        setupKeyboardHandler();
+        setupResizeObserver();
+        startMemoryMonitoring();
+
+        onCleanup(cleanup);
+    });
+
+    const setupViewerEventHandlers = () => {
         viewer.addHandler('open', () => {
             console.log('Viewer ready - initializing systems');
             console.log('Using drawer:', viewer.drawer.getType ? viewer.drawer.getType() : 'canvas');
             setViewerReady(true);
             setIsLoading(false);
 
-            // Fit to screen
             const tiledImage = viewer.world.getItemAt(0);
             const bounds = tiledImage.getBounds();
             viewer.viewport.fitBounds(bounds, true);
             viewer.viewport.applyConstraints(true);
 
-            // Initialize tile optimizer
-            tileOptimizer.start();
-
-            // Initialize hotspots after a short delay
-            setTimeout(() => {
-                initializeHotspotSystem();
-                if (viewportManager && spatialIndex && audioEngine) {
-                    const viewport = viewportManager.getCurrentViewport();
-                    const visibleHotspots = spatialIndex.queryViewport(viewport.bounds, viewport.zoom);
-                    audioEngine.preloadHotspots(visibleHotspots);
-                }
-            }, 100);
+            components.tileOptimizer.start();
+            setTimeout(() => initializeHotspotSystem(), 100);
         });
 
-        // Optimize tile rendering based on render mode
         viewer.addHandler('tile-loaded', (event) => {
-            if (event.tile && event.tile.element && renderOptimizer && renderOptimizer.getRenderMode() === 'static') {
-                const element = event.tile.element;
-
-                // Apply optimization based on current render mode
-                if (!renderOptimizer.isCurrentlyAnimating()) {
-                    // Force integer positioning
-                    if (performanceConfig.renderOptimization.forceIntegerPositions) {
-                        const transform = element.style.transform;
-                        if (transform && transform.includes('translate')) {
-                            element.style.transform = transform.replace(
-                                /translate\(([^,]+),([^)]+)\)/,
-                                (match, x, y) => {
-                                    const intX = Math.round(parseFloat(x));
-                                    const intY = Math.round(parseFloat(y));
-                                    return `translate(${intX}px, ${intY}px)`;
-                                }
-                            );
-                        }
-                    }
-
-                    element.style.imageRendering = 'pixelated';
-                    element.style.transform += ' translateZ(0)';
-                    element.style.willChange = 'transform';
-                    element.style.backfaceVisibility = 'hidden';
-                }
+            if (event.tile?.element && components.renderOptimizer?.getRenderMode() === 'static') {
+                optimizeTileElement(event.tile.element);
             }
 
-            // Track tile load times for optimization
-            if (event.tile && tileOptimizer) {
+            if (event.tile && components.tileOptimizer) {
                 const loadTime = event.tile.loadTime || event.tiledImage?.lastResetTime || 100;
-                tileOptimizer.trackLoadTime(loadTime);
+                components.tileOptimizer.trackLoadTime(loadTime);
 
-                // Remove from loading set
-                const level = event.tile.level || 0;
-                const x = event.tile.x || 0;
-                const y = event.tile.y || 0;
-                const tileKey = `${level}_${x}_${y}`;
-                tileOptimizer.loadingTiles.delete(tileKey);
+                const tileKey = `${event.tile.level || 0}_${event.tile.x || 0}_${event.tile.y || 0}`;
+                components.tileOptimizer.loadingTiles.delete(tileKey);
             }
         });
 
-        // Monitor performance and adjust settings
         viewer.addHandler('animation', () => {
-            if (performanceMonitor) {
-                const metrics = performanceMonitor.getMetrics();
+            if (components.performanceMonitor) {
+                const metrics = components.performanceMonitor.getMetrics();
                 if (metrics.averageFPS < performanceConfig.debug.warnThreshold.fps) {
-                    // Dynamic quality adjustment
-                    adjustSettingsForPerformance(
-                        metrics.averageFPS,
-                        metrics.memoryUsage
-                    );
+                    adjustSettingsForPerformance(metrics.averageFPS, metrics.memoryUsage);
                 }
             }
         });
 
-        // Update visible content with optimized debouncing
         const updateVisibleContent = () => {
-            if (updateTimer) clearTimeout(updateTimer);
-            updateTimer = setTimeout(() => {
+            if (intervals.updateTimer) clearTimeout(intervals.updateTimer);
+            intervals.updateTimer = setTimeout(() => {
+                const { viewportManager, spatialIndex, audioEngine } = components;
                 if (!viewportManager || !spatialIndex || !audioEngine) return;
+
                 const viewport = viewportManager.getCurrentViewport();
                 const visibleHotspots = spatialIndex.queryViewport(viewport.bounds, viewport.zoom);
                 audioEngine.preloadHotspots(visibleHotspots);
@@ -321,10 +251,67 @@ function ArtworkViewer(props) {
         };
 
         viewer.addHandler('viewport-change', updateVisibleContent);
+    };
 
-        // Optimized resize handling
-        resizeObserver = new ResizeObserver((entries) => {
-            if (!viewer || !viewer.viewport || !viewer.isOpen()) return;
+    const optimizeTileElement = (element) => {
+        if (!components.renderOptimizer.isCurrentlyAnimating() && performanceConfig.renderOptimization.forceIntegerPositions) {
+            const transform = element.style.transform;
+            if (transform?.includes('translate')) {
+                element.style.transform = transform.replace(
+                    /translate\(([^,]+),([^)]+)\)/,
+                    (match, x, y) => `translate(${Math.round(parseFloat(x))}px, ${Math.round(parseFloat(y))}px)`
+                );
+            }
+        }
+
+        element.style.imageRendering = 'pixelated';
+        element.style.transform += ' translateZ(0)';
+        element.style.willChange = 'transform';
+        element.style.backfaceVisibility = 'hidden';
+    };
+
+    const setupKeyboardHandler = () => {
+        const keyActions = {
+            '+': () => viewer.viewport.zoomBy(performanceConfig.viewer.zoomPerScroll),
+            '=': () => viewer.viewport.zoomBy(performanceConfig.viewer.zoomPerScroll),
+            '-': () => viewer.viewport.zoomBy(1 / performanceConfig.viewer.zoomPerScroll),
+            '_': () => viewer.viewport.zoomBy(1 / performanceConfig.viewer.zoomPerScroll),
+            '0': () => viewer.viewport.goHome(),
+            'ArrowLeft': () => viewer.viewport.panBy(new OpenSeadragon.Point(-0.1, 0)),
+            'ArrowRight': () => viewer.viewport.panBy(new OpenSeadragon.Point(0.1, 0)),
+            'ArrowUp': () => viewer.viewport.panBy(new OpenSeadragon.Point(0, -0.1)),
+            'ArrowDown': () => viewer.viewport.panBy(new OpenSeadragon.Point(0, 0.1)),
+            'f': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
+            'F': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
+            'r': () => viewer.forceRedraw(),
+            'd': () => {
+                const showFPS = !performanceConfig.debug.showFPS;
+                performanceConfig.debug.showFPS = showFPS;
+                performanceConfig.debug.showMetrics = showFPS;
+                if (showFPS) {
+                    components.performanceMonitor.enableDebugOverlay();
+                } else {
+                    components.performanceMonitor.disableDebugOverlay();
+                }
+            }
+        };
+
+        intervals.handleKeyPress = (event) => {
+            if (!viewer) return;
+            const action = keyActions[event.key];
+            if (action) {
+                event.preventDefault();
+                action();
+                viewer.viewport.applyConstraints();
+            }
+        };
+
+        window.addEventListener('keydown', intervals.handleKeyPress);
+    };
+
+    const setupResizeObserver = () => {
+        components.resizeObserver = new ResizeObserver((entries) => {
+            if (!viewer?.viewport || !viewer.isOpen()) return;
 
             for (let entry of entries) {
                 const { width, height } = entry.contentRect;
@@ -341,76 +328,29 @@ function ArtworkViewer(props) {
                 }
             }
         });
-        resizeObserver.observe(viewerRef);
+        components.resizeObserver.observe(viewerRef);
+    };
 
-        // Keyboard navigation
-        handleKeyPress = (event) => {
-            if (!viewer) return;
-
-            const handlers = {
-                '+': () => viewer.viewport.zoomBy(performanceConfig.viewer.zoomPerScroll),
-                '=': () => viewer.viewport.zoomBy(performanceConfig.viewer.zoomPerScroll),
-                '-': () => viewer.viewport.zoomBy(1 / performanceConfig.viewer.zoomPerScroll),
-                '_': () => viewer.viewport.zoomBy(1 / performanceConfig.viewer.zoomPerScroll),
-                '0': () => viewer.viewport.goHome(),
-                'ArrowLeft': () => viewer.viewport.panBy(new OpenSeadragon.Point(-0.1, 0)),
-                'ArrowRight': () => viewer.viewport.panBy(new OpenSeadragon.Point(0.1, 0)),
-                'ArrowUp': () => viewer.viewport.panBy(new OpenSeadragon.Point(0, -0.1)),
-                'ArrowDown': () => viewer.viewport.panBy(new OpenSeadragon.Point(0, 0.1)),
-                'f': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
-                'F': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
-                'r': () => viewer.forceRedraw(),
-                'd': () => {
-                    // Toggle debug mode
-                    const showFPS = !performanceConfig.debug.showFPS;
-                    performanceConfig.debug.showFPS = showFPS;
-                    performanceConfig.debug.showMetrics = showFPS;
-                    if (showFPS) {
-                        performanceMonitor.enableDebugOverlay();
-                    } else {
-                        performanceMonitor.disableDebugOverlay();
-                    }
-                }
-            };
-
-            const handler = handlers[event.key];
-            if (handler) {
-                event.preventDefault();
-                handler();
-                viewer.viewport.applyConstraints();
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyPress);
-
-        // Memory monitoring
+    const startMemoryMonitoring = () => {
         if (performance.memory) {
-            setInterval(() => {
+            intervals.memory = setInterval(() => {
                 const memUsage = performance.memory.usedJSHeapSize / 1048576;
                 if (memUsage > performanceConfig.memory.criticalMemoryThreshold) {
                     console.warn(`Critical memory usage: ${memUsage.toFixed(2)} MB`);
-                    // Force garbage collection if available
-                    if (viewer.world && viewer.world.getItemCount() > 0) {
-                        const tiledImage = viewer.world.getItemAt(0);
-                        if (tiledImage && tiledImage._tileCache) {
-                            // Clear old tiles
-                            tileOptimizer.clearOldTiles();
-                        }
+                    if (viewer.world?.getItemCount() > 0) {
+                        components.tileOptimizer?.clearOldTiles();
                     }
                 }
             }, performanceConfig.memory.gcInterval);
         }
-
-        // Setup cleanup
-        onCleanup(cleanup);
-    });
+    };
 
     const initializeHotspotSystem = () => {
         if (!viewer) return;
 
-        renderer = new NativeHotspotRenderer({
+        components.renderer = new NativeHotspotRenderer({
             viewer: viewer,
-            spatialIndex: spatialIndex,
+            spatialIndex: components.spatialIndex,
             onHotspotHover: setHoveredHotspot,
             onHotspotClick: handleHotspotClick,
             visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
@@ -425,12 +365,11 @@ function ArtworkViewer(props) {
         console.log('Hotspot clicked:', hotspot);
         setSelectedHotspot(hotspot);
 
-        if (audioEngine && hotspot.audioUrl) {
-            audioEngine.play(hotspot.id);
+        if (components.audioEngine && hotspot.audioUrl) {
+            components.audioEngine.play(hotspot.id);
         }
     };
 
-    // Mobile controls
     const handleZoomIn = () => {
         viewer.viewport.zoomBy(performanceConfig.viewer.zoomPerClick);
         viewer.viewport.applyConstraints();
@@ -447,7 +386,6 @@ function ArtworkViewer(props) {
 
     return (
         <div class="viewer-container">
-            {/* Preview for instant display */}
             {previewLoaded() && !viewerReady() && (
                 <img
                     src={`/images/tiles/${props.artworkId}/preview.jpg`}
@@ -464,7 +402,6 @@ function ArtworkViewer(props) {
                 </div>
             )}
 
-            {/* Debug info */}
             {viewerReady() && performanceConfig.debug.showMetrics && (
                 <div class="debug-info">
                     <div>Hovered: {hoveredHotspot()?.id || 'none'}</div>
@@ -475,7 +412,6 @@ function ArtworkViewer(props) {
                 </div>
             )}
 
-            {/* Keyboard shortcuts */}
             {viewerReady() && window.innerWidth > 768 && (
                 <div class="shortcuts-info">
                     <details>
@@ -492,7 +428,6 @@ function ArtworkViewer(props) {
                 </div>
             )}
 
-            {/* Mobile controls */}
             {viewerReady() && window.innerWidth <= 768 && (
                 <div class="mobile-controls">
                     <button class="zoom-btn zoom-in" onClick={handleZoomIn}>+</button>
@@ -501,30 +436,21 @@ function ArtworkViewer(props) {
                 </div>
             )}
 
-            {/* Hotspot legend */}
             {viewerReady() && (
                 <div class="hotspot-legend">
                     <h3>Hotspot Types</h3>
-                    <div class="legend-item">
-                        <div class="legend-color audio-only"></div>
-                        <span>Audio Only</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color audio-link"></div>
-                        <span>Audio + Link</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color audio-image"></div>
-                        <span>Audio + Image</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color audio-image-link"></div>
-                        <span>Audio + Image + Link</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color audio-sound"></div>
-                        <span>Audio + Sound</span>
-                    </div>
+                    {[
+                        { type: 'audio-only', label: 'Audio Only' },
+                        { type: 'audio-link', label: 'Audio + Link' },
+                        { type: 'audio-image', label: 'Audio + Image' },
+                        { type: 'audio-image-link', label: 'Audio + Image + Link' },
+                        { type: 'audio-sound', label: 'Audio + Sound' }
+                    ].map(({ type, label }) => (
+                        <div class="legend-item">
+                            <div class={`legend-color ${type}`}></div>
+                            <span>{label}</span>
+                        </div>
+                    ))}
                 </div>
             )}
         </div>
