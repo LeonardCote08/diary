@@ -341,6 +341,59 @@
     font-size: 20px;
 }
 
+/* Expand to Full View button container */
+.expand-button-container {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateX(-50%) translateY(100px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Expand to Full View button */
+.expand-button {
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+}
+
+    .expand-button:hover {
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.6);
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .expand-button:active {
+        transform: scale(0.98);
+    }
+
 /* Keyboard shortcuts info */
 .shortcuts-info {
     position: absolute;
@@ -465,6 +518,16 @@
         height: 36px !important;
         font-size: 16px !important;
         margin: 3px !important;
+    }
+
+    /* Move expand button higher on mobile to avoid controls */
+    .expand-button-container {
+        bottom: 60px;
+    }
+
+    .expand-button {
+        font-size: 14px;
+        padding: 10px 20px;
     }
 }
 

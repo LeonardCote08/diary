@@ -1,4 +1,4 @@
-import { onMount, createSignal, onCleanup } from 'solid-js';
+import { onMount, createSignal, onCleanup, Show } from 'solid-js';
 import OpenSeadragon from 'openseadragon';
 import NativeHotspotRenderer from '../core/NativeHotspotRenderer';
 import ViewportManager from '../core/ViewportManager';
@@ -43,6 +43,14 @@ function ArtworkViewer(props) {
     const [selectedHotspot, setSelectedHotspot] = createSignal(null);
     const [viewerReady, setViewerReady] = createSignal(false);
     const [previewLoaded, setPreviewLoaded] = createSignal(false);
+    const [showExpandButton, setShowExpandButton] = createSignal(false);
+    const [isZoomingToHotspot, setIsZoomingToHotspot] = createSignal(false);
+
+    // Check if device is mobile
+    const isMobile = () => window.innerWidth <= 768;
+
+    // Store initial viewport for "Expand to Full View"
+    let homeViewport = null;
 
     const cleanup = () => {
         if (intervals.handleKeyPress) {
@@ -141,17 +149,17 @@ function ArtworkViewer(props) {
             showFullPageControl: false,
             showRotationControl: false,
 
-            // Input
+            // Input - DISABLED double-click zoom
             gestureSettingsMouse: {
                 scrollToZoom: true,
                 clickToZoom: false,
-                dblClickToZoom: true,
+                dblClickToZoom: false,  // DISABLED
                 flickEnabled: config.flickEnabled
             },
             gestureSettingsTouch: {
                 scrollToZoom: false,
                 clickToZoom: false,
-                dblClickToZoom: true,
+                dblClickToZoom: false,  // DISABLED
                 flickEnabled: config.flickEnabled,
                 flickMinSpeed: config.flickMinSpeed,
                 flickMomentum: config.flickMomentum,
@@ -244,6 +252,9 @@ function ArtworkViewer(props) {
             viewer.viewport.fitBounds(bounds, true);
             viewer.viewport.applyConstraints(true);
 
+            // Store home viewport for "Expand to Full View"
+            homeViewport = viewer.viewport.getHomeBounds();
+
             setTimeout(() => initializeHotspotSystem(), 100);
         });
 
@@ -278,6 +289,17 @@ function ArtworkViewer(props) {
                         };
                         components.tileCleanupManager.setPressure(pressureMap[performanceMode] || 'normal');
                     }
+                }
+            }
+        });
+
+        // Handle zoom animation completion
+        viewer.addHandler('animation-finish', () => {
+            if (isZoomingToHotspot()) {
+                setIsZoomingToHotspot(false);
+                // Force update hotspot positions after zoom
+                if (components.renderer) {
+                    components.renderer.updateVisibility();
                 }
             }
         });
@@ -380,11 +402,17 @@ function ArtworkViewer(props) {
                 if (width > 0 && height > 0) {
                     requestAnimationFrame(() => {
                         try {
-                            viewer.viewport.resize();
-                            viewer.viewport.applyConstraints();
-                            viewer.forceRedraw();
+                            // Check if viewer is still valid before resize
+                            if (viewer && viewer.viewport && viewer.isOpen()) {
+                                viewer.viewport.resize();
+                                viewer.viewport.applyConstraints();
+                                viewer.forceRedraw();
+                            }
                         } catch (error) {
-                            console.warn('Resize error:', error);
+                            // Silently handle resize errors - they're usually transient
+                            if (error.message && !error.message.includes('undefined')) {
+                                console.warn('Resize error:', error);
+                            }
                         }
                     });
                 }
@@ -409,13 +437,196 @@ function ArtworkViewer(props) {
         });
     };
 
-    const handleHotspotClick = (hotspot) => {
-        console.log('Hotspot clicked:', hotspot);
+    /**
+     * Calculate optimal bounds for hotspot zoom with padding
+     */
+    const calculateHotspotBounds = (hotspot) => {
+        const overlay = components.renderer?.overlays.get(hotspot.id);
+
+        if (!overlay) {
+            // Fallback: use coordinates directly if available
+            if (hotspot.coordinates) {
+                // Calculate bounds from coordinates
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+                const processCoords = (coords) => {
+                    if (Array.isArray(coords[0]) && typeof coords[0][0] === 'number') {
+                        // Single polygon
+                        coords.forEach(([x, y]) => {
+                            minX = Math.min(minX, x);
+                            minY = Math.min(minY, y);
+                            maxX = Math.max(maxX, x);
+                            maxY = Math.max(maxY, y);
+                        });
+                    } else {
+                        // Multiple polygons
+                        coords.forEach(polygon => {
+                            polygon.forEach(([x, y]) => {
+                                minX = Math.min(minX, x);
+                                minY = Math.min(minY, y);
+                                maxX = Math.max(maxX, x);
+                                maxY = Math.max(maxY, y);
+                            });
+                        });
+                    }
+                };
+
+                processCoords(hotspot.coordinates);
+
+                const bounds = { minX, minY, maxX, maxY };
+
+                // Convert to viewport coordinates
+                const topLeft = viewer.viewport.imageToViewportCoordinates(
+                    new OpenSeadragon.Point(bounds.minX, bounds.minY)
+                );
+                const bottomRight = viewer.viewport.imageToViewportCoordinates(
+                    new OpenSeadragon.Point(bounds.maxX, bounds.maxY)
+                );
+
+                // Calculate bounds with padding
+                const width = bottomRight.x - topLeft.x;
+                const height = bottomRight.y - topLeft.y;
+
+                // Different padding for mobile vs desktop
+                const paddingFactor = isMobile() ? 0.5 : 0.3; // More padding on mobile
+                const paddingX = width * paddingFactor;
+                const paddingY = height * paddingFactor;
+
+                return new OpenSeadragon.Rect(
+                    topLeft.x - paddingX,
+                    topLeft.y - paddingY,
+                    width + (paddingX * 2),
+                    height + (paddingY * 2)
+                );
+            }
+            return null;
+        }
+
+        const bounds = overlay.bounds;
+        const tiledImage = viewer.world.getItemAt(0);
+        const imageSize = tiledImage.getContentSize();
+
+        // Convert to viewport coordinates
+        const topLeft = viewer.viewport.imageToViewportCoordinates(
+            new OpenSeadragon.Point(bounds.minX, bounds.minY)
+        );
+        const bottomRight = viewer.viewport.imageToViewportCoordinates(
+            new OpenSeadragon.Point(bounds.maxX, bounds.maxY)
+        );
+
+        // Calculate bounds with padding
+        const width = bottomRight.x - topLeft.x;
+        const height = bottomRight.y - topLeft.y;
+
+        // Different padding for mobile vs desktop
+        const paddingFactor = isMobile() ? 0.5 : 0.3; // More padding on mobile
+        const paddingX = width * paddingFactor;
+        const paddingY = height * paddingFactor;
+
+        return new OpenSeadragon.Rect(
+            topLeft.x - paddingX,
+            topLeft.y - paddingY,
+            width + (paddingX * 2),
+            height + (paddingY * 2)
+        );
+    };
+
+    /**
+     * Smooth zoom to hotspot
+     */
+    const zoomToHotspot = async (hotspot) => {
+        if (!viewer || isZoomingToHotspot()) {
+            return;
+        }
+
+        const bounds = calculateHotspotBounds(hotspot);
+
+        if (!bounds) {
+            return;
+        }
+
+        setIsZoomingToHotspot(true);
+
+        // Store current animation settings
+        const originalAnimationTime = viewer.animationTime;
+        const originalSpringStiffness = viewer.springStiffness;
+
+        // Set smoother animation for zoom
+        viewer.animationTime = 0.8; // Slower, smoother animation
+        viewer.springStiffness = 6.5; // Less stiff for smoothness
+
+        // Fit to bounds with smooth animation
+        viewer.viewport.fitBounds(bounds, false);
+
+        // Restore original settings after animation starts
+        setTimeout(() => {
+            viewer.animationTime = originalAnimationTime;
+            viewer.springStiffness = originalSpringStiffness;
+        }, 100);
+
+        // Force update of hotspot overlays after zoom animation
+        setTimeout(() => {
+            if (components.renderer) {
+                components.renderer.updateVisibility();
+                // Force redraw to ensure overlays are properly positioned
+                viewer.forceRedraw();
+            }
+        }, 850); // After animation completes
+
+        // Show expand button on mobile after zoom
+        if (isMobile()) {
+            setShowExpandButton(true);
+        }
+    };
+
+    /**
+     * Handle hotspot click with zoom behavior
+     */
+    const handleHotspotClick = async (hotspot) => {
         setSelectedHotspot(hotspot);
 
-        if (components.audioEngine && hotspot.audioUrl) {
-            components.audioEngine.play(hotspot.id);
+        // Zoom behavior
+        if (isMobile()) {
+            // Mobile: Always zoom to hotspot
+            await zoomToHotspot(hotspot);
+        } else {
+            // Desktop: Optional subtle zoom (can be disabled if not desired)
+            // For now, implementing a subtle zoom as per specs allow pan/zoom freely
+            const currentZoom = viewer.viewport.getZoom();
+            const minZoomForDetail = 2; // Minimum zoom to see details clearly
+
+            if (currentZoom < minZoomForDetail) {
+                await zoomToHotspot(hotspot);
+            }
         }
+
+        // Play audio after zoom animation
+        const audioDelay = isMobile() ? 800 : 100;
+
+        setTimeout(() => {
+            if (components.audioEngine && hotspot.audioUrl) {
+                components.audioEngine.play(hotspot.id);
+            }
+        }, audioDelay);
+    };
+
+    /**
+     * Expand to full view (mobile only)
+     */
+    const expandToFullView = () => {
+        if (!viewer || !homeViewport) return;
+
+        setShowExpandButton(false);
+
+        // Smooth animation to home
+        const originalAnimationTime = viewer.animationTime;
+        viewer.animationTime = 0.8;
+
+        viewer.viewport.fitBounds(homeViewport, false);
+
+        setTimeout(() => {
+            viewer.animationTime = originalAnimationTime;
+        }, 100);
     };
 
     const handleZoomIn = () => {
@@ -430,27 +641,28 @@ function ArtworkViewer(props) {
 
     const handleHome = () => {
         viewer.viewport.goHome();
+        setShowExpandButton(false);
     };
 
     return (
         <div class="viewer-container">
-            {previewLoaded() && !viewerReady() && (
+            <Show when={previewLoaded() && !viewerReady()}>
                 <img
                     src={`/images/tiles/${props.artworkId}_1024/preview.jpg`}
                     class="preview-image"
                     alt="Loading preview"
                 />
-            )}
+            </Show>
 
             <div ref={viewerRef} class="openseadragon-viewer" />
 
-            {isLoading() && (
+            <Show when={isLoading()}>
                 <div class="viewer-loading">
                     <p>Loading high-resolution artwork...</p>
                 </div>
-            )}
+            </Show>
 
-            {viewerReady() && performanceConfig.debug.showMetrics && (
+            <Show when={viewerReady() && performanceConfig.debug.showMetrics}>
                 <div class="debug-info">
                     <div>Hovered: {hoveredHotspot()?.id || 'none'}</div>
                     <div>Selected: {selectedHotspot()?.id || 'none'}</div>
@@ -458,9 +670,9 @@ function ArtworkViewer(props) {
                     <div>Total hotspots: {hotspotData.length}</div>
                     <div>Drawer: {viewer?.drawer?.getType ? viewer.drawer.getType() : 'canvas'}</div>
                 </div>
-            )}
+            </Show>
 
-            {viewerReady() && window.innerWidth > 768 && (
+            <Show when={viewerReady() && window.innerWidth > 768}>
                 <div class="shortcuts-info">
                     <details>
                         <summary>Keyboard Shortcuts</summary>
@@ -476,17 +688,26 @@ function ArtworkViewer(props) {
                         </div>
                     </details>
                 </div>
-            )}
+            </Show>
 
-            {viewerReady() && window.innerWidth <= 768 && (
+            <Show when={viewerReady() && window.innerWidth <= 768}>
                 <div class="mobile-controls">
                     <button class="zoom-btn zoom-in" onClick={handleZoomIn}>+</button>
                     <button class="zoom-btn zoom-out" onClick={handleZoomOut}>−</button>
                     <button class="zoom-btn zoom-home" onClick={handleHome}>⌂</button>
                 </div>
-            )}
+            </Show>
 
-            {viewerReady() && (
+            {/* Expand to Full View button for mobile */}
+            <Show when={viewerReady() && showExpandButton() && isMobile()}>
+                <div class="expand-button-container">
+                    <button class="expand-button" onClick={expandToFullView}>
+                        ↗ Expand to Full View
+                    </button>
+                </div>
+            </Show>
+
+            <Show when={viewerReady()}>
                 <div class="hotspot-legend">
                     <h3>Hotspot Types</h3>
                     {[
@@ -502,7 +723,7 @@ function ArtworkViewer(props) {
                         </div>
                     ))}
                 </div>
-            )}
+            </Show>
         </div>
     );
 }

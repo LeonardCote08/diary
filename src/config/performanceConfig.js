@@ -33,6 +33,7 @@ const performanceConfig = {
         flickMinSpeed: 120,
         flickMomentum: 0.25,
 
+
         // Zoom settings
         zoomPerScroll: 1.2,           // Slightly smaller steps for control
         zoomPerClick: 2.0,
@@ -176,7 +177,7 @@ const performanceConfig = {
     // Debug
     debug: {
         showFPS: false,               // Off by default
-        showMetrics: false,
+        showMetrics: true,
         logPerformance: false,
         warnThreshold: {
             fps: 45,

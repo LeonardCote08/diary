@@ -20,6 +20,11 @@ class NativeHotspotRenderer {
         this.hoveredHotspot = null;
         this.selectedHotspot = null;
 
+        // Track mouse state
+        this.mouseTracker = null;
+        this.clickStartTime = 0;
+        this.clickStartPoint = null;
+
         this.initStyles();
         this.init();
     }
@@ -69,6 +74,7 @@ class NativeHotspotRenderer {
         });
 
         await this.loadHotspotsInBatches();
+        this.setupMouseTracking();
         this.startVisibilityTracking();
     }
 
@@ -76,7 +82,7 @@ class NativeHotspotRenderer {
         const svgString = `<svg xmlns="http://www.w3.org/2000/svg" 
                                width="${imageSize.x}" height="${imageSize.y}" 
                                viewBox="0 0 ${imageSize.x} ${imageSize.y}"
-                               style="position: absolute; width: 100%; height: 100%;"></svg>`;
+                               style="position: absolute; width: 100%; height: 100%; pointer-events: none;"></svg>`;
 
         return new DOMParser().parseFromString(svgString, 'image/svg+xml').documentElement;
     }
@@ -107,7 +113,6 @@ class NativeHotspotRenderer {
         paths.forEach(path => g.appendChild(path));
 
         this.applyStyle(g, hotspot.type, 'normal');
-        this.setupEventListeners(g, hotspot);
 
         this.svg.appendChild(g);
 
@@ -123,7 +128,7 @@ class NativeHotspotRenderer {
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         Object.assign(g.style, {
             cursor: 'pointer',
-            pointerEvents: 'auto',
+            pointerEvents: 'painted',
             opacity: '0',
             transition: 'opacity 0.2s ease-out'
         });
@@ -138,24 +143,113 @@ class NativeHotspotRenderer {
 
         path.setAttribute('d', d);
         path.setAttribute('vector-effect', 'non-scaling-stroke');
+        path.style.pointerEvents = 'painted';
         return path;
     }
 
-    setupEventListeners(element, hotspot) {
-        const events = {
-            pointerenter: () => this.handleHover(hotspot, true),
-            pointerleave: () => this.handleHover(hotspot, false),
-            click: (e) => this.handleClick(e, hotspot),
-            touchstart: () => this.handleHover(hotspot, true),
-            touchend: () => {
-                this.handleHover(hotspot, false);
-                this.handleClick(event, hotspot);
-            }
-        };
+    setupMouseTracking() {
+        // Create mouse tracker on the viewer canvas
+        this.mouseTracker = new OpenSeadragon.MouseTracker({
+            element: this.viewer.canvas,
 
-        Object.entries(events).forEach(([event, handler]) =>
-            element.addEventListener(event, handler, { passive: true })
-        );
+            moveHandler: (event) => {
+                this.handleMouseMove(event);
+            },
+
+            pressHandler: (event) => {
+                this.clickStartTime = Date.now();
+                this.clickStartPoint = event.position;
+            },
+
+            releaseHandler: (event) => {
+                if (this.clickStartPoint) {
+                    const deltaTime = Date.now() - this.clickStartTime;
+                    const deltaX = Math.abs(event.position.x - this.clickStartPoint.x);
+                    const deltaY = Math.abs(event.position.y - this.clickStartPoint.y);
+
+                    // Check if it's a click (not a drag)
+                    if (deltaTime < 300 && deltaX < 5 && deltaY < 5) {
+                        this.handleClick(event);
+                    }
+                }
+                this.clickStartPoint = null;
+            }
+        });
+    }
+
+    handleMouseMove(event) {
+        const viewportPoint = this.viewer.viewport.pointFromPixel(event.position);
+        const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
+
+        // Find hotspot under cursor
+        let foundHotspot = null;
+
+        this.overlays.forEach((overlay, id) => {
+            if (overlay.isVisible && this.isPointInHotspot(imagePoint, overlay)) {
+                foundHotspot = overlay.hotspot;
+            }
+        });
+
+        // Update hover state
+        if (foundHotspot !== this.hoveredHotspot) {
+            if (this.hoveredHotspot) {
+                const prevOverlay = this.overlays.get(this.hoveredHotspot.id);
+                if (prevOverlay) {
+                    this.applyStyle(prevOverlay.element, this.hoveredHotspot.type,
+                        this.hoveredHotspot === this.selectedHotspot ? 'selected' : 'normal');
+                }
+            }
+
+            this.hoveredHotspot = foundHotspot;
+            this.onHotspotHover(foundHotspot);
+
+            if (foundHotspot) {
+                const overlay = this.overlays.get(foundHotspot.id);
+                if (overlay) {
+                    this.applyStyle(overlay.element, foundHotspot.type, 'hover');
+                }
+            }
+        }
+    }
+
+    handleClick(event) {
+        const viewportPoint = this.viewer.viewport.pointFromPixel(event.position);
+        const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
+
+        // Find clicked hotspot
+        let clickedHotspot = null;
+
+        this.overlays.forEach((overlay, id) => {
+            if (overlay.isVisible && this.isPointInHotspot(imagePoint, overlay)) {
+                clickedHotspot = overlay.hotspot;
+            }
+        });
+
+        if (clickedHotspot) {
+            this.selectedHotspot = clickedHotspot;
+            this.onHotspotClick(clickedHotspot);
+
+            // Update visual state
+            this.overlays.forEach((overlay, id) => {
+                const state = id === clickedHotspot.id ? 'selected' :
+                    (id === this.hoveredHotspot?.id ? 'hover' : 'normal');
+                this.applyStyle(overlay.element, overlay.hotspot.type, state);
+            });
+        }
+    }
+
+    isPointInHotspot(point, overlay) {
+        const bounds = overlay.bounds;
+
+        // Quick bounds check first
+        if (point.x < bounds.minX || point.x > bounds.maxX ||
+            point.y < bounds.minY || point.y > bounds.maxY) {
+            return false;
+        }
+
+        // For now, just use bounds check
+        // Could implement proper polygon point-in-polygon test if needed
+        return true;
     }
 
     applyStyle(group, type, state) {
@@ -200,12 +294,22 @@ class NativeHotspotRenderer {
 
         const scheduleUpdate = () => {
             if (updateTimer) clearTimeout(updateTimer);
-            updateTimer = setTimeout(() => this.updateVisibility(), this.renderDebounceTime);
+            updateTimer = setTimeout(() => {
+                this.updateVisibility();
+            }, this.renderDebounceTime);
         };
 
         this.viewer.addHandler('animation', scheduleUpdate);
-        this.viewer.addHandler('animation-finish', () => this.updateVisibility());
+        this.viewer.addHandler('animation-finish', () => {
+            this.updateVisibility();
+        });
 
+        // Also update on viewport change to ensure overlays stay in sync
+        this.viewer.addHandler('viewport-change', () => {
+            scheduleUpdate();
+        });
+
+        // Initial update
         this.updateVisibility();
     }
 
@@ -247,50 +351,33 @@ class NativeHotspotRenderer {
             }
         });
 
+        // Force update overlay positions after zoom
+        if (this.viewer.world.getItemCount() > 0) {
+            this.viewer.updateOverlay(this.svg);
+        }
+
         if (visibleCount > 100) {
             console.log(`Performance note: ${visibleCount} hotspots visible`);
         }
     }
 
     boundsIntersect(a, b) {
-        return !(a.maxX < b.minX || a.minX > b.maxX || a.maxY < b.minY || a.minY > b.maxY);
-    }
-
-    handleHover(hotspot, isHovering) {
-        if (isHovering) {
-            this.hoveredHotspot = hotspot;
-            this.onHotspotHover(hotspot);
-
-            const overlay = this.overlays.get(hotspot.id);
-            if (overlay && hotspot.id !== this.selectedHotspot?.id) {
-                this.applyStyle(overlay.element, hotspot.type, 'hover');
-            }
-        } else if (this.hoveredHotspot?.id === hotspot.id) {
-            this.hoveredHotspot = null;
-            this.onHotspotHover(null);
-
-            const overlay = this.overlays.get(hotspot.id);
-            if (overlay && hotspot.id !== this.selectedHotspot?.id) {
-                this.applyStyle(overlay.element, hotspot.type, 'normal');
-            }
-        }
-    }
-
-    handleClick(event, hotspot) {
-        event.stopPropagation();
-        this.selectedHotspot = hotspot;
-        this.onHotspotClick(hotspot);
-
-        this.overlays.forEach((overlay, id) => {
-            const state = id === hotspot.id ? 'selected' :
-                (id === this.hoveredHotspot?.id ? 'hover' : 'normal');
-            this.applyStyle(overlay.element, overlay.hotspot.type, state);
-        });
+        return !(
+            a.maxX < b.minX ||
+            a.minX > b.maxX ||
+            a.maxY < b.minY ||
+            a.minY > b.maxY
+        );
     }
 
     destroy() {
+        if (this.mouseTracker) {
+            this.mouseTracker.destroy();
+        }
+
         this.viewer.removeAllHandlers('animation');
         this.viewer.removeAllHandlers('animation-finish');
+        this.viewer.removeAllHandlers('viewport-change');
 
         if (this.svg) {
             this.viewer.removeOverlay(this.svg);

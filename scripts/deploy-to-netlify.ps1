@@ -7,9 +7,12 @@ Write-Host " DEPLOY TO NETLIFY" -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
+# Store current location
+$originalLocation = Get-Location
+
 # Configuration
-$productionRepoPath = "..\diary-production"  # Adjust path as needed
-$productionRepoUrl = "https://github.com/YOUR_USERNAME/diary-production.git"  # Update with your repo
+$productionRepoPath = "C:\Users\Utilisateur\Leo\diary-production"  # Adjust path as needed
+$productionRepoUrl = "https://github.com/LeonardCote08/diary-production"  # Update with your repo
 
 # Check if production repo exists
 if (-not (Test-Path $productionRepoPath)) {
@@ -30,10 +33,10 @@ if (-not (Test-Path $productionRepoPath)) {
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Failed to clone repository. Creating new one..." -ForegroundColor Yellow
         New-Item -ItemType Directory -Path $productionRepoPath -Force
-        Set-Location $productionRepoPath
+        Push-Location $productionRepoPath
         git init
         git remote add origin $productionRepoUrl
-        Set-Location -
+        Pop-Location
     }
 }
 
@@ -141,11 +144,22 @@ This repository is automatically deployed to Netlify when changes are pushed to 
 
 Set-Content -Path "$productionRepoPath\README.md" -Value $readme
 
+# Store current location
+$originalLocation = Get-Location
+
 # Git operations in production repo
 Write-Host ""
 Write-Host "Committing changes..." -ForegroundColor Yellow
 
 Set-Location $productionRepoPath
+
+# Pull latest changes first to avoid conflicts
+Write-Host "Pulling latest changes from remote..." -ForegroundColor Yellow
+git pull origin main --rebase
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "⚠ Pull failed - attempting to continue anyway" -ForegroundColor Yellow
+}
 
 # Add all files
 git add -A
@@ -199,7 +213,7 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 # Return to original directory
-Set-Location -
+Set-Location $originalLocation
 
 Write-Host ""
 Read-Host "Press Enter to close"
