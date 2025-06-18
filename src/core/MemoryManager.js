@@ -152,8 +152,8 @@ class MemoryManager {
         this.cleanupTileCache(true);
 
         // Clear audio cache if available
-        if (window.audioEngine) {
-            window.audioEngine.clearCache();
+        if (window.audioEngine && typeof window.audioEngine.destroy === 'function') {
+            
         }
 
         // Suggest garbage collection

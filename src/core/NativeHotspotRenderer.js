@@ -2,6 +2,7 @@ import OpenSeadragon from 'openseadragon';
 
 /**
  * NativeHotspotRenderer - OpenSeadragon overlay system for interactive hotspots
+ * FIXED: Prevents panning when clicking on hotspots
  */
 class NativeHotspotRenderer {
     constructor(options = {}) {
@@ -24,6 +25,13 @@ class NativeHotspotRenderer {
         this.mouseTracker = null;
         this.clickStartTime = 0;
         this.clickStartPoint = null;
+
+        // Track if we're over a hotspot
+        this.isOverHotspot = false;
+
+        // Mobile detection
+        this.isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+            ('ontouchstart' in window);
 
         this.initStyles();
         this.init();
@@ -159,6 +167,11 @@ class NativeHotspotRenderer {
             pressHandler: (event) => {
                 this.clickStartTime = Date.now();
                 this.clickStartPoint = event.position;
+
+                // CRITICAL: If we're over a hotspot, prevent the default panning behavior
+                if (this.isOverHotspot) {
+                    event.preventDefaultAction = true;
+                }
             },
 
             releaseHandler: (event) => {
@@ -189,6 +202,9 @@ class NativeHotspotRenderer {
                 foundHotspot = overlay.hotspot;
             }
         });
+
+        // Update isOverHotspot flag
+        this.isOverHotspot = foundHotspot !== null;
 
         // Update hover state
         if (foundHotspot !== this.hoveredHotspot) {
@@ -226,6 +242,9 @@ class NativeHotspotRenderer {
         });
 
         if (clickedHotspot) {
+            console.log(`Hotspot clicked: ${clickedHotspot.id}`);
+            event.preventDefaultAction = true;
+
             this.selectedHotspot = clickedHotspot;
             this.onHotspotClick(clickedHotspot);
 
@@ -235,7 +254,42 @@ class NativeHotspotRenderer {
                     (id === this.hoveredHotspot?.id ? 'hover' : 'normal');
                 this.applyStyle(overlay.element, overlay.hotspot.type, state);
             });
+
+            // On mobile, zoom to hotspot
+            if (this.isMobile) {
+                this.zoomToHotspot(clickedHotspot);
+            }
         }
+    }
+
+    zoomToHotspot(hotspot) {
+        const overlay = this.overlays.get(hotspot.id);
+        if (!overlay) return;
+
+        const bounds = overlay.bounds;
+        const imageSize = this.viewer.world.getItemAt(0).getContentSize();
+
+        // Convert to viewport coordinates
+        const viewportBounds = new OpenSeadragon.Rect(
+            bounds.minX / imageSize.x,
+            bounds.minY / imageSize.y,
+            (bounds.maxX - bounds.minX) / imageSize.x,
+            (bounds.maxY - bounds.minY) / imageSize.y
+        );
+
+        // Add padding
+        const padding = 0.5;
+        const paddingX = viewportBounds.width * padding;
+        const paddingY = viewportBounds.height * padding;
+
+        const zoomBounds = new OpenSeadragon.Rect(
+            viewportBounds.x - paddingX,
+            viewportBounds.y - paddingY,
+            viewportBounds.width + paddingX * 2,
+            viewportBounds.height + paddingY * 2
+        );
+
+        this.viewer.viewport.fitBounds(zoomBounds, false);
     }
 
     isPointInHotspot(point, overlay) {

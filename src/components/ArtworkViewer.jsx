@@ -9,6 +9,7 @@ import RenderOptimizer from '../core/RenderOptimizer';
 import TileOptimizer from '../core/TileOptimizer';
 import MemoryManager from '../core/MemoryManager';
 import TileCleanupManager from '../core/TileCleanupManager';
+import AudioPlayer from './AudioPlayer';
 import performanceConfig, { adjustSettingsForPerformance } from '../config/performanceConfig';
 
 let hotspotData = [];
@@ -45,6 +46,7 @@ function ArtworkViewer(props) {
     const [previewLoaded, setPreviewLoaded] = createSignal(false);
     const [showExpandButton, setShowExpandButton] = createSignal(false);
     const [isZoomingToHotspot, setIsZoomingToHotspot] = createSignal(false);
+    const [currentPlayingHotspot, setCurrentPlayingHotspot] = createSignal(null);
 
     // Check if device is mobile
     const isMobile = () => window.innerWidth <= 768;
@@ -186,6 +188,36 @@ function ArtworkViewer(props) {
             tileOptimizer: new TileOptimizer(viewer),
             memoryManager: new MemoryManager(viewer),
             tileCleanupManager: new TileCleanupManager(viewer)
+        };
+
+        window.audioEngine = components.audioEngine;
+
+        // Setup AudioEngine callbacks
+        components.audioEngine.onPlaybackStart = (hotspotId) => {
+            console.log(`Started playing audio for hotspot ${hotspotId}`);
+            // TODO: Show audio player UI
+        };
+
+        components.audioEngine.onProgress = (progress) => {
+            // Update progress bar in player UI
+            // console.log(`Progress: ${progress.percent.toFixed(1)}%`);
+        };
+
+        components.audioEngine.onPlaybackEnd = (hotspotId) => {
+            console.log(`Finished playing audio for hotspot ${hotspotId}`);
+            // TODO: Auto-advance to next hotspot if enabled
+        };
+
+        components.audioEngine.onError = (hotspotId, error) => {
+            console.error(`Audio error for hotspot ${hotspotId}:`, error);
+        };
+
+        components.audioEngine.onCrossfadeStart = (fromId, toId) => {
+            console.log(`Crossfading from ${fromId} to ${toId}`);
+        };
+
+        components.audioEngine.onCrossfadeEnd = (hotspotId) => {
+            console.log(`Crossfade complete to ${hotspotId}`);
         };
 
         components.spatialIndex.loadHotspots(hotspotData);
@@ -428,7 +460,7 @@ function ArtworkViewer(props) {
             viewer: viewer,
             spatialIndex: components.spatialIndex,
             onHotspotHover: setHoveredHotspot,
-            onHotspotClick: handleHotspotClick,
+            onHotspotClick: handleHotspotClick, 
             visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
             batchSize: performanceConfig.hotspots.batchSize,
             renderDebounceTime: performanceConfig.hotspots.renderDebounceTime,
@@ -583,7 +615,9 @@ function ArtworkViewer(props) {
      * Handle hotspot click with zoom behavior
      */
     const handleHotspotClick = async (hotspot) => {
+        console.log('handleHotspotClick called with:', hotspot);
         setSelectedHotspot(hotspot);
+        setCurrentPlayingHotspot(hotspot);
 
         // Zoom behavior
         if (isMobile()) {
@@ -723,6 +757,14 @@ function ArtworkViewer(props) {
                         </div>
                     ))}
                 </div>
+            </Show>
+
+            {/* Audio Player */}
+            <Show when={viewerReady() && components.audioEngine}>
+                <AudioPlayer
+                    audioEngine={components.audioEngine}
+                    currentHotspot={currentPlayingHotspot}  
+                />
             </Show>
         </div>
     );
