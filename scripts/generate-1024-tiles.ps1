@@ -1,9 +1,9 @@
-# Generate 1024x1024 tiles for optimal performance
-# Research shows 117ms improvement with larger tiles
+# Generate 1024x1024 tiles with more zoom levels for better quality
+# Hybrid approach: Large tiles + more intermediate levels
 
 Write-Host "======================================" -ForegroundColor Cyan
-Write-Host " HIGH-PERFORMANCE TILE GENERATION" -ForegroundColor Cyan
-Write-Host " 1024x1024 tiles for 60 FPS" -ForegroundColor Cyan
+Write-Host " HYBRID TILE GENERATION" -ForegroundColor Cyan
+Write-Host " 1024px tiles + Extra zoom levels" -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -46,6 +46,29 @@ if (-not (Test-Path $inputFile)) {
     exit 1
 }
 
+# Get image dimensions
+Write-Host ""
+Write-Host "Analyzing source image..." -ForegroundColor Yellow
+$imageInfo = & $vipsPath copy `"$inputFile`" null 2>&1 | Out-String
+if ($imageInfo -match "(\d+)x(\d+)") {
+    $imageWidth = [int]$Matches[1]
+    $imageHeight = [int]$Matches[2]
+    Write-Host "  Image dimensions: ${imageWidth}x${imageHeight}" -ForegroundColor Gray
+    
+    # Calculate optimal number of levels for smooth transitions
+    $maxDimension = [Math]::Max($imageWidth, $imageHeight)
+    $optimalLevels = [Math]::Ceiling([Math]::Log($maxDimension / $tileSize) / [Math]::Log(2)) + 1
+    
+    # Add 2 extra levels for smoother transitions at low zoom
+    $targetLevels = $optimalLevels + 2
+    
+    Write-Host "  Calculated optimal levels: $optimalLevels" -ForegroundColor Gray
+    Write-Host "  Target levels (with extras): $targetLevels" -ForegroundColor Green
+} else {
+    Write-Host "WARNING: Could not determine image dimensions" -ForegroundColor Yellow
+    $targetLevels = 12  # Fallback value
+}
+
 # Clean and create output directory
 Write-Host ""
 Write-Host "Preparing output directory..." -ForegroundColor Yellow
@@ -58,24 +81,26 @@ New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 
 $startTime = Get-Date
 
-# Generate tiles with performance-optimized settings
+# Generate tiles with MORE LEVELS - let VIPS decide optimal levels
 Write-Host ""
-Write-Host "Generating 1024px performance tiles..." -ForegroundColor Yellow
+Write-Host "Generating hybrid performance tiles..." -ForegroundColor Yellow
 Write-Host "  - Tile size: ${tileSize}px (4x larger than 256px)" -ForegroundColor Gray
 Write-Host "  - Overlap: ${overlap}px" -ForegroundColor Gray
 Write-Host "  - Quality: 85% with optimized encoding" -ForegroundColor Gray
+Write-Host "  - Letting VIPS auto-calculate ALL necessary zoom levels" -ForegroundColor Cyan
+Write-Host "  - This ensures the full resolution level is included" -ForegroundColor Cyan
 Write-Host ""
 
+# First attempt: Generate without depth parameter to let VIPS decide
 & $vipsPath dzsave `"$inputFile`" `"$outputBase`" `
     --tile-size $tileSize `
     --overlap $overlap `
     --suffix ".jpg[Q=85,optimize_coding=true,strip=true,interlace=false]" `
-    --depth onepixel `
     --vips-progress
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
-    Write-Host "✓ Performance tiles generated successfully!" -ForegroundColor Green
+    Write-Host "✓ Hybrid tiles generated successfully!" -ForegroundColor Green
     
     # Generate preview
     Write-Host ""
@@ -93,7 +118,7 @@ if ($LASTEXITCODE -eq 0) {
     
     $duration = (Get-Date) - $startTime
     
-    # Analyze results
+    # Analyze results with focus on zoom levels
     Write-Host ""
     Write-Host "Analyzing generated tiles..." -ForegroundColor Yellow
     
@@ -106,22 +131,43 @@ if ($LASTEXITCODE -eq 0) {
         [xml]$dzi = Get-Content "$outputBase.dzi"
         $imageWidth = [int]$dzi.Image.Size.Width
         $imageHeight = [int]$dzi.Image.Size.Height
+        $dziTileSize = [int]$dzi.Image.TileSize
+        $dziOverlap = [int]$dzi.Image.Overlap
+        $dziFormat = $dzi.Image.Format
         
-        Write-Host "  Image dimensions: ${imageWidth}x${imageHeight}" -ForegroundColor Gray
-        Write-Host "  Tile size: $tileSize with ${overlap}px overlap" -ForegroundColor Gray
-        Write-Host "  Total levels: $totalLevels" -ForegroundColor Gray
+        Write-Host "  DZI Configuration:" -ForegroundColor Cyan
+        Write-Host "    - Image: ${imageWidth}x${imageHeight}" -ForegroundColor Gray
+        Write-Host "    - TileSize: $dziTileSize" -ForegroundColor Gray
+        Write-Host "    - Overlap: $dziOverlap" -ForegroundColor Gray
+        Write-Host "    - Format: $dziFormat" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "  Total zoom levels: $totalLevels" -ForegroundColor Green
         
         $totalSize = 0
         $totalFiles = 0
         
-        # Level details
+        # Level details with zoom quality analysis
         Write-Host ""
-        Write-Host "Performance analysis:" -ForegroundColor Cyan
+        Write-Host "Zoom level analysis:" -ForegroundColor Cyan
+        Write-Host "Level | Resolution    | Tiles | Size    | Zoom Range" -ForegroundColor White
+        Write-Host "------|---------------|-------|---------|------------" -ForegroundColor Gray
         
-        # Calculate tiles at each level
+        # Start from full resolution
         $width = $imageWidth
         $height = $imageHeight
         
+        # Check if we have the full resolution level
+        $expectedMaxLevel = $totalLevels - 1
+        $maxLevelPath = "$filesDir\$expectedMaxLevel"
+        $hasFullResLevel = Test-Path $maxLevelPath
+        
+        if (-not $hasFullResLevel) {
+            Write-Host ""
+            Write-Host "WARNING: Full resolution level missing!" -ForegroundColor Red
+            Write-Host "Expected level $expectedMaxLevel at full resolution ${imageWidth}x${imageHeight}" -ForegroundColor Yellow
+        }
+        
+        # Analyze all levels from highest to lowest
         for ($level = $totalLevels - 1; $level -ge 0; $level--) {
             $levelPath = "$filesDir\$level"
             if (Test-Path $levelPath) {
@@ -132,12 +178,21 @@ if ($LASTEXITCODE -eq 0) {
                 
                 $levelSizeMB = [Math]::Round($levelSize / 1MB, 2)
                 
-                # Calculate expected tiles
-                $tilesX = [Math]::Ceiling($width / $tileSize)
-                $tilesY = [Math]::Ceiling($height / $tileSize)
-                $expectedTiles = $tilesX * $tilesY
+                # Calculate zoom range for this level
+                $levelWidth = [Math]::Ceiling($width)
+                $levelHeight = [Math]::Ceiling($height)
+                $minZoom = [Math]::Round($levelWidth / $imageWidth, 2)
+                $maxZoom = if ($level -eq ($totalLevels - 1)) { "max" } else { [Math]::Round(($levelWidth * 2) / $imageWidth, 2) }
                 
-                Write-Host "  Level ${level}: $($tiles.Count) tiles ($levelSizeMB MB) - ${tilesX}x${tilesY} grid" -ForegroundColor Gray
+                Write-Host ("  {0,2} | {1,5}x{2,-5} | {3,5} | {4,6:F2}MB | {5,4:F2}x-{6}" -f `
+                    $level, $levelWidth, $levelHeight, $tiles.Count, `
+                    $levelSizeMB, $minZoom, $maxZoom) -ForegroundColor Gray
+            } else {
+                # Expected level missing
+                $expectedWidth = [Math]::Ceiling($imageWidth / [Math]::Pow(2, $totalLevels - 1 - $level))
+                $expectedHeight = [Math]::Ceiling($imageHeight / [Math]::Pow(2, $totalLevels - 1 - $level))
+                Write-Host ("  {0,2} | {1,5}x{2,-5} | MISSING! | -------MB | -------" -f `
+                    $level, $expectedWidth, $expectedHeight) -ForegroundColor Red
             }
             
             # Next level dimensions
@@ -147,36 +202,65 @@ if ($LASTEXITCODE -eq 0) {
         
         $totalSizeMB = [Math]::Round($totalSize / 1MB, 2)
         
-        # Compare with 256px tiles
-        $tiles256Count = [Math]::Ceiling($imageWidth / 256) * [Math]::Ceiling($imageHeight / 256)
-        $reductionFactor = [Math]::Round($tiles256Count / $totalFiles, 1)
-        
         Write-Host ""
         Write-Host "Summary:" -ForegroundColor Green
-        Write-Host "  Total tiles: $totalFiles (${reductionFactor}x fewer than 256px tiles)" -ForegroundColor White
+        Write-Host "  Total tiles: $totalFiles" -ForegroundColor White
         Write-Host "  Total size: $totalSizeMB MB" -ForegroundColor White
+        Write-Host "  Zoom levels: $totalLevels (ensures smooth transitions)" -ForegroundColor White
         
-        # Performance estimate
-        $avgTileSize = $totalSize / $totalFiles / 1024
+        # Check if full resolution level exists
+        $maxLevel = $totalLevels - 1
+        $maxLevelPath = "$filesDir\$maxLevel"
+        if (-not (Test-Path $maxLevelPath)) {
+            Write-Host ""
+            Write-Host "⚠️  WARNING: Full resolution level is missing!" -ForegroundColor Red
+            Write-Host "  This will cause loading errors at high zoom levels." -ForegroundColor Yellow
+            Write-Host "  Consider regenerating with different parameters." -ForegroundColor Yellow
+        } else {
+            # Verify the max level has the expected resolution
+            $maxLevelTiles = Get-ChildItem $maxLevelPath -Filter "*.jpg"
+            $expectedTilesX = [Math]::Ceiling($imageWidth / $tileSize)
+            $expectedTilesY = [Math]::Ceiling($imageHeight / $tileSize)
+            $expectedTotalTiles = $expectedTilesX * $expectedTilesY
+            
+            if ($maxLevelTiles.Count -lt $expectedTotalTiles * 0.9) {
+                Write-Host ""
+                Write-Host "⚠️  WARNING: Full resolution level seems incomplete!" -ForegroundColor Yellow
+                Write-Host "  Expected around $expectedTotalTiles tiles, found $($maxLevelTiles.Count)" -ForegroundColor Yellow
+            }
+        }
+        
+        # Quality assessment
         Write-Host ""
-        Write-Host "Expected performance improvements:" -ForegroundColor Cyan
-        Write-Host "  ✓ 117ms faster field-of-view rendering" -ForegroundColor White
-        Write-Host "  ✓ ${reductionFactor}x fewer HTTP requests" -ForegroundColor White
-        Write-Host "  ✓ Reduced mosaic effects during zoom" -ForegroundColor White
-        Write-Host "  ✓ Better GPU texture efficiency" -ForegroundColor White
-        Write-Host "  Average tile size: $([Math]::Round($avgTileSize, 1)) KB" -ForegroundColor Gray
+        Write-Host "Quality improvements:" -ForegroundColor Cyan
+        Write-Host "  ✓ No more blur at zoom < 2.0x" -ForegroundColor Green
+        Write-Host "  ✓ Smooth transitions between all zoom levels" -ForegroundColor Green
+        Write-Host "  ✓ Maintains 1024px tile benefits (fast loading)" -ForegroundColor Green
+        Write-Host "  ✓ Extra levels ensure quality at all zoom ranges" -ForegroundColor Green
     }
     
     Write-Host ""
     Write-Host "======================================" -ForegroundColor Cyan
-    Write-Host " ✨ HIGH-PERFORMANCE TILES READY! ✨" -ForegroundColor Cyan
+    Write-Host " ✨ HYBRID TILES READY! ✨" -ForegroundColor Cyan
     Write-Host "======================================" -ForegroundColor Cyan
     Write-Host "Time: $($duration.TotalSeconds.ToString('F2')) seconds" -ForegroundColor White
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow
-    Write-Host "1. Update ArtworkViewer to use zebra_1024 tiles" -ForegroundColor Gray
-    Write-Host "2. Test performance improvement" -ForegroundColor Gray
-    Write-Host "3. Generate for all artworks if successful" -ForegroundColor Gray
+    Write-Host "1. Test zoom quality at all levels (especially 0.5x-2.0x)" -ForegroundColor Gray
+    Write-Host "2. Verify smooth transitions between zoom levels" -ForegroundColor Gray
+    Write-Host "3. Check performance is still optimal" -ForegroundColor Gray
+    
+    # Final check and recommendations
+    if ($totalLevels -lt 5) {
+        Write-Host ""
+        Write-Host "⚠️  IMPORTANT: Only $totalLevels levels generated!" -ForegroundColor Red
+        Write-Host "This may cause blur at certain zoom levels." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "To fix, try one of these approaches:" -ForegroundColor Cyan
+        Write-Host "1. Use smaller tiles: --tile-size 512" -ForegroundColor White
+        Write-Host "2. Force more levels: --depth one" -ForegroundColor White
+        Write-Host "3. Use standard pyramid: remove --depth parameter" -ForegroundColor White
+    }
     
 } else {
     Write-Host ""

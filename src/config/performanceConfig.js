@@ -1,15 +1,19 @@
 /**
- * Performance Configuration - Optimized for 60 FPS with zero lag
- * Based on extensive OpenSeadragon research and testing
+ * Performance Configuration - Optimized for 60 FPS with sharp images
+ * HYBRID APPROACH: Large tiles + better quality at low zoom
  */
 
 const performanceConfig = {
-    // OpenSeadragon viewer settings - OPTIMIZED FOR ZERO LAG
+    // OpenSeadragon viewer settings - OPTIMIZED FOR SHARPNESS + PERFORMANCE
     viewer: {
         // Critical: Tile loading optimization
         imageLoaderLimit: 6,          // Optimal for parallel loading
         maxImageCacheCount: 500,      // Desktop default, adjusted by platform
-        minPixelRatio: 1.0,           // Don't render below viewport resolution
+
+        // MODIFIED FOR SHARPNESS: Load higher quality tiles earlier
+        minPixelRatio: 0.5,           // Allow higher resolution tiles at lower zoom
+        minZoomImageRatio: 0.8,       // Load better quality tiles sooner
+
         smoothTileEdgesMinZoom: Infinity, // Disable for performance
         alwaysBlend: false,           // Critical for zoom performance
 
@@ -33,14 +37,15 @@ const performanceConfig = {
         flickMinSpeed: 120,
         flickMomentum: 0.25,
 
-
         // Zoom settings
         zoomPerScroll: 1.2,           // Slightly smaller steps for control
         zoomPerClick: 2.0,
         minZoomLevel: 0.5,
         maxZoomLevel: 40,
         defaultZoomLevel: 1,
-        maxZoomPixelRatio: 2,         // Cap pixel density
+
+        // MODIFIED FOR QUALITY: Allow more pixel density at all zoom levels
+        maxZoomPixelRatio: 4,         // Increased from 2 to allow sharper tiles
 
         // Network optimization
         loadTilesWithAjax: true,
@@ -49,8 +54,8 @@ const performanceConfig = {
         },
         timeout: 60000,               // Shorter timeout
 
-        // Tile quality settings
-        minZoomImageRatio: 0.9,
+        // Tile quality settings - MODIFIED FOR HYBRID APPROACH
+        minZoomImageRatio: 0.8,       // Load HD tiles at 80% zoom (was 0.9)
         maxTilesPerFrame: 4,          // Limit for consistent frame rate
         tileRetryMax: 1,              // Fewer retries
         tileRetryDelay: 100,
@@ -148,7 +153,9 @@ const performanceConfig = {
         springStiffness: 12.0,        // Very responsive
         immediateRender: true,
         blendTime: 0,                 // No blending on mobile
-        maxTilesPerFrame: 2           // Very limited
+        maxTilesPerFrame: 2,          // Very limited
+        minPixelRatio: 0.8,           // Allow some quality on mobile too
+        minZoomImageRatio: 0.9        // But be more conservative
     },
 
     // Render optimization settings
@@ -246,14 +253,15 @@ const applyPlatformOptimizations = () => {
             smoothImageZoom: false,
             maxTilesPerFrame: performanceConfig.mobile.maxTilesPerFrame,
             visibilityRatio: 0.4,
-            minPixelRatio: 0.5        // Allow lower quality on mobile
+            minPixelRatio: performanceConfig.mobile.minPixelRatio,
+            minZoomImageRatio: performanceConfig.mobile.minZoomImageRatio
         });
 
         performanceConfig.hotspots.batchSize = 25;
         performanceConfig.hotspots.maxVisibleHotspots = 50;
         performanceConfig.memory.maxCachedImages = 100;
 
-        console.log('Mobile device detected - applied aggressive optimizations');
+        console.log('Mobile device detected - applied balanced optimizations for quality');
     }
 
     // Low-end device adjustments
@@ -266,7 +274,9 @@ const applyPlatformOptimizations = () => {
         performanceConfig.memory.maxCachedImages = 150;
         performanceConfig.network.maxConcurrentRequests = 3;
         performanceConfig.hotspots.maxVisibleHotspots = 50;
-        console.log('Low-end device detected - reduced resource usage');
+        // But keep quality settings for sharpness
+        performanceConfig.viewer.minPixelRatio = 0.7;
+        console.log('Low-end device detected - reduced resource usage but maintained quality settings');
     }
 
     // High-end device enhancements
@@ -276,13 +286,17 @@ const applyPlatformOptimizations = () => {
         performanceConfig.viewer.maxTilesPerFrame = 6;
         performanceConfig.memory.maxCachedImages = 500;
         performanceConfig.network.maxConcurrentRequests = 8;
-        console.log('High-end device detected - increased resource limits');
+        // Allow even better quality
+        performanceConfig.viewer.minPixelRatio = 0.4;
+        performanceConfig.viewer.maxZoomPixelRatio = 8;
+        console.log('High-end device detected - increased resource limits and quality');
     }
 
     // High DPI adjustments
     if (platform.isHighDPI && !platform.isMobile) {
-        performanceConfig.viewer.minPixelRatio = Math.min(1.5, platform.pixelRatio);
-        performanceConfig.viewer.maxZoomPixelRatio = Math.min(2, platform.pixelRatio);
+        // For high DPI screens, we want to load even sharper tiles
+        performanceConfig.viewer.minPixelRatio = Math.min(0.5, performanceConfig.viewer.minPixelRatio);
+        performanceConfig.viewer.maxZoomPixelRatio = Math.max(4, platform.pixelRatio * 2);
     }
 
     // Connection-based adjustments
@@ -330,6 +344,8 @@ export function adjustSettingsForPerformance(currentFPS, memoryUsage) {
         config.viewer.immediateRender = true;
         config.viewer.blendTime = 0;
         config.viewer.maxImageCacheCount = 50;
+        // Keep some quality even in emergency
+        config.viewer.minPixelRatio = 0.8;
         console.error('Emergency performance mode activated');
         return 'emergency';
     }
@@ -342,6 +358,7 @@ export function adjustSettingsForPerformance(currentFPS, memoryUsage) {
         config.viewer.springStiffness = 12;
         config.viewer.blendTime = 0;
         config.viewer.maxImageCacheCount = 100;
+        config.viewer.minPixelRatio = 0.7;
         console.warn('Critical performance mode activated');
         return 'critical';
     }
@@ -362,6 +379,8 @@ export function adjustSettingsForPerformance(currentFPS, memoryUsage) {
         if (config.viewer.maxTilesPerFrame < 4) {
             config.viewer.maxTilesPerFrame = Math.min(4, config.viewer.maxTilesPerFrame + 1);
         }
+        // Restore quality settings
+        config.viewer.minPixelRatio = platform.isMobile ? 0.8 : 0.5;
         return 'normal';
     }
 
