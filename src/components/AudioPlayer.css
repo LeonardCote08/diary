@@ -21,6 +21,7 @@
         width: 480px;
         max-width: calc(100vw - 40px);
         border-radius: 12px;
+        animation: fadeIn 0.3s ease-out;
     }
 
     /* Mobile positioning */
@@ -30,6 +31,8 @@
         right: 0;
         width: 100%;
         border-radius: 12px 12px 0 0;
+        transform: none !important; /* FIX: Force no transform on mobile */
+        animation: slideUp 0.3s ease-out; /* Different animation for mobile */
     }
 
     /* Minimized state */
@@ -343,22 +346,34 @@
     }
 }
 
-.audio-player {
-    animation: fadeIn 0.3s ease-out;
+/* Mobile-specific slide up animation */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-    /* Disabled state */
-    .audio-player button:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-    }
+/* Remove animation from base .audio-player class */
+/* Animation is now applied specifically to .desktop and .mobile */
 
-    /* Focus styles for accessibility */
-    .audio-player button:focus-visible,
-    .volume-slider:focus-visible {
-        outline: 2px solid rgba(255, 255, 255, 0.5);
-        outline-offset: 2px;
-    }
+/* Disabled state */
+.audio-player button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Focus styles for accessibility */
+.audio-player button:focus-visible,
+.volume-slider:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 2px;
+}
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {

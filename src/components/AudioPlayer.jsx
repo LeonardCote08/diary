@@ -8,6 +8,10 @@ import './AudioPlayer.css';
 function AudioPlayer(props) {
     const { audioEngine, currentHotspot } = props;
 
+    // Debug effect to track currentHotspot changes
+    createEffect(() => {
+    });
+
     // UI State
     const [isMinimized, setIsMinimized] = createSignal(false);
     const [isPlaying, setIsPlaying] = createSignal(false);
@@ -170,6 +174,8 @@ function AudioPlayer(props) {
         // Use narration title if available, otherwise use ID
         return hotspot.narrationTitle || `Hotspot ${hotspot.id}`;
     };
+
+    
 
     return (
         <Show when={currentHotspot()}>

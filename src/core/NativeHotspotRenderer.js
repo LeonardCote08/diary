@@ -21,13 +21,8 @@ class NativeHotspotRenderer {
         this.hoveredHotspot = null;
         this.selectedHotspot = null;
 
-        // Track mouse state
-        this.mouseTracker = null;
-        this.clickStartTime = 0;
-        this.clickStartPoint = null;
 
-        // Track if we're over a hotspot
-        this.isOverHotspot = false;
+       
 
         // Mobile detection
         this.isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
@@ -86,11 +81,12 @@ class NativeHotspotRenderer {
         this.startVisibilityTracking();
     }
 
+
     createSVG(imageSize) {
         const svgString = `<svg xmlns="http://www.w3.org/2000/svg" 
-                               width="${imageSize.x}" height="${imageSize.y}" 
-                               viewBox="0 0 ${imageSize.x} ${imageSize.y}"
-                               style="position: absolute; width: 100%; height: 100%; pointer-events: none;"></svg>`;
+                           width="${imageSize.x}" height="${imageSize.y}" 
+                           viewBox="0 0 ${imageSize.x} ${imageSize.y}"
+                           style="position: absolute; width: 100%; height: 100%; pointer-events: auto;"></svg>`;
 
         return new DOMParser().parseFromString(svgString, 'image/svg+xml').documentElement;
     }
@@ -136,7 +132,7 @@ class NativeHotspotRenderer {
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         Object.assign(g.style, {
             cursor: 'pointer',
-            pointerEvents: 'painted',
+            pointerEvents: 'fill',
             opacity: '0',
             transition: 'opacity 0.2s ease-out'
         });
@@ -151,117 +147,106 @@ class NativeHotspotRenderer {
 
         path.setAttribute('d', d);
         path.setAttribute('vector-effect', 'non-scaling-stroke');
-        path.style.pointerEvents = 'painted';
+        path.style.pointerEvents = 'fill';  
         return path;
     }
 
     setupMouseTracking() {
-        // Create mouse tracker on the viewer canvas
-        this.mouseTracker = new OpenSeadragon.MouseTracker({
-            element: this.viewer.canvas,
+        // Ensure SVG can receive pointer events
+        this.svg.style.pointerEvents = 'auto';
 
-            moveHandler: (event) => {
-                this.handleMouseMove(event);
-            },
+        // Add click handler to the viewer's canvas container instead of SVG
+        const container = this.viewer.container;
 
-            pressHandler: (event) => {
-                this.clickStartTime = Date.now();
-                this.clickStartPoint = event.position;
-
-                // CRITICAL: If we're over a hotspot, prevent the default panning behavior
-                if (this.isOverHotspot) {
-                    event.preventDefaultAction = true;
-                }
-            },
-
-            releaseHandler: (event) => {
-                if (this.clickStartPoint) {
-                    const deltaTime = Date.now() - this.clickStartTime;
-                    const deltaX = Math.abs(event.position.x - this.clickStartPoint.x);
-                    const deltaY = Math.abs(event.position.y - this.clickStartPoint.y);
-
-                    // Check if it's a click (not a drag)
-                    if (deltaTime < 300 && deltaX < 5 && deltaY < 5) {
-                        this.handleClick(event);
-                    }
-                }
-                this.clickStartPoint = null;
-            }
-        });
-    }
-
-    handleMouseMove(event) {
-        const viewportPoint = this.viewer.viewport.pointFromPixel(event.position);
-        const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
-
-        // Find hotspot under cursor
-        let foundHotspot = null;
-
-        this.overlays.forEach((overlay, id) => {
-            if (overlay.isVisible && this.isPointInHotspot(imagePoint, overlay)) {
-                foundHotspot = overlay.hotspot;
-            }
-        });
-
-        // Update isOverHotspot flag
-        this.isOverHotspot = foundHotspot !== null;
-
-        // Update hover state
-        if (foundHotspot !== this.hoveredHotspot) {
-            if (this.hoveredHotspot) {
-                const prevOverlay = this.overlays.get(this.hoveredHotspot.id);
-                if (prevOverlay) {
-                    this.applyStyle(prevOverlay.element, this.hoveredHotspot.type,
-                        this.hoveredHotspot === this.selectedHotspot ? 'selected' : 'normal');
-                }
+        container.addEventListener('click', (event) => {
+            // Prevent if clicking on controls
+            if (event.target.closest('.openseadragon-controls')) {
+                return;
             }
 
-            this.hoveredHotspot = foundHotspot;
-            this.onHotspotHover(foundHotspot);
+            // Get click position relative to the viewer
+            const rect = this.viewer.element.getBoundingClientRect();
+            const pixelPoint = new OpenSeadragon.Point(
+                event.clientX - rect.left,
+                event.clientY - rect.top
+            );
 
-            if (foundHotspot) {
-                const overlay = this.overlays.get(foundHotspot.id);
-                if (overlay) {
-                    this.applyStyle(overlay.element, foundHotspot.type, 'hover');
-                }
-            }
-        }
-    }
+            // Convert to viewport then image coordinates
+            const viewportPoint = this.viewer.viewport.pointFromPixel(pixelPoint);
+            const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
-    handleClick(event) {
-        const viewportPoint = this.viewer.viewport.pointFromPixel(event.position);
-        const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
+            // Find clicked hotspot
+            let clickedHotspot = null;
 
-        // Find clicked hotspot
-        let clickedHotspot = null;
-
-        this.overlays.forEach((overlay, id) => {
-            if (overlay.isVisible && this.isPointInHotspot(imagePoint, overlay)) {
-                clickedHotspot = overlay.hotspot;
-            }
-        });
-
-        if (clickedHotspot) {
-            console.log(`Hotspot clicked: ${clickedHotspot.id}`);
-            event.preventDefaultAction = true;
-
-            this.selectedHotspot = clickedHotspot;
-            this.onHotspotClick(clickedHotspot);
-
-            // Update visual state
             this.overlays.forEach((overlay, id) => {
-                const state = id === clickedHotspot.id ? 'selected' :
-                    (id === this.hoveredHotspot?.id ? 'hover' : 'normal');
-                this.applyStyle(overlay.element, overlay.hotspot.type, state);
+                if (overlay.isVisible && this.isPointInHotspot(imagePoint, overlay)) {
+                    clickedHotspot = overlay.hotspot;
+                }
             });
 
-            // On mobile, zoom to hotspot
-            if (this.isMobile) {
-                this.zoomToHotspot(clickedHotspot);
-            }
-        }
-    }
+            if (clickedHotspot) {
+                event.stopPropagation();
+                event.preventDefault();
 
+                this.selectedHotspot = clickedHotspot;
+                this.onHotspotClick(clickedHotspot);
+
+                // Update visual state
+                this.overlays.forEach((overlay, id) => {
+                    const state = id === clickedHotspot.id ? 'selected' :
+                        (id === this.hoveredHotspot?.id ? 'hover' : 'normal');
+                    this.applyStyle(overlay.element, overlay.hotspot.type, state);
+                });
+            }
+        });
+
+        // Keep the hover effect on SVG
+        this.svg.addEventListener('mousemove', (event) => {
+            const rect = this.viewer.element.getBoundingClientRect();
+            const pixelPoint = new OpenSeadragon.Point(
+                event.clientX - rect.left,
+                event.clientY - rect.top
+            );
+
+            const viewportPoint = this.viewer.viewport.pointFromPixel(pixelPoint);
+            const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
+
+            // Find hotspot under cursor
+            let foundHotspot = null;
+
+            this.overlays.forEach((overlay, id) => {
+                if (overlay.isVisible && this.isPointInHotspot(imagePoint, overlay)) {
+                    foundHotspot = overlay.hotspot;
+                }
+            });
+
+            // Update hover state
+            if (foundHotspot !== this.hoveredHotspot) {
+                if (this.hoveredHotspot) {
+                    const prevOverlay = this.overlays.get(this.hoveredHotspot.id);
+                    if (prevOverlay) {
+                        this.applyStyle(prevOverlay.element, this.hoveredHotspot.type,
+                            this.hoveredHotspot === this.selectedHotspot ? 'selected' : 'normal');
+                    }
+                }
+
+                this.hoveredHotspot = foundHotspot;
+                this.onHotspotHover(foundHotspot);
+
+                if (foundHotspot) {
+                    const overlay = this.overlays.get(foundHotspot.id);
+                    if (overlay) {
+                        this.applyStyle(overlay.element, foundHotspot.type, 'hover');
+                    }
+                }
+            }
+
+            // Update cursor
+            this.svg.style.cursor = foundHotspot ? 'pointer' : 'default';
+        });
+    }
+    
+    
     zoomToHotspot(hotspot) {
         const overlay = this.overlays.get(hotspot.id);
         if (!overlay) return;
@@ -292,18 +277,13 @@ class NativeHotspotRenderer {
         this.viewer.viewport.fitBounds(zoomBounds, false);
     }
 
+
     isPointInHotspot(point, overlay) {
         const bounds = overlay.bounds;
 
-        // Quick bounds check first
-        if (point.x < bounds.minX || point.x > bounds.maxX ||
-            point.y < bounds.minY || point.y > bounds.maxY) {
-            return false;
-        }
-
-        // For now, just use bounds check
-        // Could implement proper polygon point-in-polygon test if needed
-        return true;
+        // For now, just use bounds check to test if clicks work
+        return point.x >= bounds.minX && point.x <= bounds.maxX &&
+            point.y >= bounds.minY && point.y <= bounds.maxY;
     }
 
     applyStyle(group, type, state) {

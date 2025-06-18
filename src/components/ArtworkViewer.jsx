@@ -615,7 +615,6 @@ function ArtworkViewer(props) {
      * Handle hotspot click with zoom behavior
      */
     const handleHotspotClick = async (hotspot) => {
-        console.log('handleHotspotClick called with:', hotspot);
         setSelectedHotspot(hotspot);
         setCurrentPlayingHotspot(hotspot);
 
@@ -759,11 +758,14 @@ function ArtworkViewer(props) {
                 </div>
             </Show>
 
+            
+
             {/* Audio Player */}
             <Show when={viewerReady() && components.audioEngine}>
+                
                 <AudioPlayer
                     audioEngine={components.audioEngine}
-                    currentHotspot={currentPlayingHotspot}  
+                    currentHotspot={currentPlayingHotspot}
                 />
             </Show>
         </div>

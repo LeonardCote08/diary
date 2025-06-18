@@ -55,6 +55,20 @@ class AudioEngine {
         console.log('AudioEngine initialized');
     }
 
+     /**
+     * Resume audio context after user interaction
+     */
+    async resumeContext() {
+        if (Howler.ctx && Howler.ctx.state === 'suspended') {
+            try {
+                await Howler.ctx.resume();
+                console.log('AudioContext resumed');
+            } catch (error) {
+                console.error('Failed to resume AudioContext:', error);
+            }
+        }
+    }
+
     /**
      * Preload audio for a set of hotspots
      */
@@ -153,7 +167,8 @@ class AudioEngine {
      * Play audio for a specific hotspot
      */
     async play(hotspotId) {
-        console.log(`Playing audio for hotspot: ${hotspotId}`);
+        // Resume context if needed
+        await this.resumeContext();
 
         // If same hotspot, toggle play/pause
         if (this.currentHotspotId === hotspotId && this.currentSound) {
