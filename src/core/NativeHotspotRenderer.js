@@ -2,7 +2,7 @@ import OpenSeadragon from 'openseadragon';
 
 /**
  * NativeHotspotRenderer - OpenSeadragon overlay system for interactive hotspots
- * FIXED: Precise polygon detection instead of bounding box
+ * FIXED: Prioritizes smaller hotspots when nested inside larger ones
  */
 class NativeHotspotRenderer {
     constructor(options = {}) {
@@ -33,6 +33,9 @@ class NativeHotspotRenderer {
         // Thresholds for click vs drag
         this.clickTimeThreshold = 300;  // ms
         this.clickDistThreshold = this.isMobile ? 12 : 8;  // pixels
+
+        // Cache for hotspot areas
+        this.hotspotAreas = new Map();
 
         this.initStyles();
         this.init();
@@ -126,12 +129,19 @@ class NativeHotspotRenderer {
 
         this.svg.appendChild(g);
 
+        const bounds = this.calculateBounds(hotspot.coordinates);
+        const area = this.calculateArea(bounds);
+
         this.overlays.set(hotspot.id, {
             element: g,
             hotspot: hotspot,
-            bounds: this.calculateBounds(hotspot.coordinates),
+            bounds: bounds,
+            area: area,
             isVisible: false
         });
+
+        // Cache the area for performance
+        this.hotspotAreas.set(hotspot.id, area);
     }
 
     createGroup(hotspot) {
@@ -230,14 +240,8 @@ class NativeHotspotRenderer {
             const viewportPoint = this.viewer.viewport.pointFromPixel(pixelPoint);
             const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
-            // Find clicked hotspot using precise polygon detection
-            let clickedHotspot = null;
-
-            this.overlays.forEach((overlay, id) => {
-                if (overlay.isVisible && this.isPointInHotspot(imagePoint, overlay)) {
-                    clickedHotspot = overlay.hotspot;
-                }
-            });
+            // Find the smallest hotspot at this point
+            const clickedHotspot = this.findSmallestHotspotAtPoint(imagePoint);
 
             if (clickedHotspot) {
                 event.stopPropagation();
@@ -266,14 +270,8 @@ class NativeHotspotRenderer {
             const viewportPoint = this.viewer.viewport.pointFromPixel(pixelPoint);
             const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
-            // Find hotspot under cursor using precise polygon detection
-            let foundHotspot = null;
-
-            this.overlays.forEach((overlay, id) => {
-                if (overlay.isVisible && this.isPointInHotspot(imagePoint, overlay)) {
-                    foundHotspot = overlay.hotspot;
-                }
-            });
+            // Find the smallest hotspot under cursor
+            const foundHotspot = this.findSmallestHotspotAtPoint(imagePoint);
 
             // Update hover state
             if (foundHotspot !== this.hoveredHotspot) {
@@ -302,7 +300,34 @@ class NativeHotspotRenderer {
     }
 
     /**
-     * FIXED: Now uses precise polygon detection instead of bounding box
+     * Find the smallest hotspot at a given point
+     * This ensures smaller hotspots take priority over larger ones
+     */
+    findSmallestHotspotAtPoint(point) {
+        const candidates = [];
+
+        // Collect all hotspots containing the point
+        this.overlays.forEach((overlay, id) => {
+            if (overlay.isVisible && this.isPointInHotspot(point, overlay)) {
+                candidates.push({
+                    hotspot: overlay.hotspot,
+                    area: overlay.area
+                });
+            }
+        });
+
+        // No hotspots found
+        if (candidates.length === 0) {
+            return null;
+        }
+
+        // Sort by area (smallest first) and return the smallest
+        candidates.sort((a, b) => a.area - b.area);
+        return candidates[0].hotspot;
+    }
+
+    /**
+     * Check if point is inside hotspot using precise polygon detection
      */
     isPointInHotspot(point, overlay) {
         const hotspot = overlay.hotspot;
@@ -398,6 +423,14 @@ class NativeHotspotRenderer {
         return bounds;
     }
 
+    /**
+     * Calculate approximate area of hotspot using bounding box
+     * For performance, we use bounding box area instead of exact polygon area
+     */
+    calculateArea(bounds) {
+        return (bounds.maxX - bounds.minX) * (bounds.maxY - bounds.minY);
+    }
+
     startVisibilityTracking() {
         let updateTimer = null;
 
@@ -479,6 +512,9 @@ class NativeHotspotRenderer {
         );
     }
 
+    /**
+     * Zoom to hotspot with intelligent framing
+     */
     zoomToHotspot(hotspot) {
         const overlay = this.overlays.get(hotspot.id);
         if (!overlay) return;
@@ -494,10 +530,18 @@ class NativeHotspotRenderer {
             (bounds.maxY - bounds.minY) / imageSize.y
         );
 
-        // Add padding
-        const padding = 0.5;
-        const paddingX = viewportBounds.width * padding;
-        const paddingY = viewportBounds.height * padding;
+        // Add padding based on hotspot size
+        const area = overlay.area;
+        const imageArea = imageSize.x * imageSize.y;
+        const relativeSize = area / imageArea;
+
+        // Smaller hotspots get more padding to be clearly visible
+        const paddingFactor = relativeSize < 0.01 ? 1.0 :
+            relativeSize < 0.05 ? 0.7 :
+                relativeSize < 0.1 ? 0.5 : 0.3;
+
+        const paddingX = viewportBounds.width * paddingFactor;
+        const paddingY = viewportBounds.height * paddingFactor;
 
         const zoomBounds = new OpenSeadragon.Rect(
             viewportBounds.x - paddingX,
@@ -507,6 +551,32 @@ class NativeHotspotRenderer {
         );
 
         this.viewer.viewport.fitBounds(zoomBounds, false);
+    }
+
+    /**
+     * Get metrics about hotspot overlaps
+     */
+    getOverlapMetrics() {
+        const overlaps = [];
+        const overlayArray = Array.from(this.overlays.values());
+
+        for (let i = 0; i < overlayArray.length; i++) {
+            for (let j = i + 1; j < overlayArray.length; j++) {
+                if (this.boundsIntersect(overlayArray[i].bounds, overlayArray[j].bounds)) {
+                    overlaps.push({
+                        hotspot1: overlayArray[i].hotspot.id,
+                        hotspot2: overlayArray[j].hotspot.id,
+                        area1: overlayArray[i].area,
+                        area2: overlayArray[j].area
+                    });
+                }
+            }
+        }
+
+        return {
+            totalOverlaps: overlaps.length,
+            overlaps: overlaps
+        };
     }
 
     destroy() {
@@ -526,6 +596,7 @@ class NativeHotspotRenderer {
 
         this.overlays.clear();
         this.visibleOverlays.clear();
+        this.hotspotAreas.clear();
         this.viewer = null;
     }
 }
