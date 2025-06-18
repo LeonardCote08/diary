@@ -4,6 +4,14 @@
  */
 
 const performanceConfig = {
+
+    qualityPreservation: {
+        minVisibleAreaDesktop: 600,
+        minVisibleAreaMobile: 400,
+        maxZoomForQuality: 15,
+        adaptivePaddingEnabled: true
+    },
+
     // OpenSeadragon viewer settings - OPTIMIZED FOR SHARPNESS + PERFORMANCE
     viewer: {
         // Critical: Tile loading optimization

@@ -12,6 +12,14 @@ import TileCleanupManager from '../core/TileCleanupManager';
 import AudioPlayer from './AudioPlayer';
 import performanceConfig, { adjustSettingsForPerformance } from '../config/performanceConfig';
 
+// Quality preservation settings
+const QUALITY_CONFIG = {
+    minHotspotPixelsDesktop: 600,  // Minimum visible area for desktop
+    minHotspotPixelsMobile: 400,   // Minimum visible area for mobile
+    maxZoomBeforeBlur: 15,          // Maximum zoom level before quality degrades
+    tileSize: 1024                  // Your tile size configuration
+};
+
 let hotspotData = [];
 
 // Browser detection for optimal drawer selection
@@ -470,73 +478,53 @@ function ArtworkViewer(props) {
     };
 
     /**
-     * Calculate optimal bounds for hotspot zoom with padding
+     * Calculate optimal bounds for hotspot zoom with adaptive padding
      */
     const calculateHotspotBounds = (hotspot) => {
         const overlay = components.renderer?.overlays.get(hotspot.id);
 
-        if (!overlay) {
-            // Fallback: use coordinates directly if available
-            if (hotspot.coordinates) {
-                // Calculate bounds from coordinates
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        // Get hotspot bounds
+        let bounds;
+        if (overlay) {
+            bounds = overlay.bounds;
+        } else if (hotspot.coordinates) {
+            // Fallback: calculate from coordinates
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
-                const processCoords = (coords) => {
-                    if (Array.isArray(coords[0]) && typeof coords[0][0] === 'number') {
-                        // Single polygon
-                        coords.forEach(([x, y]) => {
+            const processCoords = (coords) => {
+                if (Array.isArray(coords[0]) && typeof coords[0][0] === 'number') {
+                    coords.forEach(([x, y]) => {
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                        maxX = Math.max(maxX, x);
+                        maxY = Math.max(maxY, y);
+                    });
+                } else {
+                    coords.forEach(polygon => {
+                        polygon.forEach(([x, y]) => {
                             minX = Math.min(minX, x);
                             minY = Math.min(minY, y);
                             maxX = Math.max(maxX, x);
                             maxY = Math.max(maxY, y);
                         });
-                    } else {
-                        // Multiple polygons
-                        coords.forEach(polygon => {
-                            polygon.forEach(([x, y]) => {
-                                minX = Math.min(minX, x);
-                                minY = Math.min(minY, y);
-                                maxX = Math.max(maxX, x);
-                                maxY = Math.max(maxY, y);
-                            });
-                        });
-                    }
-                };
+                    });
+                }
+            };
 
-                processCoords(hotspot.coordinates);
-
-                const bounds = { minX, minY, maxX, maxY };
-
-                // Convert to viewport coordinates
-                const topLeft = viewer.viewport.imageToViewportCoordinates(
-                    new OpenSeadragon.Point(bounds.minX, bounds.minY)
-                );
-                const bottomRight = viewer.viewport.imageToViewportCoordinates(
-                    new OpenSeadragon.Point(bounds.maxX, bounds.maxY)
-                );
-
-                // Calculate bounds with padding
-                const width = bottomRight.x - topLeft.x;
-                const height = bottomRight.y - topLeft.y;
-
-                // Different padding for mobile vs desktop
-                const paddingFactor = isMobile() ? 0.5 : 0.3; // More padding on mobile
-                const paddingX = width * paddingFactor;
-                const paddingY = height * paddingFactor;
-
-                return new OpenSeadragon.Rect(
-                    topLeft.x - paddingX,
-                    topLeft.y - paddingY,
-                    width + (paddingX * 2),
-                    height + (paddingY * 2)
-                );
-            }
+            processCoords(hotspot.coordinates);
+            bounds = { minX, minY, maxX, maxY };
+        } else {
             return null;
         }
 
-        const bounds = overlay.bounds;
+        // Get image size for calculations
         const tiledImage = viewer.world.getItemAt(0);
         const imageSize = tiledImage.getContentSize();
+
+        // Calculate hotspot size in pixels
+        const hotspotWidthPixels = bounds.maxX - bounds.minX;
+        const hotspotHeightPixels = bounds.maxY - bounds.minY;
+        const hotspotSizePixels = Math.max(hotspotWidthPixels, hotspotHeightPixels);
 
         // Convert to viewport coordinates
         const topLeft = viewer.viewport.imageToViewportCoordinates(
@@ -546,25 +534,74 @@ function ArtworkViewer(props) {
             new OpenSeadragon.Point(bounds.maxX, bounds.maxY)
         );
 
-        // Calculate bounds with padding
         const width = bottomRight.x - topLeft.x;
         const height = bottomRight.y - topLeft.y;
 
-        // Different padding for mobile vs desktop
-        const paddingFactor = isMobile() ? 0.5 : 0.3; // More padding on mobile
-        const paddingX = width * paddingFactor;
-        const paddingY = height * paddingFactor;
+        // ADAPTIVE PADDING CALCULATION
+        const minVisibleAreaPixels = isMobile() ? 400 : 600;
+        const maxPaddingFactor = isMobile() ? 0.5 : 0.3;
 
-        return new OpenSeadragon.Rect(
+        let paddingX, paddingY;
+
+        if (hotspotSizePixels < minVisibleAreaPixels) {
+            // For small hotspots, ensure minimum visible area
+            const targetSizeViewport = viewer.viewport.imageToViewportCoordinates(
+                new OpenSeadragon.Point(minVisibleAreaPixels, 0)
+            ).x;
+
+            paddingX = Math.max(0, (targetSizeViewport - width) / 2);
+            paddingY = Math.max(0, (targetSizeViewport - height) / 2);
+        } else {
+            // For larger hotspots, use proportional padding
+            paddingX = width * maxPaddingFactor;
+            paddingY = height * maxPaddingFactor;
+        }
+
+        // Calculate zoom bounds
+        const zoomBounds = new OpenSeadragon.Rect(
             topLeft.x - paddingX,
             topLeft.y - paddingY,
             width + (paddingX * 2),
             height + (paddingY * 2)
         );
+
+        // NEW QUALITY-BASED ZOOM CALCULATION
+        const viewportSize = viewer.viewport.getContainerSize();
+
+        // Calculate desired visible area in pixels (hotspot + padding)
+        const desiredVisiblePixels = Math.max(
+            hotspotSizePixels * (1 + maxPaddingFactor * 2),
+            minVisibleAreaPixels
+        );
+
+        // Calculate zoom that would show this many pixels in the viewport
+        const pixelsPerViewportUnit = imageSize.x; // Since viewport width = 1.0 for full image
+        const desiredViewportUnits = desiredVisiblePixels / pixelsPerViewportUnit;
+        const viewportAspectRatio = viewportSize.x / viewportSize.y;
+
+        // Calculate max zoom that maintains quality
+        let maxQualityZoom;
+        if (viewportAspectRatio > 1) {
+            // Landscape viewport
+            maxQualityZoom = 1.0 / desiredViewportUnits;
+        } else {
+            // Portrait viewport
+            maxQualityZoom = viewportAspectRatio / desiredViewportUnits;
+        }
+
+        // Apply reasonable limits
+        maxQualityZoom = Math.min(maxQualityZoom, 10); // Never zoom more than 10x
+        maxQualityZoom = Math.max(maxQualityZoom, 0.5); // Never zoom out beyond 0.5x
+
+        zoomBounds.maxZoom = maxQualityZoom;
+        zoomBounds.hotspotSizePixels = hotspotSizePixels;
+        zoomBounds.desiredVisiblePixels = desiredVisiblePixels;
+
+        return zoomBounds;
     };
 
     /**
-     * Smooth zoom to hotspot
+     * Smooth zoom to hotspot with quality limits
      */
     const zoomToHotspot = async (hotspot) => {
         if (!viewer || isZoomingToHotspot()) {
@@ -584,11 +621,76 @@ function ArtworkViewer(props) {
         const originalSpringStiffness = viewer.springStiffness;
 
         // Set smoother animation for zoom
-        viewer.animationTime = 0.8; // Slower, smoother animation
-        viewer.springStiffness = 6.5; // Less stiff for smoothness
+        viewer.animationTime = 0.8;
+        viewer.springStiffness = 6.5;
 
-        // Fit to bounds with smooth animation
-        viewer.viewport.fitBounds(bounds, false);
+        // Get hotspot center in image coordinates
+        const overlay = components.renderer?.overlays.get(hotspot.id);
+        let hotspotCenterImage;
+
+        if (overlay) {
+            hotspotCenterImage = new OpenSeadragon.Point(
+                (overlay.bounds.minX + overlay.bounds.maxX) / 2,
+                (overlay.bounds.minY + overlay.bounds.maxY) / 2
+            );
+        } else if (hotspot.coordinates) {
+            // Fallback calculation
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+            const processCoords = (coords) => {
+                if (Array.isArray(coords[0]) && typeof coords[0][0] === 'number') {
+                    coords.forEach(([x, y]) => {
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                        maxX = Math.max(maxX, x);
+                        maxY = Math.max(maxY, y);
+                    });
+                } else {
+                    coords.forEach(polygon => {
+                        polygon.forEach(([x, y]) => {
+                            minX = Math.min(minX, x);
+                            minY = Math.min(minY, y);
+                            maxX = Math.max(maxX, x);
+                            maxY = Math.max(maxY, y);
+                        });
+                    });
+                }
+            };
+
+            processCoords(hotspot.coordinates);
+            hotspotCenterImage = new OpenSeadragon.Point(
+                (minX + maxX) / 2,
+                (minY + maxY) / 2
+            );
+        }
+
+        // Convert to viewport coordinates
+        const centerViewport = viewer.viewport.imageToViewportCoordinates(hotspotCenterImage);
+
+        // Calculate zoom needed to fit bounds in viewport
+        const viewportAspect = viewer.viewport.getAspectRatio();
+        const boundsAspect = bounds.width / bounds.height;
+
+        let targetZoom;
+        if (boundsAspect > viewportAspect) {
+            // Bounds are wider than viewport
+            targetZoom = 1.0 / bounds.width;
+        } else {
+            // Bounds are taller than viewport
+            targetZoom = viewportAspect / bounds.height;
+        }
+
+        // Apply quality limit
+        const finalZoom = Math.min(targetZoom, bounds.maxZoom);
+
+        // Log for debugging
+        console.log(`Hotspot ${hotspot.id}: size=${bounds.hotspotSizePixels.toFixed(0)}px, targetZoom=${targetZoom.toFixed(2)}, maxZoom=${bounds.maxZoom.toFixed(2)}, finalZoom=${finalZoom.toFixed(2)}`);
+
+        // Apply zoom and center - ORDER IS IMPORTANT
+        // First pan to center the hotspot
+        viewer.viewport.panTo(centerViewport, false);
+        // Then zoom without changing the center point (null = keep current center)
+        viewer.viewport.zoomTo(finalZoom, null, false);
 
         // Restore original settings after animation starts
         setTimeout(() => {
@@ -600,10 +702,9 @@ function ArtworkViewer(props) {
         setTimeout(() => {
             if (components.renderer) {
                 components.renderer.updateVisibility();
-                // Force redraw to ensure overlays are properly positioned
                 viewer.forceRedraw();
             }
-        }, 850); // After animation completes
+        }, 850);
 
         // Show expand button on mobile after zoom
         if (isMobile()) {
