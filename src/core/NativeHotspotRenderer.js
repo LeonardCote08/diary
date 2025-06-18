@@ -2,7 +2,7 @@ import OpenSeadragon from 'openseadragon';
 
 /**
  * NativeHotspotRenderer - OpenSeadragon overlay system for interactive hotspots
- * FIXED: Prevents panning when clicking on hotspots
+ * FIXED: Precise polygon detection instead of bounding box
  */
 class NativeHotspotRenderer {
     constructor(options = {}) {
@@ -21,7 +21,7 @@ class NativeHotspotRenderer {
         this.hoveredHotspot = null;
         this.selectedHotspot = null;
 
-        // NEW: Track drag state
+        // Track drag state
         this.isDragging = false;
         this.dragStartTime = 0;
         this.dragStartPoint = null;
@@ -30,7 +30,7 @@ class NativeHotspotRenderer {
         this.isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
             ('ontouchstart' in window);
 
-        // NEW: Thresholds for click vs drag
+        // Thresholds for click vs drag
         this.clickTimeThreshold = 300;  // ms
         this.clickDistThreshold = this.isMobile ? 12 : 8;  // pixels
 
@@ -84,7 +84,7 @@ class NativeHotspotRenderer {
 
         await this.loadHotspotsInBatches();
         this.setupMouseTracking();
-        this.setupDragDetection(); // NEW
+        this.setupDragDetection();
         this.startVisibilityTracking();
     }
 
@@ -157,9 +157,6 @@ class NativeHotspotRenderer {
         return path;
     }
 
-    /**
-     * NEW: Setup drag detection using OpenSeadragon events
-     */
     setupDragDetection() {
         // Listen to OpenSeadragon's drag events
         this.viewer.addHandler('canvas-drag', () => {
@@ -198,12 +195,12 @@ class NativeHotspotRenderer {
         const container = this.viewer.container;
 
         container.addEventListener('click', (event) => {
-            // NEW: Don't process clicks if we were dragging
+            // Don't process clicks if we were dragging
             if (this.isDragging) {
                 return;
             }
 
-            // NEW: Additional validation - check time and distance
+            // Additional validation - check time and distance
             if (this.dragStartTime && this.dragStartPoint) {
                 const timeDiff = Date.now() - this.dragStartTime;
                 const distance = Math.sqrt(
@@ -233,7 +230,7 @@ class NativeHotspotRenderer {
             const viewportPoint = this.viewer.viewport.pointFromPixel(pixelPoint);
             const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
-            // Find clicked hotspot
+            // Find clicked hotspot using precise polygon detection
             let clickedHotspot = null;
 
             this.overlays.forEach((overlay, id) => {
@@ -269,7 +266,7 @@ class NativeHotspotRenderer {
             const viewportPoint = this.viewer.viewport.pointFromPixel(pixelPoint);
             const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
 
-            // Find hotspot under cursor
+            // Find hotspot under cursor using precise polygon detection
             let foundHotspot = null;
 
             this.overlays.forEach((overlay, id) => {
@@ -304,44 +301,64 @@ class NativeHotspotRenderer {
         });
     }
 
+    /**
+     * FIXED: Now uses precise polygon detection instead of bounding box
+     */
+    isPointInHotspot(point, overlay) {
+        const hotspot = overlay.hotspot;
 
-    zoomToHotspot(hotspot) {
-        const overlay = this.overlays.get(hotspot.id);
-        if (!overlay) return;
-
+        // First check bounding box for performance
         const bounds = overlay.bounds;
-        const imageSize = this.viewer.world.getItemAt(0).getContentSize();
+        if (point.x < bounds.minX || point.x > bounds.maxX ||
+            point.y < bounds.minY || point.y > bounds.maxY) {
+            return false;
+        }
 
-        // Convert to viewport coordinates
-        const viewportBounds = new OpenSeadragon.Rect(
-            bounds.minX / imageSize.x,
-            bounds.minY / imageSize.y,
-            (bounds.maxX - bounds.minX) / imageSize.x,
-            (bounds.maxY - bounds.minY) / imageSize.y
-        );
+        // Then do precise polygon check
+        if (hotspot.shape === 'polygon') {
+            return this.pointInPolygon(point.x, point.y, hotspot.coordinates);
+        } else if (hotspot.shape === 'multipolygon') {
+            // For multipolygon, check if point is in ANY of the polygons
+            return hotspot.coordinates.some(polygon =>
+                this.pointInPolygon(point.x, point.y, polygon)
+            );
+        }
 
-        // Add padding
-        const padding = 0.5;
-        const paddingX = viewportBounds.width * padding;
-        const paddingY = viewportBounds.height * padding;
-
-        const zoomBounds = new OpenSeadragon.Rect(
-            viewportBounds.x - paddingX,
-            viewportBounds.y - paddingY,
-            viewportBounds.width + paddingX * 2,
-            viewportBounds.height + paddingY * 2
-        );
-
-        this.viewer.viewport.fitBounds(zoomBounds, false);
+        return false;
     }
 
+    /**
+     * Ray casting algorithm for precise point-in-polygon detection
+     */
+    pointInPolygon(x, y, polygon) {
+        let inside = false;
+        const n = polygon.length;
 
-    isPointInHotspot(point, overlay) {
-        const bounds = overlay.bounds;
+        let p1x = polygon[0][0];
+        let p1y = polygon[0][1];
 
-        // For now, just use bounds check to test if clicks work
-        return point.x >= bounds.minX && point.x <= bounds.maxX &&
-            point.y >= bounds.minY && point.y <= bounds.maxY;
+        for (let i = 1; i <= n; i++) {
+            const p2x = polygon[i % n][0];
+            const p2y = polygon[i % n][1];
+
+            if (y > Math.min(p1y, p2y)) {
+                if (y <= Math.max(p1y, p2y)) {
+                    if (x <= Math.max(p1x, p2x)) {
+                        if (p1y !== p2y) {
+                            const xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x;
+                            if (p1x === p2x || x <= xinters) {
+                                inside = !inside;
+                            }
+                        }
+                    }
+                }
+            }
+
+            p1x = p2x;
+            p1y = p2y;
+        }
+
+        return inside;
     }
 
     applyStyle(group, type, state) {
@@ -460,6 +477,36 @@ class NativeHotspotRenderer {
             a.maxY < b.minY ||
             a.minY > b.maxY
         );
+    }
+
+    zoomToHotspot(hotspot) {
+        const overlay = this.overlays.get(hotspot.id);
+        if (!overlay) return;
+
+        const bounds = overlay.bounds;
+        const imageSize = this.viewer.world.getItemAt(0).getContentSize();
+
+        // Convert to viewport coordinates
+        const viewportBounds = new OpenSeadragon.Rect(
+            bounds.minX / imageSize.x,
+            bounds.minY / imageSize.y,
+            (bounds.maxX - bounds.minX) / imageSize.x,
+            (bounds.maxY - bounds.minY) / imageSize.y
+        );
+
+        // Add padding
+        const padding = 0.5;
+        const paddingX = viewportBounds.width * padding;
+        const paddingY = viewportBounds.height * padding;
+
+        const zoomBounds = new OpenSeadragon.Rect(
+            viewportBounds.x - paddingX,
+            viewportBounds.y - paddingY,
+            viewportBounds.width + paddingX * 2,
+            viewportBounds.height + paddingY * 2
+        );
+
+        this.viewer.viewport.fitBounds(zoomBounds, false);
     }
 
     destroy() {
