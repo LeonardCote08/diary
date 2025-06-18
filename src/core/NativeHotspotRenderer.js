@@ -21,12 +21,18 @@ class NativeHotspotRenderer {
         this.hoveredHotspot = null;
         this.selectedHotspot = null;
 
-
-       
+        // NEW: Track drag state
+        this.isDragging = false;
+        this.dragStartTime = 0;
+        this.dragStartPoint = null;
 
         // Mobile detection
         this.isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
             ('ontouchstart' in window);
+
+        // NEW: Thresholds for click vs drag
+        this.clickTimeThreshold = 300;  // ms
+        this.clickDistThreshold = this.isMobile ? 12 : 8;  // pixels
 
         this.initStyles();
         this.init();
@@ -78,9 +84,9 @@ class NativeHotspotRenderer {
 
         await this.loadHotspotsInBatches();
         this.setupMouseTracking();
+        this.setupDragDetection(); // NEW
         this.startVisibilityTracking();
     }
-
 
     createSVG(imageSize) {
         const svgString = `<svg xmlns="http://www.w3.org/2000/svg" 
@@ -147,8 +153,41 @@ class NativeHotspotRenderer {
 
         path.setAttribute('d', d);
         path.setAttribute('vector-effect', 'non-scaling-stroke');
-        path.style.pointerEvents = 'fill';  
+        path.style.pointerEvents = 'fill';
         return path;
+    }
+
+    /**
+     * NEW: Setup drag detection using OpenSeadragon events
+     */
+    setupDragDetection() {
+        // Listen to OpenSeadragon's drag events
+        this.viewer.addHandler('canvas-drag', () => {
+            this.isDragging = true;
+        });
+
+        this.viewer.addHandler('canvas-drag-end', () => {
+            // Small delay to ensure click events don't fire after drag
+            setTimeout(() => {
+                this.isDragging = false;
+            }, 100);
+        });
+
+        // Track mouse down for additional click validation
+        const container = this.viewer.container;
+
+        container.addEventListener('mousedown', (event) => {
+            this.dragStartTime = Date.now();
+            this.dragStartPoint = { x: event.clientX, y: event.clientY };
+        });
+
+        container.addEventListener('mouseup', () => {
+            // Reset after a short delay
+            setTimeout(() => {
+                this.dragStartTime = 0;
+                this.dragStartPoint = null;
+            }, 100);
+        });
     }
 
     setupMouseTracking() {
@@ -159,6 +198,25 @@ class NativeHotspotRenderer {
         const container = this.viewer.container;
 
         container.addEventListener('click', (event) => {
+            // NEW: Don't process clicks if we were dragging
+            if (this.isDragging) {
+                return;
+            }
+
+            // NEW: Additional validation - check time and distance
+            if (this.dragStartTime && this.dragStartPoint) {
+                const timeDiff = Date.now() - this.dragStartTime;
+                const distance = Math.sqrt(
+                    Math.pow(event.clientX - this.dragStartPoint.x, 2) +
+                    Math.pow(event.clientY - this.dragStartPoint.y, 2)
+                );
+
+                // If it took too long or moved too far, it's not a click
+                if (timeDiff > this.clickTimeThreshold || distance > this.clickDistThreshold) {
+                    return;
+                }
+            }
+
             // Prevent if clicking on controls
             if (event.target.closest('.openseadragon-controls')) {
                 return;
@@ -245,8 +303,8 @@ class NativeHotspotRenderer {
             this.svg.style.cursor = foundHotspot ? 'pointer' : 'default';
         });
     }
-    
-    
+
+
     zoomToHotspot(hotspot) {
         const overlay = this.overlays.get(hotspot.id);
         if (!overlay) return;
@@ -412,6 +470,8 @@ class NativeHotspotRenderer {
         this.viewer.removeAllHandlers('animation');
         this.viewer.removeAllHandlers('animation-finish');
         this.viewer.removeAllHandlers('viewport-change');
+        this.viewer.removeHandler('canvas-drag');
+        this.viewer.removeHandler('canvas-drag-end');
 
         if (this.svg) {
             this.viewer.removeOverlay(this.svg);
