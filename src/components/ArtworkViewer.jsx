@@ -56,6 +56,10 @@ function ArtworkViewer(props) {
     const [isZoomingToHotspot, setIsZoomingToHotspot] = createSignal(false);
     const [currentPlayingHotspot, setCurrentPlayingHotspot] = createSignal(null);
 
+    const [debugMode, setDebugMode] = createSignal(
+        localStorage.getItem('debugMode') === 'enabled'
+    );
+
     // Check if device is mobile
     const isMobile = () => window.innerWidth <= 768;
 
@@ -151,11 +155,10 @@ function ArtworkViewer(props) {
             springStiffness: config.springStiffness,
             blendTime: config.blendTime,
 
-            // Controls
-            showNavigationControl: true,
-            navigationControlAnchor: OpenSeadragon.ControlAnchor.TOP_RIGHT,
-            showZoomControl: true,
-            showHomeControl: true,
+            // Controls - all disabled for clean interface
+            showNavigationControl: false,
+            showZoomControl: false,
+            showHomeControl: false,
             showFullPageControl: false,
             showRotationControl: false,
 
@@ -268,7 +271,8 @@ function ArtworkViewer(props) {
         components.tileOptimizer.start();
         components.tileCleanupManager.start();
 
-        if (performanceConfig.debug.showFPS || performanceConfig.debug.showMetrics) {
+        
+        if (debugMode()) {
             components.performanceMonitor.enableDebugOverlay();
         }
 
@@ -390,21 +394,23 @@ function ArtworkViewer(props) {
             'f': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
             'F': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
             'r': () => viewer.forceRedraw(),
-            'd': () => {
-                const showFPS = !performanceConfig.debug.showFPS;
-                performanceConfig.debug.showFPS = showFPS;
-                performanceConfig.debug.showMetrics = showFPS;
-                if (showFPS) {
-                    components.performanceMonitor.enableDebugOverlay();
-                } else {
-                    components.performanceMonitor.disableDebugOverlay();
-                }
-            },
+            'd': () => viewer.viewport.panBy(new OpenSeadragon.Point(0.1, 0)),
             'c': () => {
-                // Force tile cleanup
-                if (components.tileCleanupManager) {
-                    components.tileCleanupManager.forceCleanup();
-                    console.log('Forced tile cleanup');
+                const newDebugState = !debugMode();
+                setDebugMode(newDebugState);
+                localStorage.setItem('debugMode', newDebugState ? 'enabled' : 'disabled');
+
+                if (newDebugState) {
+                    components.performanceMonitor?.enableDebugOverlay();
+                    console.log('Debug mode: ENABLED (press C to disable)');
+                } else {
+                    components.performanceMonitor?.disableDebugOverlay();
+                    console.log('Debug mode: DISABLED');
+                }
+
+                // Update renderer debug mode in BOTH cases
+                if (components.renderer) {
+                    components.renderer.setDebugMode(newDebugState);
                 }
             },
             'w': async () => {
@@ -468,12 +474,13 @@ function ArtworkViewer(props) {
             viewer: viewer,
             spatialIndex: components.spatialIndex,
             onHotspotHover: setHoveredHotspot,
-            onHotspotClick: handleHotspotClick, 
+            onHotspotClick: handleHotspotClick,
             visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
             batchSize: performanceConfig.hotspots.batchSize,
             renderDebounceTime: performanceConfig.hotspots.renderDebounceTime,
             maxVisibleHotspots: performanceConfig.hotspots.maxVisibleHotspots,
-            minZoomForHotspots: performanceConfig.hotspots.minZoomForHotspots
+            minZoomForHotspots: performanceConfig.hotspots.minZoomForHotspots,
+            debugMode: debugMode()
         });
     };
 
@@ -796,7 +803,7 @@ function ArtworkViewer(props) {
                 </div>
             </Show>
 
-            <Show when={viewerReady() && performanceConfig.debug.showMetrics}>
+            <Show when={viewerReady() && debugMode()}>
                 <div class="debug-info">
                     <div>Hovered: {hoveredHotspot()?.id || 'none'}</div>
                     <div>Selected: {selectedHotspot()?.id || 'none'}</div>
@@ -806,7 +813,7 @@ function ArtworkViewer(props) {
                 </div>
             </Show>
 
-            <Show when={viewerReady() && window.innerWidth > 768}>
+            <Show when={viewerReady() && debugMode() && window.innerWidth > 768}>
                 <div class="shortcuts-info">
                     <details>
                         <summary>Keyboard Shortcuts</summary>
@@ -823,6 +830,76 @@ function ArtworkViewer(props) {
                     </details>
                 </div>
             </Show>
+
+            <Show when={debugMode()}>
+                <div style={{
+                    position: 'absolute',
+                    top: '10px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: 'rgba(255, 0, 0, 0.8)',
+                    color: 'white',
+                    padding: '4px 12px',
+                    'border-radius': '4px',
+                    'font-size': '12px',
+                    'font-weight': 'bold',
+                    'z-index': 100,
+                    'pointer-events': 'none'
+                }}>
+                    DEBUG MODE
+                </div>
+            </Show>
+
+            {/* Debug Mode Toggle Button - REMOVE FOR PRODUCTION */}
+            <div style={{
+                position: 'absolute',
+                bottom: '20px',
+                right: '20px',
+                'z-index': 100
+            }}>
+                <button
+                    onClick={() => {
+                        const newDebugState = !debugMode();
+                        setDebugMode(newDebugState);
+                        localStorage.setItem('debugMode', newDebugState ? 'enabled' : 'disabled');
+
+                        if (newDebugState) {
+                            components.performanceMonitor?.enableDebugOverlay();
+                            console.log('Debug mode: ENABLED');
+                        } else {
+                            components.performanceMonitor?.disableDebugOverlay();
+                            console.log('Debug mode: DISABLED');
+                        }
+
+                        if (components.renderer) {
+                            components.renderer.setDebugMode(newDebugState);
+                        }
+                    }}
+                    style={{
+                        background: debugMode() ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+                        color: 'white',
+                        border: '2px solid ' + (debugMode() ? '#ff0000' : '#666'),
+                        padding: '10px 20px',
+                        'border-radius': '8px',
+                        'font-size': '14px',
+                        'font-weight': 'bold',
+                        cursor: 'pointer',
+                        'backdrop-filter': 'blur(10px)',
+                        transition: 'all 0.3s ease',
+                        'box-shadow': '0 4px 12px rgba(0, 0, 0, 0.3)'
+                    }}
+                >
+                    Debug Mode: {debugMode() ? 'ON' : 'OFF'}
+                    <div style={{
+                        'font-size': '11px',
+                        'font-weight': 'normal',
+                        'margin-top': '4px',
+                        opacity: '0.8'
+                    }}>
+                        Press C or click here
+                    </div>
+                </button>
+            </div>
 
             <Show when={viewerReady() && window.innerWidth <= 768}>
                 <div class="mobile-controls">
@@ -841,7 +918,7 @@ function ArtworkViewer(props) {
                 </div>
             </Show>
 
-            <Show when={viewerReady()}>
+            <Show when={viewerReady() && debugMode()}>
                 <div class="hotspot-legend">
                     <h3>Hotspot Types</h3>
                     {[

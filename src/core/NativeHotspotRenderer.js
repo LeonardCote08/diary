@@ -13,8 +13,11 @@ class NativeHotspotRenderer {
             onHotspotClick: options.onHotspotClick || (() => { }),
             visibilityCheckInterval: options.visibilityCheckInterval || 100,
             batchSize: options.batchSize || 50,
-            renderDebounceTime: options.renderDebounceTime || 16
+            renderDebounceTime: options.renderDebounceTime || 16,
+            debugMode: options.debugMode || false
         });
+
+
 
         this.overlays = new Map();
         this.visibleOverlays = new Set();
@@ -41,6 +44,7 @@ class NativeHotspotRenderer {
         this.init();
     }
 
+
     initStyles() {
         const baseStyle = {
             strokeWidth: 1,
@@ -57,16 +61,34 @@ class NativeHotspotRenderer {
         };
 
         this.styles = {};
-        Object.entries(colors).forEach(([type, color]) => {
-            this.styles[type] = {
-                ...baseStyle,
-                stroke: color.stroke,
-                fill: `rgba(${color.fill.join(',')}, 0.3)`,
-                hoverFill: `rgba(${color.fill.join(',')}, 0.5)`,
-                selectedFill: `rgba(${color.fill.join(',')}, 0.7)`
-            };
-        });
+
+        // Debug mode: colored fills
+        if (this.debugMode) {
+            Object.entries(colors).forEach(([type, color]) => {
+                this.styles[type] = {
+                    ...baseStyle,
+                    stroke: color.stroke,
+                    fill: `rgba(${color.fill.join(',')}, 0.3)`,
+                    hoverFill: `rgba(${color.fill.join(',')}, 0.5)`,
+                    selectedFill: `rgba(${color.fill.join(',')}, 0.7)`
+                };
+            });
+        } else {
+            // Production mode: subtle/invisible fills
+            Object.entries(colors).forEach(([type]) => {
+                this.styles[type] = {
+                    ...baseStyle,
+                    stroke: 'rgba(255, 255, 255, 0)',  // Invisible by default
+                    fill: 'rgba(255, 255, 255, 0)',     // Completely transparent
+                    hoverFill: 'rgba(255, 255, 255, 0.25)', // More visible on hover
+                    hoverStroke: 'rgba(255, 255, 255, 1)', // Bright white border on hover
+                    selectedFill: 'rgba(255, 255, 255, 0.35)',
+                    selectedStroke: 'rgba(255, 255, 255, 1)'
+                };
+            });
+        }
     }
+
 
     async init() {
         if (!this.viewer.world.getItemCount()) {
@@ -149,7 +171,7 @@ class NativeHotspotRenderer {
         Object.assign(g.style, {
             cursor: 'pointer',
             pointerEvents: 'fill',
-            opacity: '0',
+            opacity: this.debugMode ? '1' : '0',  // Visible in debug, invisible in prod
             transition: 'opacity 0.2s ease-out'
         });
         g.setAttribute('data-hotspot-id', hotspot.id);
@@ -386,6 +408,7 @@ class NativeHotspotRenderer {
         return inside;
     }
 
+
     applyStyle(group, type, state) {
         const style = this.styles[type] || this.styles.audio_only;
         const paths = group.getElementsByTagName('path');
@@ -393,14 +416,42 @@ class NativeHotspotRenderer {
         group.setAttribute('class', `hotspot-${type} hotspot-${state}`);
 
         for (let path of paths) {
-            Object.assign(path.style, {
-                fill: style[`${state}Fill`] || style.fill,
-                stroke: style.stroke,
-                strokeWidth: style[`${state}StrokeWidth`] + 'px' || style.strokeWidth + 'px',
-                filter: state === 'hover' ? `drop-shadow(0 0 8px ${style.stroke})` : ''
-            });
+            if (this.debugMode) {
+                // Debug mode: always show colors
+                Object.assign(path.style, {
+                    fill: style[`${state}Fill`] || style.fill,
+                    stroke: style.stroke,
+                    strokeWidth: style[`${state}StrokeWidth`] + 'px' || style.strokeWidth + 'px',
+                    filter: state === 'hover' ? `drop-shadow(0 0 8px ${style.stroke})` : '',
+                    opacity: '1'  // Always visible
+                });
+            } else {
+                // Production mode: subtle/invisible
+                const isHover = state === 'hover';
+                const isSelected = state === 'selected';
+
+                Object.assign(path.style, {
+                    fill: style[`${state}Fill`] || style.fill,
+                    stroke: isHover ? style.hoverStroke : (isSelected ? style.selectedStroke : style.stroke),
+                    strokeWidth: (isHover || isSelected ? 3 : 1) + 'px',  // Thicker border on hover
+                    transition: 'all 0.2s ease',  // Faster transition
+                    filter: isHover ? 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.8))' : '',  // Stronger glow
+                    opacity: isHover || isSelected ? '1' : '0'
+                });
+            }
+        }
+
+        // Set group opacity based on debug mode
+        group.style.opacity = this.debugMode ? '1' : (state === 'hover' || state === 'selected' ? '1' : '0');
+
+        // Pulsing effect for hover in production mode
+        if (!this.debugMode && state === 'hover') {
+            group.style.animation = 'hotspotPulse 1.5s ease-in-out infinite';
+        } else {
+            group.style.animation = '';
         }
     }
+
 
     calculateBounds(coordinates) {
         let bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
@@ -577,6 +628,18 @@ class NativeHotspotRenderer {
             totalOverlaps: overlaps.length,
             overlaps: overlaps
         };
+    }
+
+    setDebugMode(enabled) {
+        this.debugMode = enabled;
+        this.initStyles(); // Reinitialize styles
+
+        // Update all existing hotspots
+        this.overlays.forEach((overlay, id) => {
+            const state = id === this.selectedHotspot?.id ? 'selected' :
+                (id === this.hoveredHotspot?.id ? 'hover' : 'normal');
+            this.applyStyle(overlay.element, overlay.hotspot.type, state);
+        });
     }
 
     destroy() {
