@@ -48,6 +48,9 @@ class RenderOptimizer {
 
         this.setupEventHandlers();
         this.applyInitialOptimizations();
+
+        // Make optimizer globally accessible for synchronization
+        window.renderOptimizer = this;
     }
 
     setupEventHandlers() {
@@ -195,6 +198,11 @@ class RenderOptimizer {
 
             // Force immediate render during zoom
             this.viewer.immediateRender = true;
+
+            // Pause tile cleanup during zoom
+            if (window.tileCleanupManager) {
+                window.tileCleanupManager.pauseCleanup(2000);
+            }
 
         } else if (!isZooming && this.state.isZoomingActive) {
             // Ending zoom - restore values

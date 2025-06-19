@@ -50,9 +50,9 @@ class TileCleanupManager {
             // Performance thresholds
             fpsThresholds: {
                 good: 55,
-                acceptable: 45,
-                poor: 30,
-                critical: 20
+                acceptable: 40,
+                poor: 25,
+                critical: 15  // Lower threshold to avoid aggressive cleanup during zoom
             }
         };
 
@@ -175,12 +175,23 @@ class TileCleanupManager {
         this.intervals.cleanup = setInterval(() => this.performCleanup(), interval);
     }
 
+
     performCleanup() {
         if (!this.state.isActive) return;
 
         const startTime = performance.now();
         const tiledImage = this.viewer.world?.getItemAt(0);
         if (!tiledImage || !tiledImage._tileCache) return;
+
+        // CRITICAL FIX: Never clean tiles during animations
+        const isAnimating = this.viewer.isAnimating ||
+            (window.renderOptimizer && window.renderOptimizer.isCurrentlyAnimating()) ||
+            this.viewer.viewport.zoomSpring.current.value !== this.viewer.viewport.zoomSpring.target.value;
+
+        if (isAnimating) {
+            console.log('Skipping tile cleanup during animation');
+            return;
+        }
 
         const pressure = this.state.currentPressure;
         const maxAge = this.config.maxTileAge[pressure];
@@ -205,11 +216,26 @@ class TileCleanupManager {
 
         if (currentCacheSize === 0) return;
 
+        // Get currently visible tiles - NEVER remove these
+        const visibleTiles = new Set();
+        if (tiledImage._tilesToDraw) {
+            tiledImage._tilesToDraw.forEach(tile => {
+                const tileKey = this.getTileKey(tile);
+                visibleTiles.add(tileKey);
+            });
+        }
+
         // Determine tiles to remove
         const tilesToRemove = [];
 
         cachedTiles.forEach(tile => {
             const tileKey = this.getTileKey(tile);
+
+            // NEVER remove visible tiles
+            if (visibleTiles.has(tileKey)) {
+                return;
+            }
+
             const lastAccess = this.tileAccessTimes.get(tileKey) || 0;
             const age = now - lastAccess;
 
@@ -248,7 +274,11 @@ class TileCleanupManager {
             const remainingToRemove = currentCacheSize - cacheThreshold;
             if (remainingToRemove > tilesToRemove.length) {
                 // Sort remaining tiles by age and remove oldest
-                const remainingTiles = cachedTiles.filter(tile => !tilesToRemove.includes(tile));
+                const remainingTiles = cachedTiles.filter(tile => {
+                    const tileKey = this.getTileKey(tile);
+                    return !tilesToRemove.includes(tile) && !visibleTiles.has(tileKey);
+                });
+
                 remainingTiles.sort((a, b) => {
                     const aKey = this.getTileKey(a);
                     const bKey = this.getTileKey(b);
@@ -262,23 +292,25 @@ class TileCleanupManager {
             }
         }
 
-        // Remove tiles
+        // Remove tiles individually instead of clearing entire cache
         if (tilesToRemove.length > 0) {
-            // OpenSeadragon doesn't provide selective tile removal, so we clear and let it rebuild
-            // This is aggressive but necessary for performance
-            cache.clearTilesFor(tiledImage);
-
-            // Clear access times for removed tiles
+            // OpenSeadragon doesn't provide selective removal, but we can mark tiles for removal
+            // and let OpenSeadragon handle it naturally
             tilesToRemove.forEach(tile => {
                 const tileKey = this.getTileKey(tile);
                 this.tileAccessTimes.delete(tileKey);
+
+                // Mark tile as unneeded
+                if (tile.unload) {
+                    tile.unload();
+                }
             });
 
             // Update metrics
             this.state.tilesRemoved += tilesToRemove.length;
             this.metrics.totalCleaned += tilesToRemove.length;
 
-            console.log(`Cleaned ${tilesToRemove.length} tiles (pressure: ${pressure}, cache was: ${currentCacheSize})`);
+            console.log(`Cleaned ${tilesToRemove.length} tiles (pressure: ${pressure}, cache was: ${currentCacheSize}, kept ${visibleTiles.size} visible)`);
         }
 
         // Update metrics
@@ -296,17 +328,20 @@ class TileCleanupManager {
     performDeepCleanup() {
         if (!this.state.isActive) return;
 
+        // CRITICAL FIX: Never deep clean during animations
+        const isAnimating = this.viewer.isAnimating ||
+            (window.renderOptimizer && window.renderOptimizer.isCurrentlyAnimating()) ||
+            this.viewer.viewport.zoomSpring.current.value !== this.viewer.viewport.zoomSpring.target.value;
+
+        if (isAnimating) {
+            console.log('Skipping deep cleanup during animation');
+            return;
+        }
+
         console.log('Performing deep tile cleanup');
         const startTime = performance.now();
 
-        // Clear all non-visible tiles
-        const tiledImage = this.viewer.world?.getItemAt(0);
-        if (!tiledImage || !tiledImage._tileCache) return;
-
-        // Force complete cache clear
-        tiledImage._tileCache.clearTilesFor(tiledImage);
-
-        // Clear all tracking data older than 5 minutes
+        // Clear tracking data older than 5 minutes
         const now = Date.now();
         const maxTrackingAge = 300000; // 5 minutes
 
@@ -356,6 +391,19 @@ class TileCleanupManager {
             this.state.currentPressure = pressure;
             this.updateCleanupInterval();
             console.log(`Tile cleanup pressure manually set to: ${pressure}`);
+        }
+    }
+
+    pauseCleanup(duration = 1000) {
+        if (this.intervals.cleanup) {
+            clearInterval(this.intervals.cleanup);
+
+            // Resume after duration
+            setTimeout(() => {
+                if (this.state.isActive) {
+                    this.updateCleanupInterval();
+                }
+            }, duration);
         }
     }
 

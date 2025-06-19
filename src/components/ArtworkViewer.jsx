@@ -203,6 +203,8 @@ function ArtworkViewer(props) {
 
         window.audioEngine = components.audioEngine;
 
+        window.tileCleanupManager = components.tileCleanupManager;
+
         // Setup AudioEngine callbacks
         components.audioEngine.onPlaybackStart = (hotspotId) => {
             console.log(`Started playing audio for hotspot ${hotspotId}`);
@@ -300,6 +302,19 @@ function ArtworkViewer(props) {
             homeViewport = viewer.viewport.getHomeBounds();
 
             setTimeout(() => initializeHotspotSystem(), 100);
+        });
+
+        // Prevent tile cleanup during critical operations
+        viewer.addHandler('zoom', () => {
+            if (components.tileCleanupManager) {
+                components.tileCleanupManager.setPressure('normal');
+            }
+        });
+
+        viewer.addHandler('pan', () => {
+            if (components.tileCleanupManager) {
+                components.tileCleanupManager.setPressure('normal');
+            }
         });
 
         viewer.addHandler('tile-loaded', (event) => {
