@@ -273,7 +273,7 @@ function ArtworkViewer(props) {
         components.tileOptimizer.start();
         components.tileCleanupManager.start();
 
-        
+
         if (debugMode()) {
             components.performanceMonitor.enableDebugOverlay();
         }
@@ -951,11 +951,11 @@ function ArtworkViewer(props) {
                 </div>
             </Show>
 
-            
+
 
             {/* Audio Player */}
             <Show when={viewerReady() && components.audioEngine}>
-                
+
                 <AudioPlayer
                     audioEngine={components.audioEngine}
                     currentHotspot={currentPlayingHotspot}
