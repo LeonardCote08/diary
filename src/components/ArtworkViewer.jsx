@@ -191,7 +191,7 @@ function ArtworkViewer(props) {
                 flickMinSpeed: config.flickMinSpeed,
                 flickMomentum: config.flickMomentum,
                 pinchToZoom: true,
-                dragToPan: true  
+                dragToPan: true
             },
 
             // Touch handling configuration 
