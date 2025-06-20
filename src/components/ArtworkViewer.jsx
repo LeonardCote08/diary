@@ -824,169 +824,168 @@ function ArtworkViewer(props) {
     };
 
     return (
-        <div class="viewer-container">
-            <Show when={previewLoaded() && !viewerReady()}>
-                <img
-                    src={`/images/tiles/${props.artworkId}_1024/preview.jpg`}
-                    class="preview-image"
-                    alt="Loading preview"
-                />
-            </Show>
+        <>
+            <div class="viewer-container">
+                <Show when={previewLoaded() && !viewerReady()}>
+                    <img
+                        src={`/images/tiles/${props.artworkId}_1024/preview.jpg`}
+                        class="preview-image"
+                        alt="Loading preview"
+                    />
+                </Show>
 
-            <div ref={viewerRef} class="openseadragon-viewer" />
+                <div ref={viewerRef} class="openseadragon-viewer" />
 
-            <Show when={isLoading()}>
-                <div class="viewer-loading">
-                    <p>Loading high-resolution artwork...</p>
-                </div>
-            </Show>
+                <Show when={isLoading()}>
+                    <div class="viewer-loading">
+                        <p>Loading high-resolution artwork...</p>
+                    </div>
+                </Show>
 
-            <Show when={viewerReady() && debugMode()}>
-                <div class="debug-info">
-                    <div>Hovered: {hoveredHotspot()?.id || 'none'}</div>
-                    <div>Selected: {selectedHotspot()?.id || 'none'}</div>
-                    <div>Type: {hoveredHotspot()?.type || 'none'}</div>
-                    <div>Total hotspots: {hotspotData.length}</div>
-                    <div>Drawer: {viewer?.drawer?.getType ? viewer.drawer.getType() : 'canvas'}</div>
-                </div>
-            </Show>
+                <Show when={viewerReady() && debugMode()}>
+                    <div class="debug-info">
+                        <div>Hovered: {hoveredHotspot()?.id || 'none'}</div>
+                        <div>Selected: {selectedHotspot()?.id || 'none'}</div>
+                        <div>Type: {hoveredHotspot()?.type || 'none'}</div>
+                        <div>Total hotspots: {hotspotData.length}</div>
+                        <div>Drawer: {viewer?.drawer?.getType ? viewer.drawer.getType() : 'canvas'}</div>
+                    </div>
+                </Show>
 
-            <Show when={viewerReady() && debugMode() && window.innerWidth > 768}>
-                <div class="shortcuts-info">
-                    <details>
-                        <summary>Keyboard Shortcuts</summary>
-                        <div class="shortcuts-list">
-                            <div><kbd>+</kbd> Zoom in</div>
-                            <div><kbd>-</kbd> Zoom out</div>
-                            <div><kbd>0</kbd> Reset view</div>
-                            <div><kbd>F</kbd> Fit to screen</div>
-                            <div><kbd>↑↓←→</kbd> Pan</div>
-                            <div><kbd>D</kbd> Toggle debug</div>
-                            <div><kbd>C</kbd> Force cleanup</div>
-                            <div><kbd>W</kbd> Worker status</div>
-                        </div>
-                    </details>
-                </div>
-            </Show>
+                <Show when={viewerReady() && debugMode() && window.innerWidth > 768}>
+                    <div class="shortcuts-info">
+                        <details>
+                            <summary>Keyboard Shortcuts</summary>
+                            <div class="shortcuts-list">
+                                <div><kbd>+</kbd> Zoom in</div>
+                                <div><kbd>-</kbd> Zoom out</div>
+                                <div><kbd>0</kbd> Reset view</div>
+                                <div><kbd>F</kbd> Fit to screen</div>
+                                <div><kbd>↑↓←→</kbd> Pan</div>
+                                <div><kbd>D</kbd> Toggle debug</div>
+                                <div><kbd>C</kbd> Force cleanup</div>
+                                <div><kbd>W</kbd> Worker status</div>
+                            </div>
+                        </details>
+                    </div>
+                </Show>
 
-            <Show when={debugMode()}>
-                <div style={{
-                    position: 'absolute',
-                    top: '10px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: 'rgba(255, 0, 0, 0.8)',
-                    color: 'white',
-                    padding: '4px 12px',
-                    'border-radius': '4px',
-                    'font-size': '12px',
-                    'font-weight': 'bold',
-                    'z-index': 100,
-                    'pointer-events': 'none'
-                }}>
-                    DEBUG MODE
-                </div>
-            </Show>
-
-            {/* Debug Mode Toggle Button - REMOVE FOR PRODUCTION */}
-            <div style={{
-                position: 'fixed', 
-                bottom: isMobile() ? '10px' : '20px',
-                right: isMobile() ? '10px' : '20px',
-                'z-index': 100
-            }}>
-                <button
-                    onClick={() => {
-                        const newDebugState = !debugMode();
-                        setDebugMode(newDebugState);
-                        localStorage.setItem('debugMode', newDebugState ? 'enabled' : 'disabled');
-
-                        if (newDebugState) {
-                            components.performanceMonitor?.enableDebugOverlay();
-                            console.log('Debug mode: ENABLED');
-                        } else {
-                            components.performanceMonitor?.disableDebugOverlay();
-                            console.log('Debug mode: DISABLED');
-                        }
-
-                        if (components.renderer) {
-                            components.renderer.setDebugMode(newDebugState);
-                        }
-                    }}
-                    style={{
-                        background: debugMode() ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+                <Show when={debugMode()}>
+                    <div style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: 'rgba(255, 0, 0, 0.8)',
                         color: 'white',
-                        border: '2px solid ' + (debugMode() ? '#ff0000' : '#666'),
-                        padding: isMobile() ? '6px 10px' : '10px 20px',
-                        'border-radius': '8px',
-                        'font-size': isMobile() ? '12px' : '14px',
+                        padding: '4px 12px',
+                        'border-radius': '4px',
+                        'font-size': '12px',
                         'font-weight': 'bold',
-                        cursor: 'pointer',
-                        'backdrop-filter': 'blur(10px)',
-                        transition: 'all 0.3s ease',
-                        'box-shadow': '0 4px 12px rgba(0, 0, 0, 0.3)'
-                    }}
-                >
-                    {isMobile() ? (debugMode() ? 'DBG: ON' : 'DBG: OFF') : `Debug Mode: ${debugMode() ? 'ON' : 'OFF'}`}
-                    <Show when={!isMobile()}>
-                        <div style={{
-                            'font-size': '11px',
-                            'font-weight': 'normal',
-                            'margin-top': '4px',
-                            opacity: '0.8'
-                        }}>
-                            Press C or click here
-                        </div>
-                    </Show>
-                </button>
-            </div>
+                        'z-index': 100,
+                        'pointer-events': 'none'
+                    }}>
+                        DEBUG MODE
+                    </div>
+                </Show>
 
-            <Show when={viewerReady() && window.innerWidth <= 768}>
-                <div class="mobile-controls">
-                    <button class="zoom-btn zoom-in" onClick={handleZoomIn}>+</button>
-                    <button class="zoom-btn zoom-out" onClick={handleZoomOut}>−</button>
-                    <button class="zoom-btn zoom-home" onClick={handleHome}>⌂</button>
-                </div>
-            </Show>
+                {/* Debug Mode Toggle Button - REMOVE FOR PRODUCTION */}
+                <div style={{
+                    position: 'fixed',
+                    bottom: isMobile() ? '10px' : '20px',
+                    right: isMobile() ? '10px' : '20px',
+                    'z-index': 100
+                }}>
+                    <button
+                        onClick={() => {
+                            const newDebugState = !debugMode();
+                            setDebugMode(newDebugState);
+                            localStorage.setItem('debugMode', newDebugState ? 'enabled' : 'disabled');
 
-            {/* Expand to Full View button for mobile */}
-            <Show when={viewerReady() && showExpandButton() && isMobile()}>
-                <div class="expand-button-container">
-                    <button class="expand-button" onClick={expandToFullView}>
-                        ↗ Expand to Full View
+                            if (newDebugState) {
+                                components.performanceMonitor?.enableDebugOverlay();
+                                console.log('Debug mode: ENABLED');
+                            } else {
+                                components.performanceMonitor?.disableDebugOverlay();
+                                console.log('Debug mode: DISABLED');
+                            }
+
+                            if (components.renderer) {
+                                components.renderer.setDebugMode(newDebugState);
+                            }
+                        }}
+                        style={{
+                            background: debugMode() ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+                            color: 'white',
+                            border: '2px solid ' + (debugMode() ? '#ff0000' : '#666'),
+                            padding: isMobile() ? '6px 10px' : '10px 20px',
+                            'border-radius': '8px',
+                            'font-size': isMobile() ? '12px' : '14px',
+                            'font-weight': 'bold',
+                            cursor: 'pointer',
+                            'backdrop-filter': 'blur(10px)',
+                            transition: 'all 0.3s ease',
+                            'box-shadow': '0 4px 12px rgba(0, 0, 0, 0.3)'
+                        }}
+                    >
+                        {isMobile() ? (debugMode() ? 'DBG: ON' : 'DBG: OFF') : `Debug Mode: ${debugMode() ? 'ON' : 'OFF'}`}
+                        <Show when={!isMobile()}>
+                            <div style={{
+                                'font-size': '11px',
+                                'font-weight': 'normal',
+                                'margin-top': '4px',
+                                opacity: '0.8'
+                            }}>
+                                Press C or click here
+                            </div>
+                        </Show>
                     </button>
                 </div>
-            </Show>
 
-            <Show when={viewerReady() && debugMode()}>
-                <div class="hotspot-legend">
-                    <h3>Hotspot Types</h3>
-                    {[
-                        { type: 'audio-only', label: 'Audio Only' },
-                        { type: 'audio-link', label: 'Audio + Link' },
-                        { type: 'audio-image', label: 'Audio + Image' },
-                        { type: 'audio-image-link', label: 'Audio + Image + Link' },
-                        { type: 'audio-sound', label: 'Audio + Sound' }
-                    ].map(({ type, label }) => (
-                        <div class="legend-item">
-                            <div class={`legend-color ${type}`}></div>
-                            <span>{label}</span>
-                        </div>
-                    ))}
-                </div>
-            </Show>
+                <Show when={viewerReady() && window.innerWidth <= 768}>
+                    <div class="mobile-controls">
+                        <button class="zoom-btn zoom-in" onClick={handleZoomIn}>+</button>
+                        <button class="zoom-btn zoom-out" onClick={handleZoomOut}>−</button>
+                        <button class="zoom-btn zoom-home" onClick={handleHome}>⌂</button>
+                    </div>
+                </Show>
 
+                {/* Expand to Full View button for mobile */}
+                <Show when={viewerReady() && showExpandButton() && isMobile()}>
+                    <div class="expand-button-container">
+                        <button class="expand-button" onClick={expandToFullView}>
+                            ↗ Expand to Full View
+                        </button>
+                    </div>
+                </Show>
 
+                <Show when={viewerReady() && debugMode()}>
+                    <div class="hotspot-legend">
+                        <h3>Hotspot Types</h3>
+                        {[
+                            { type: 'audio-only', label: 'Audio Only' },
+                            { type: 'audio-link', label: 'Audio + Link' },
+                            { type: 'audio-image', label: 'Audio + Image' },
+                            { type: 'audio-image-link', label: 'Audio + Image + Link' },
+                            { type: 'audio-sound', label: 'Audio + Sound' }
+                        ].map(({ type, label }) => (
+                            <div class="legend-item">
+                                <div class={`legend-color ${type}`}></div>
+                                <span>{label}</span>
+                            </div>
+                        ))}
+                    </div>
+                </Show>
+            </div>
 
-            {/* Audio Player */}
+            {/* Audio Player - Outside viewer container to avoid overflow hidden */}
             <Show when={viewerReady() && components.audioEngine}>
-
                 <AudioPlayer
                     audioEngine={components.audioEngine}
                     currentHotspot={currentPlayingHotspot}
                 />
             </Show>
-        </div>
+        </>
     );
 }
 

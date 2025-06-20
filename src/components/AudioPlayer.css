@@ -31,7 +31,7 @@
 
     /* Mobile positioning */
     .audio-player.mobile {
-        bottom: 20px; /* Add space from bottom */
+        bottom: 60px; /* Increased to avoid bottom controls and ensure visibility */
         left: 10px;
         right: 10px;
         width: calc(100% - 20px); /* Account for left/right margins */
@@ -117,7 +117,7 @@
 
 /* Expanded state */
 .audio-player-expanded {
-    padding: 14px 16px;
+    padding: 10px 14px; /* Reduced padding for more compact design */
 }
 
 /* Player header */
@@ -125,7 +125,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 12px; /* Reduced spacing */
     position: relative;
 }
 
@@ -170,7 +170,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 14px;
+    margin-bottom: 10px; /* Reduced spacing */
 }
 
 .time-current,
@@ -432,7 +432,7 @@
 
     /* Make minimized player smaller on mobile */
     .audio-player.minimized {
-        bottom: 20px;
+        bottom: 70px; /* Raised to ensure full visibility */
         right: 10px;
         position: fixed; /* Use fixed positioning */
     }
@@ -442,6 +442,7 @@
             left: auto;
             width: auto;
             max-width: none;
+            bottom: 70px; /* Ensure consistent positioning */
         }
 
     .btn-play-mini {
