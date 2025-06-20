@@ -893,7 +893,7 @@ function ArtworkViewer(props) {
                 <div style={{
                     position: 'fixed',
                     bottom: isMobile() ? '10px' : '20px',
-                    right: isMobile() ? '10px' : '20px',
+                    left: isMobile() ? '10px' : '20px',
                     'z-index': 100
                 }}>
                     <button
@@ -954,7 +954,7 @@ function ArtworkViewer(props) {
                 <Show when={viewerReady() && showExpandButton() && isMobile()}>
                     <div class="expand-button-container">
                         <button class="expand-button" onClick={expandToFullView}>
-                            ↗ Expand to Full View
+                            <span style="font-size: 16px; line-height: 1;">⤢</span> Full View
                         </button>
                     </div>
                 </Show>

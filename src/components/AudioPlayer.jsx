@@ -65,6 +65,22 @@ function AudioPlayer(props) {
     const [isMuted, setIsMuted] = createSignal(false);
     const [isDraggingProgress, setIsDraggingProgress] = createSignal(false);
 
+    // Track if this is the first playback in the session
+    const [isFirstPlayback, setIsFirstPlayback] = createSignal(true);
+
+    // Track hotspot changes for visual feedback
+    const [isChangingTrack, setIsChangingTrack] = createSignal(false);
+
+    // Watch for hotspot changes
+    createEffect(() => {
+        const hotspot = currentHotspot();
+        if (hotspot && isPlaying() && isMinimized()) {
+            // Briefly indicate track change
+            setIsChangingTrack(true);
+            setTimeout(() => setIsChangingTrack(false), 500);
+        }
+    });
+
     // Mobile detection
     const isMobile = () => window.innerWidth <= 768;
 
@@ -82,9 +98,13 @@ function AudioPlayer(props) {
 
         audioEngine.onPlaybackStart = () => {
             setIsPlaying(true);
-            // Auto-expand on play if minimized
-            if (isMinimized()) {
+            // Only auto-expand on first playback
+            if (isMinimized() && isFirstPlayback()) {
                 setIsMinimized(false);
+                setIsFirstPlayback(false);
+            } else if (!isMinimized()) {
+                // If already expanded, mark that we've had our first playback
+                setIsFirstPlayback(false);
             }
         };
 
@@ -238,12 +258,15 @@ function AudioPlayer(props) {
                 <Show when={isMinimized()}>
                     <div class="audio-player-minimized">
                         <button
-                            class={`btn-play-mini ${isPlaying() ? 'playing' : ''}`}
+                            class={`btn-play-mini ${isPlaying() ? 'playing' : ''} ${isChangingTrack() ? 'changing' : ''}`}
                             onClick={() => {
                                 if (!isPlaying()) {
+                                    // Just expand, don't auto-play
                                     setIsMinimized(false);
+                                } else {
+                                    // If playing, toggle pause
+                                    togglePlayPause();
                                 }
-                                togglePlayPause();
                             }}
                             title={isPlaying() ? 'Pause' : 'Play'}
                         >
