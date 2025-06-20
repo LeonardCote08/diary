@@ -20,6 +20,12 @@ const QUALITY_CONFIG = {
     tileSize: 1024                  // Your tile size configuration
 };
 
+// Zoom behavior configuration
+const ZOOM_CONFIG = {
+    enableDesktopZoom: false,  // Disabled per Deji's specs
+    minZoomForDetail: 2
+};
+
 let hotspotData = [];
 
 // Browser detection for optimal drawer selection
@@ -735,8 +741,8 @@ function ArtworkViewer(props) {
     };
 
     /**
-     * Handle hotspot click with zoom behavior
-     */
+ * Handle hotspot click with zoom behavior
+ */
     const handleHotspotClick = async (hotspot) => {
         setSelectedHotspot(hotspot);
         setCurrentPlayingHotspot(hotspot);
@@ -745,19 +751,16 @@ function ArtworkViewer(props) {
         if (isMobile()) {
             // Mobile: Always zoom to hotspot
             await zoomToHotspot(hotspot);
-        } else {
-            // Desktop: Optional subtle zoom (can be disabled if not desired)
-            // For now, implementing a subtle zoom as per specs allow pan/zoom freely
+        } else if (ZOOM_CONFIG.enableDesktopZoom) {
+            // Desktop: Optional zoom (currently disabled per Deji's specs)
             const currentZoom = viewer.viewport.getZoom();
-            const minZoomForDetail = 2; // Minimum zoom to see details clearly
-
-            if (currentZoom < minZoomForDetail) {
+            if (currentZoom < ZOOM_CONFIG.minZoomForDetail) {
                 await zoomToHotspot(hotspot);
             }
         }
 
-        // Play audio after zoom animation
-        const audioDelay = isMobile() ? 800 : 100;
+        // Play audio - no delay needed on desktop without zoom
+        const audioDelay = isMobile() ? 800 : 0;
 
         setTimeout(() => {
             if (components.audioEngine && hotspot.audioUrl) {

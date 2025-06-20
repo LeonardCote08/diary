@@ -110,6 +110,23 @@ class NativeHotspotRenderer {
         await this.loadHotspotsInBatches();
         this.setupMouseTracking();
         this.setupDragDetection();
+
+        // Update styles on zoom change
+        this.viewer.addHandler('zoom', () => {
+            // Update all visible hotspots with new glow intensity
+            if (this.hoveredHotspot) {
+                const overlay = this.overlays.get(this.hoveredHotspot.id);
+                if (overlay) {
+                    this.applyStyle(overlay.element, this.hoveredHotspot.type, 'hover');
+                }
+            }
+            if (this.selectedHotspot && this.selectedHotspot !== this.hoveredHotspot) {
+                const overlay = this.overlays.get(this.selectedHotspot.id);
+                if (overlay) {
+                    this.applyStyle(overlay.element, this.selectedHotspot.type, 'selected');
+                }
+            }
+        });
         this.startVisibilityTracking();
     }
 
@@ -412,6 +429,7 @@ class NativeHotspotRenderer {
     applyStyle(group, type, state) {
         const style = this.styles[type] || this.styles.audio_only;
         const paths = group.getElementsByTagName('path');
+        const glowIntensity = this.calculateGlowIntensity();
 
         group.setAttribute('class', `hotspot-${type} hotspot-${state}`);
 
@@ -423,35 +441,58 @@ class NativeHotspotRenderer {
                     stroke: style.stroke,
                     strokeWidth: style[`${state}StrokeWidth`] + 'px' || style.strokeWidth + 'px',
                     filter: state === 'hover' ? `drop-shadow(0 0 8px ${style.stroke})` : '',
-                    opacity: '1'  // Always visible
+                    opacity: '1'
                 });
             } else {
-                // Production mode: subtle/invisible
+                // Production mode: adaptive glow
                 const isHover = state === 'hover';
                 const isSelected = state === 'selected';
 
+                // Calculate stroke width based on zoom (minimum 2px for visibility)
+                let strokeWidth = 0;
+                if (isHover || isSelected) {
+                    if (glowIntensity > 0.7) {
+                        strokeWidth = 4;  // Thick border at low zoom
+                    } else if (glowIntensity > 0.5) {
+                        strokeWidth = 3;  // Medium border at medium zoom
+                    } else {
+                        strokeWidth = 2;  // Still visible at high zoom
+                    }
+                }
+
+                // Always use full opacity for stroke, adjust width instead
                 Object.assign(path.style, {
                     fill: style[`${state}Fill`] || style.fill,
-                    stroke: isHover ? style.hoverStroke : (isSelected ? style.selectedStroke : style.stroke),
-                    strokeWidth: (isHover || isSelected ? 3 : 1) + 'px',  // Thicker border on hover
-                    transition: 'all 0.2s ease',  // Faster transition
-                    filter: isHover ? 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.8))' : '',  // Stronger glow
+                    stroke: (isHover || isSelected) ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 0)',
+                    strokeWidth: strokeWidth + 'px',
+                    strokeOpacity: glowIntensity, // Use strokeOpacity for fading effect
+                    transition: 'all 0.2s ease',
+                    filter: 'none',
                     opacity: isHover || isSelected ? '1' : '0'
                 });
+
+                // Add outer glow at low-medium zoom levels
+                if ((isHover || isSelected) && glowIntensity > 0.5) {
+                    const glowSize = Math.max(4, 12 * glowIntensity); // Minimum 4px glow
+                    path.style.filter = `drop-shadow(0 0 ${glowSize}px rgba(255, 255, 255, ${glowIntensity * 0.6}))`;
+                }
             }
         }
 
-        // Set group opacity based on debug mode
-        group.style.opacity = this.debugMode ? '1' : (state === 'hover' || state === 'selected' ? '1' : '0');
-
-        // Pulsing effect for hover in production mode
-        if (!this.debugMode && state === 'hover') {
-            group.style.animation = 'hotspotPulse 1.5s ease-in-out infinite';
+        // Set group opacity
+        if (this.debugMode) {
+            group.style.opacity = '1';
         } else {
-            group.style.animation = '';
+            group.style.opacity = (state === 'hover' || state === 'selected') ? '1' : '0';
+
+            // Keep pulsing animation at low-medium zoom only
+            if (state === 'hover' && glowIntensity > 0.5) {
+                group.style.animation = 'hotspotPulse 1.5s ease-in-out infinite';
+            } else {
+                group.style.animation = '';
+            }
         }
     }
-
 
     calculateBounds(coordinates) {
         let bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
@@ -480,6 +521,28 @@ class NativeHotspotRenderer {
      */
     calculateArea(bounds) {
         return (bounds.maxX - bounds.minX) * (bounds.maxY - bounds.minY);
+    }
+
+    /**
+     * Calculate glow intensity based on zoom level
+     * Returns opacity value between 0.3 and 1 (never fully transparent)
+     */
+    calculateGlowIntensity() {
+        if (!this.viewer || !this.viewer.viewport) return 1;
+
+        const zoom = this.viewer.viewport.getZoom();
+        const minZoom = 1;     // Start reducing at zoom 1
+        const maxZoom = 10;    // Maximum reduction at zoom 10
+
+        if (zoom <= minZoom) return 1;       // Full intensity
+        if (zoom >= maxZoom) return 0.3;     // Minimum 30% intensity (still visible)
+
+        // Smooth curve for better transition
+        const progress = (zoom - minZoom) / (maxZoom - minZoom);
+        const eased = 1 - Math.pow(progress, 0.5); // Square root for gentler reduction
+
+        // Map to range [0.3, 1]
+        return 0.3 + (eased * 0.7);
     }
 
     startVisibilityTracking() {
@@ -652,6 +715,7 @@ class NativeHotspotRenderer {
         this.viewer.removeAllHandlers('viewport-change');
         this.viewer.removeHandler('canvas-drag');
         this.viewer.removeHandler('canvas-drag-end');
+        this.viewer.removeHandler('zoom');
 
         if (this.svg) {
             this.viewer.removeOverlay(this.svg);
