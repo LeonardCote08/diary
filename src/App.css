@@ -75,6 +75,8 @@
     backface-visibility: hidden;
     -webkit-perspective: 1000;
     perspective: 1000;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
 }
 
     /* Smooth tile loading transitions */
@@ -149,6 +151,12 @@
         cursor: pointer;
         pointer-events: auto;
     }
+
+/* Éliminer le tap highlight sur les hotspots */
+.openseadragon-viewer svg * {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
 
 /* Viewer loading indicator */
 .viewer-loading {
@@ -349,6 +357,7 @@
     transform: translateX(-50%);
     z-index: 40;
     animation: slideUp 0.3s ease-out;
+    bottom: 100px; /* Changed from 60px to 100px */
 }
 
 @keyframes slideUp {
@@ -473,6 +482,7 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* Mobile responsiveness */

@@ -31,11 +31,13 @@
 
     /* Mobile positioning */
     .audio-player.mobile {
-        bottom: 0;
-        left: 0;
-        right: 0;
-        width: 100%;
-        border-radius: 20px 20px 0 0;
+        bottom: 20px; /* Add space from bottom */
+        left: 10px;
+        right: 10px;
+        width: calc(100% - 20px); /* Account for left/right margins */
+        max-width: 400px; /* Limit maximum width */
+        margin: 0 auto;
+        border-radius: 16px; /* Rounded corners all around */
         transform: none !important;
         animation: slideUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
@@ -351,13 +353,72 @@
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
+    /* Mobile player takes less width */
+    .audio-player.mobile {
+        max-width: 90%;
+        margin: 0 auto;
+        left: 5%;
+        right: 5%;
+        width: auto;
+    }
+
+        /* Reduce overall height on mobile */
+        .audio-player.mobile .audio-player-expanded {
+            padding: 8px 12px;
+        }
+
+        .audio-player.mobile .player-header {
+            margin-bottom: 8px;
+        }
+
+        .audio-player.mobile .progress-section {
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        .audio-player.mobile .controls-section {
+            gap: 4px;
+        }
+
+        /* Make progress bar thinner on mobile */
+        .audio-player.mobile .progress-track {
+            height: 3px;
+        }
+
+        .audio-player.mobile .progress-bar {
+            height: 20px; /* Smaller touch target */
+        }
+
     .audio-player-expanded {
-        padding: 12px 14px;
+        padding: 10px 12px;
+    }
+
+    .player-header {
+        margin-bottom: 12px;
+    }
+
+    .track-name {
+        font-size: 14px;
+    }
+
+    .progress-section {
+        margin-bottom: 10px;
+    }
+
+    .time-current,
+    .time-duration {
+        font-size: 9px;
+        min-width: 28px;
     }
 
     .btn-play {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
+    }
+
+    .btn-skip,
+    .btn-mute {
+        padding: 4px;
     }
 
     .controls-left {
@@ -367,6 +428,30 @@
     /* Hide skip buttons on mobile for cleaner look */
     .btn-skip {
         display: none;
+    }
+
+    /* Make minimized player smaller on mobile */
+    .audio-player.minimized {
+        bottom: 20px;
+        right: 10px;
+        position: fixed; /* Use fixed positioning */
+    }
+
+        .audio-player.minimized.mobile {
+            /* Override the mobile class for minimized state */
+            left: auto;
+            width: auto;
+            max-width: none;
+        }
+
+    .btn-play-mini {
+        width: 48px;
+        height: 48px;
+    }
+
+    .track-name-mini {
+        font-size: 10px;
+        padding: 0 16px 0 10px;
     }
 }
 

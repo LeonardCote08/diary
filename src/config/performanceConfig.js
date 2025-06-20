@@ -249,6 +249,12 @@ const applyPlatformOptimizations = () => {
         console.log('Safari/iOS detected - forcing canvas drawer and limiting cache');
     }
 
+    // Android MUST also use canvas - WebGL causes compatibility issues
+    if (platform.isAndroid) {
+        performanceConfig.viewer.drawer = 'canvas';
+        console.log('Android detected - forcing canvas drawer for compatibility');
+    }
+
     // Mobile optimizations
     if (platform.isMobile) {
         Object.assign(performanceConfig.viewer, {

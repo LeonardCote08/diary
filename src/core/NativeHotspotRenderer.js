@@ -189,7 +189,8 @@ class NativeHotspotRenderer {
             cursor: 'pointer',
             pointerEvents: 'fill',
             opacity: this.debugMode ? '1' : '0',  // Visible in debug, invisible in prod
-            transition: 'opacity 0.2s ease-out'
+            transition: 'opacity 0.2s ease-out',
+            '-webkit-tap-highlight-color': 'transparent'
         });
         g.setAttribute('data-hotspot-id', hotspot.id);
         return g;
@@ -243,7 +244,74 @@ class NativeHotspotRenderer {
         // Add click handler to the viewer's canvas container instead of SVG
         const container = this.viewer.container;
 
+        // Track if we're handling a touch to prevent double processing
+        let touchProcessed = false;
+        let touchTimeout = null;
+
+        // Handle touch events for mobile - direct processing without click simulation
+        container.addEventListener('touchstart', (event) => {
+            // Reset touch processed flag
+            touchProcessed = false;
+
+            // Clear any existing timeout
+            if (touchTimeout) {
+                clearTimeout(touchTimeout);
+                touchTimeout = null;
+            }
+        }, { passive: true });
+
+        container.addEventListener('touchend', (event) => {
+            // Prevent default to avoid ghost clicks
+            event.preventDefault();
+
+            // Skip if already processed or multi-touch
+            if (touchProcessed || event.changedTouches.length !== 1) return;
+
+            const touch = event.changedTouches[0];
+
+            // Get touch position relative to the viewer
+            const rect = this.viewer.element.getBoundingClientRect();
+            const pixelPoint = new OpenSeadragon.Point(
+                touch.clientX - rect.left,
+                touch.clientY - rect.top
+            );
+
+            // Convert to viewport then image coordinates
+            const viewportPoint = this.viewer.viewport.pointFromPixel(pixelPoint);
+            const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
+
+            // Find the smallest hotspot at this point
+            const clickedHotspot = this.findSmallestHotspotAtPoint(imagePoint);
+
+            if (clickedHotspot) {
+                // Mark as processed
+                touchProcessed = true;
+
+                // Process the hotspot click directly
+                this.selectedHotspot = clickedHotspot;
+                this.onHotspotClick(clickedHotspot);
+
+                // Update visual state
+                this.overlays.forEach((overlay, id) => {
+                    const state = id === clickedHotspot.id ? 'selected' :
+                        (id === this.hoveredHotspot?.id ? 'hover' : 'normal');
+                    this.applyStyle(overlay.element, overlay.hotspot.type, state);
+                });
+
+                // Set timeout to reset the flag
+                touchTimeout = setTimeout(() => {
+                    touchProcessed = false;
+                    touchTimeout = null;
+                }, 300);
+            }
+        }, { passive: false });
+
         container.addEventListener('click', (event) => {
+            // Skip if this was from a touch event
+            if (touchProcessed) {
+                return;
+            }
+
             // Don't process clicks if we were dragging
             if (this.isDragging) {
                 return;
@@ -298,7 +366,7 @@ class NativeHotspotRenderer {
             }
         });
 
-        // Keep the hover effect on SVG
+        // Keep the hover effect on SVG for desktop
         this.svg.addEventListener('mousemove', (event) => {
             const rect = this.viewer.element.getBoundingClientRect();
             const pixelPoint = new OpenSeadragon.Point(
@@ -337,7 +405,6 @@ class NativeHotspotRenderer {
             this.svg.style.cursor = foundHotspot ? 'pointer' : 'default';
         });
     }
-
     /**
      * Find the smallest hotspot at a given point
      * This ensures smaller hotspots take priority over larger ones

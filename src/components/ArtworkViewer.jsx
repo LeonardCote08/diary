@@ -34,16 +34,20 @@ const getBrowserOptimalDrawer = () => {
     const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
     const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
 
-    // Safari and iOS MUST use canvas for performance
-    if (isSafari || isIOS) {
-        console.log('Safari/iOS detected - using canvas drawer for optimal performance');
+    // Check if device is mobile (including Android)
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(ua) ||
+        ('ontouchstart' in window) ||
+        (navigator.maxTouchPoints > 0);
+
+    // Mobile devices MUST use canvas for compatibility and performance
+    if (isMobile || isSafari || isIOS) {
+        console.log('Mobile/Safari device detected - using canvas drawer for compatibility');
         return 'canvas';
     }
 
-    // All other browsers can use webgl
+    // Desktop browsers can use webgl
     return 'webgl';
 };
-
 /**
  * ArtworkViewer - Main viewer component optimized for 60 FPS
  */
@@ -67,7 +71,11 @@ function ArtworkViewer(props) {
     );
 
     // Check if device is mobile
-    const isMobile = () => window.innerWidth <= 768;
+    const isMobile = () => {
+        return window.innerWidth <= 768 ||
+            /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+            ('ontouchstart' in window);
+    };
 
     // Store initial viewport for "Expand to Full View"
     let homeViewport = null;
@@ -178,12 +186,19 @@ function ArtworkViewer(props) {
             gestureSettingsTouch: {
                 scrollToZoom: false,
                 clickToZoom: false,
-                dblClickToZoom: false,  // DISABLED
+                dblClickToZoom: false,
                 flickEnabled: config.flickEnabled,
                 flickMinSpeed: config.flickMinSpeed,
                 flickMomentum: config.flickMomentum,
-                pinchToZoom: true
+                pinchToZoom: true,
+                dragToPan: true  
             },
+
+            // Touch handling configuration 
+            zoomPerClick: 1.0,
+            dblClickDistThreshold: 20,
+            clickDistThreshold: 10,
+            clickTimeThreshold: 300,
 
             // Performance
             debugMode: config.debugMode,
@@ -736,7 +751,12 @@ function ArtworkViewer(props) {
 
         // Show expand button on mobile after zoom
         if (isMobile()) {
+            console.log('zoomToHotspot: isMobile=true, setting showExpandButton=true');
             setShowExpandButton(true);
+            // Force check after animation
+            setTimeout(() => {
+                console.log('showExpandButton state:', showExpandButton());
+            }, 1000);
         }
     };
 
@@ -870,9 +890,9 @@ function ArtworkViewer(props) {
 
             {/* Debug Mode Toggle Button - REMOVE FOR PRODUCTION */}
             <div style={{
-                position: 'absolute',
-                bottom: '20px',
-                right: '20px',
+                position: 'fixed', 
+                bottom: isMobile() ? '10px' : '20px',
+                right: isMobile() ? '10px' : '20px',
                 'z-index': 100
             }}>
                 <button
@@ -897,9 +917,9 @@ function ArtworkViewer(props) {
                         background: debugMode() ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.8)',
                         color: 'white',
                         border: '2px solid ' + (debugMode() ? '#ff0000' : '#666'),
-                        padding: '10px 20px',
+                        padding: isMobile() ? '6px 10px' : '10px 20px',
                         'border-radius': '8px',
-                        'font-size': '14px',
+                        'font-size': isMobile() ? '12px' : '14px',
                         'font-weight': 'bold',
                         cursor: 'pointer',
                         'backdrop-filter': 'blur(10px)',
@@ -907,15 +927,17 @@ function ArtworkViewer(props) {
                         'box-shadow': '0 4px 12px rgba(0, 0, 0, 0.3)'
                     }}
                 >
-                    Debug Mode: {debugMode() ? 'ON' : 'OFF'}
-                    <div style={{
-                        'font-size': '11px',
-                        'font-weight': 'normal',
-                        'margin-top': '4px',
-                        opacity: '0.8'
-                    }}>
-                        Press C or click here
-                    </div>
+                    {isMobile() ? (debugMode() ? 'DBG: ON' : 'DBG: OFF') : `Debug Mode: ${debugMode() ? 'ON' : 'OFF'}`}
+                    <Show when={!isMobile()}>
+                        <div style={{
+                            'font-size': '11px',
+                            'font-weight': 'normal',
+                            'margin-top': '4px',
+                            opacity: '0.8'
+                        }}>
+                            Press C or click here
+                        </div>
+                    </Show>
                 </button>
             </div>
 
