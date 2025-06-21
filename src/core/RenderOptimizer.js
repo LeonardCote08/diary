@@ -175,6 +175,12 @@ class RenderOptimizer {
     }
 
     applyZoomOptimizations(isZooming) {
+
+        // Skip zoom optimizations on mobile - they can cause tile loading issues
+        if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            return;
+        }
+
         const config = window.performanceConfig?.renderOptimization?.zoomOptimizations;
         if (!config) return;
 

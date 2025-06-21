@@ -155,15 +155,21 @@ const performanceConfig = {
         maxZoomLevel: 20,
         touchSensitivity: 1.0,
         doubleTapDelay: 300,
-        maxImageCacheCount: 100,      // Much lower for mobile
-        imageLoaderLimit: 2,          // Serial loading on mobile
-        animationTime: 0.2,           // Even faster on mobile
-        springStiffness: 12.0,        // Very responsive
+        maxImageCacheCount: 50,        // Reduced from 100
+        imageLoaderLimit: 2,           // Keep at 2
+        animationTime: 0.2,            // Faster animations
+        springStiffness: 12.0,         // More responsive
         immediateRender: true,
-        blendTime: 0,                 // No blending on mobile
-        maxTilesPerFrame: 2,          // Very limited
-        minPixelRatio: 0.8,           // Allow some quality on mobile too
-        minZoomImageRatio: 0.9        // But be more conservative
+        blendTime: 0,                  // CRITICAL: No blending on mobile
+        maxTilesPerFrame: 2,           // Very limited
+        minPixelRatio: 1.0,            // Don't load high-res tiles too early
+        minZoomImageRatio: 0.9,        // Conservative tile loading
+        visibilityRatio: 1.0,          // Only load visible tiles
+        smoothTileEdgesMinZoom: Infinity, // Disable edge smoothing
+        alwaysBlend: false,            // Disable blending
+        debugMode: false,              // Disable debug for performance
+        preserveImageSizeOnResize: false, // Allow faster resize
+        maxZoomPixelRatio: 2           // Limit pixel density
     },
 
     // Render optimization settings
@@ -258,6 +264,8 @@ const applyPlatformOptimizations = () => {
     // Mobile optimizations
     if (platform.isMobile) {
         Object.assign(performanceConfig.viewer, {
+            // Critical performance fixes
+            drawer: 'canvas',  // Force canvas on ALL mobile devices
             imageLoaderLimit: performanceConfig.mobile.imageLoaderLimit,
             maxImageCacheCount: performanceConfig.mobile.maxImageCacheCount,
             animationTime: performanceConfig.mobile.animationTime,
@@ -266,16 +274,35 @@ const applyPlatformOptimizations = () => {
             blendTime: performanceConfig.mobile.blendTime,
             smoothImageZoom: false,
             maxTilesPerFrame: performanceConfig.mobile.maxTilesPerFrame,
-            visibilityRatio: 0.4,
+            visibilityRatio: performanceConfig.mobile.visibilityRatio,
             minPixelRatio: performanceConfig.mobile.minPixelRatio,
-            minZoomImageRatio: performanceConfig.mobile.minZoomImageRatio
+            minZoomImageRatio: performanceConfig.mobile.minZoomImageRatio,
+            smoothTileEdgesMinZoom: performanceConfig.mobile.smoothTileEdgesMinZoom,
+            alwaysBlend: performanceConfig.mobile.alwaysBlend,
+            preserveImageSizeOnResize: performanceConfig.mobile.preserveImageSizeOnResize,
+            maxZoomPixelRatio: performanceConfig.mobile.maxZoomPixelRatio,
+
+            // Touch-specific optimizations
+            gestureSettingsTouch: {
+                scrollToZoom: false,
+                clickToZoom: false,
+                dblClickToZoom: false,
+                flickEnabled: true,
+                flickMinSpeed: 120,
+                flickMomentum: 0.25,
+                pinchToZoom: true,
+                dragToPan: true,
+                pinchRotate: false  // Disable rotation for performance
+            }
         });
 
+        // Reduce hotspot rendering load
         performanceConfig.hotspots.batchSize = 25;
         performanceConfig.hotspots.maxVisibleHotspots = 50;
-        performanceConfig.memory.maxCachedImages = 100;
+        performanceConfig.hotspots.renderDebounceTime = 32; // ~30 FPS max for hotspots
+        performanceConfig.memory.maxCachedImages = 50;
 
-        console.log('Mobile device detected - applied balanced optimizations for quality');
+        console.log('Mobile device detected - applied aggressive performance optimizations');
     }
 
     // Low-end device adjustments

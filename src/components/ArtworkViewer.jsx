@@ -12,6 +12,7 @@ import TileCleanupManager from '../core/TileCleanupManager';
 import AudioPlayer from './AudioPlayer';
 import performanceConfig, { adjustSettingsForPerformance } from '../config/performanceConfig';
 
+
 // Quality preservation settings
 const QUALITY_CONFIG = {
     minHotspotPixelsDesktop: 600,  // Minimum visible area for desktop
@@ -28,7 +29,6 @@ const ZOOM_CONFIG = {
 
 let hotspotData = [];
 
-// Browser detection for optimal drawer selection
 const getBrowserOptimalDrawer = () => {
     const ua = navigator.userAgent;
     const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
@@ -39,15 +39,27 @@ const getBrowserOptimalDrawer = () => {
         ('ontouchstart' in window) ||
         (navigator.maxTouchPoints > 0);
 
-    // Mobile devices MUST use canvas for compatibility and performance
+    // CRITICAL FIX: Force canvas for ALL mobile devices and Safari
+    // OpenSeadragon 5.0+ has severe WebGL performance issues on mobile
     if (isMobile || isSafari || isIOS) {
-        console.log('Mobile/Safari device detected - using canvas drawer for compatibility');
+        console.log('Mobile/Safari detected - forcing canvas drawer for performance');
         return 'canvas';
     }
 
-    // Desktop browsers can use webgl
-    return 'webgl';
+    // Desktop Chrome/Firefox can use WebGL effectively
+    const isChrome = /chrome|crios/i.test(ua) && !/edge|edg/i.test(ua);
+    const isFirefox = /firefox|fxios/i.test(ua);
+
+    if (isChrome || isFirefox) {
+        console.log('Desktop Chrome/Firefox detected - using webgl drawer');
+        return 'webgl';
+    }
+
+    // Default to canvas for all other cases
+    console.log('Default browser detected - using canvas drawer');
+    return 'canvas';
 };
+
 /**
  * ArtworkViewer - Main viewer component optimized for 60 FPS
  */
@@ -128,13 +140,29 @@ function ArtworkViewer(props) {
         const config = performanceConfig.viewer;
         const dziUrl = `/images/tiles/${props.artworkId}_1024/${props.artworkId}.dzi`;
 
+        // Mobile-specific config override
+        const isMobileDevice = isMobile();
+        const drawerType = getBrowserOptimalDrawer();
+
+        // Override critical settings for mobile
+        if (isMobileDevice) {
+            config.animationTime = 0.2;
+            config.springStiffness = 12.0;
+            config.blendTime = 0;
+            config.immediateRender = true;
+            config.imageLoaderLimit = 2;
+            config.maxImageCacheCount = 50;
+            config.visibilityRatio = 1.0;
+            config.maxTilesPerFrame = 2;
+        }
+
         viewer = OpenSeadragon({
             element: viewerRef,
             tileSources: dziUrl,
             prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
             // Rendering - use browser-specific drawer
-            drawer: getBrowserOptimalDrawer(),
+            drawer: drawerType,
             imageSmoothingEnabled: config.imageSmoothingEnabled,
             smoothTileEdgesMinZoom: config.smoothTileEdgesMinZoom,
             alwaysBlend: config.alwaysBlend,
@@ -506,31 +534,43 @@ function ArtworkViewer(props) {
     const initializeHotspotSystem = () => {
         if (!viewer) return;
 
-        components.renderer = new NativeHotspotRenderer({
-            viewer: viewer,
-            spatialIndex: components.spatialIndex,
-            onHotspotHover: setHoveredHotspot,
-            onHotspotClick: handleHotspotClick,
-            visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
-            batchSize: performanceConfig.hotspots.batchSize,
-            renderDebounceTime: performanceConfig.hotspots.renderDebounceTime,
-            maxVisibleHotspots: performanceConfig.hotspots.maxVisibleHotspots,
-            minZoomForHotspots: performanceConfig.hotspots.minZoomForHotspots,
-            debugMode: debugMode()
-        });
+        // Use Canvas renderer for mobile, SVG for desktop
+        if (isMobile()) {
+            // Import dynamically to avoid loading on desktop
+            import('../core/CanvasHotspotRenderer.js').then(({ default: CanvasHotspotRenderer }) => {
+                components.renderer = new CanvasHotspotRenderer({
+                    viewer: viewer,
+                    spatialIndex: components.spatialIndex,
+                    onHotspotHover: setHoveredHotspot,
+                    onHotspotClick: handleHotspotClick,
+                    visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
+                    debugMode: debugMode()
+                });
+                console.log('Using CanvasHotspotRenderer for mobile');
+            });
+        } else {
+            // Desktop keeps the existing SVG renderer
+            components.renderer = new NativeHotspotRenderer({
+                viewer: viewer,
+                spatialIndex: components.spatialIndex,
+                onHotspotHover: setHoveredHotspot,
+                onHotspotClick: handleHotspotClick,
+                visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
+                batchSize: performanceConfig.hotspots.batchSize,
+                renderDebounceTime: performanceConfig.hotspots.renderDebounceTime,
+                maxVisibleHotspots: performanceConfig.hotspots.maxVisibleHotspots,
+                minZoomForHotspots: performanceConfig.hotspots.minZoomForHotspots,
+                debugMode: debugMode()
+            });
+        }
     };
-
     /**
      * Calculate optimal bounds for hotspot zoom with adaptive padding
      */
     const calculateHotspotBounds = (hotspot) => {
-        const overlay = components.renderer?.overlays.get(hotspot.id);
-
-        // Get hotspot bounds
+        // For CanvasHotspotRenderer, we don't have overlays, so calculate bounds directly
         let bounds;
-        if (overlay) {
-            bounds = overlay.bounds;
-        } else if (hotspot.coordinates) {
+        if (hotspot.coordinates) {
             // Fallback: calculate from coordinates
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
@@ -668,10 +708,12 @@ function ArtworkViewer(props) {
         viewer.springStiffness = 6.5;
 
         // Get hotspot center in image coordinates
-        const overlay = components.renderer?.overlays.get(hotspot.id);
         let hotspotCenterImage;
 
-        if (overlay) {
+        // Check if renderer has overlays (desktop NativeHotspotRenderer)
+        const overlay = components.renderer?.overlays?.get?.(hotspot.id);
+
+        if (overlay && overlay.bounds) {
             hotspotCenterImage = new OpenSeadragon.Point(
                 (overlay.bounds.minX + overlay.bounds.maxX) / 2,
                 (overlay.bounds.minY + overlay.bounds.maxY) / 2
@@ -729,11 +771,17 @@ function ArtworkViewer(props) {
         // Log for debugging
         console.log(`Hotspot ${hotspot.id}: size=${bounds.hotspotSizePixels.toFixed(0)}px, targetZoom=${targetZoom.toFixed(2)}, maxZoom=${bounds.maxZoom.toFixed(2)}, finalZoom=${finalZoom.toFixed(2)}`);
 
-        // Apply zoom and center - ORDER IS IMPORTANT
-        // First pan to center the hotspot
-        viewer.viewport.panTo(centerViewport, false);
-        // Then zoom without changing the center point (null = keep current center)
-        viewer.viewport.zoomTo(finalZoom, null, false);
+        // Apply zoom and center with better calculation
+        // Use fitBounds for more reliable centering
+        const paddingFactor = isMobile() ? 0.8 : 0.9; // More padding on mobile
+        const adjustedBounds = new OpenSeadragon.Rect(
+            bounds.x + bounds.width * (1 - paddingFactor) / 2,
+            bounds.y + bounds.height * (1 - paddingFactor) / 2,
+            bounds.width * paddingFactor,
+            bounds.height * paddingFactor
+        );
+
+        viewer.viewport.fitBounds(adjustedBounds, false);
 
         // Restore original settings after animation starts
         setTimeout(() => {
@@ -764,11 +812,13 @@ function ArtworkViewer(props) {
  * Handle hotspot click with zoom behavior
  */
     const handleHotspotClick = async (hotspot) => {
+        console.log('Hotspot clicked:', hotspot.id, 'isMobile:', isMobile());
         setSelectedHotspot(hotspot);
         setCurrentPlayingHotspot(hotspot);
 
         // Zoom behavior
         if (isMobile()) {
+            console.log('Zooming to hotspot on mobile...');
             // Mobile: Always zoom to hotspot
             await zoomToHotspot(hotspot);
         } else if (ZOOM_CONFIG.enableDesktopZoom) {
