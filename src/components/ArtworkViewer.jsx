@@ -23,7 +23,7 @@ const QUALITY_CONFIG = {
 
 // Zoom behavior configuration
 const ZOOM_CONFIG = {
-    enableDesktopZoom: false,  // Disabled per Deji's specs
+    enableDesktopZoom: true,  // Disabled per Deji's specs
     minZoomForDetail: 2
 };
 
@@ -84,9 +84,21 @@ function ArtworkViewer(props) {
 
     // Check if device is mobile
     const isMobile = () => {
-        return window.innerWidth <= 768 ||
-            /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-            ('ontouchstart' in window);
+        // More accurate mobile detection
+        const userAgent = navigator.userAgent.toLowerCase();
+        const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+
+        // Check user agent first
+        if (mobileRegex.test(userAgent)) {
+            return true;
+        }
+
+        // Then check screen size AND touch capability
+        const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        const isSmallScreen = window.innerWidth <= 768;
+
+        // Only consider it mobile if BOTH conditions are true
+        return hasTouch && isSmallScreen;
     };
 
     // Store initial viewport for "Expand to Full View"
@@ -403,12 +415,30 @@ function ArtworkViewer(props) {
 
         // Handle zoom animation completion
         viewer.addHandler('animation-finish', () => {
+
             if (isZoomingToHotspot()) {
                 setIsZoomingToHotspot(false);
                 // Force update hotspot positions after zoom
                 if (components.renderer) {
                     components.renderer.updateVisibility();
                 }
+            }
+        });
+
+        
+        // Optimize tile loading during zoom animations
+        viewer.addHandler('animation-start', (event) => {
+            // Pause tile cleanup during zoom animation
+            if (isZoomingToHotspot() && components.tileCleanupManager) {
+                components.tileCleanupManager.pauseCleanup(3000); // Pause for 3 seconds
+            }
+        });
+
+        // Clear tile queue during animation for smoother performance
+        viewer.addHandler('zoom', (event) => {
+            if (isZoomingToHotspot() && viewer.imageLoader) {
+                // Clear pending tile loads to reduce jank
+                viewer.imageLoader.clear();
             }
         });
 
@@ -683,6 +713,59 @@ function ArtworkViewer(props) {
         return zoomBounds;
     };
 
+    // Utility function for smooth animations
+    const applyCinematicEasing = (viewer, duration = 2.0) => {
+        // Create a more cinematic ease-out curve
+        const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+        // Apply custom easing to springs
+        const originalUpdate = viewer.viewport.zoomSpring.update;
+        viewer.viewport.zoomSpring.update = function () {
+            originalUpdate.call(this);
+            if (this.current.time < duration) {
+                const progress = this.current.time / duration;
+                const easedProgress = easeOutCubic(progress);
+                this.current.value = this.start.value +
+                    (this.target.value - this.start.value) * easedProgress;
+            }
+        };
+
+        // Restore after animation
+        setTimeout(() => {
+            viewer.viewport.zoomSpring.update = originalUpdate;
+        }, duration * 1000);
+    };
+
+    // Smooth cubic ease-out function for graceful deceleration
+    const applySmoothEasing = (viewer, duration) => {
+        const startTime = Date.now();
+        const springs = [
+            viewer.viewport.centerSpringX,
+            viewer.viewport.centerSpringY,
+            viewer.viewport.zoomSpring
+        ];
+
+        springs.forEach(spring => {
+            const originalStiffness = spring.springStiffness;
+
+            const adjustStiffness = () => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Cubic ease-out curve
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+
+                // Gradually reduce stiffness for smoother ending
+                spring.springStiffness = originalStiffness * (1 - easeOut * 0.7);
+
+                if (progress < 1) {
+                    requestAnimationFrame(adjustStiffness);
+                }
+            };
+
+            requestAnimationFrame(adjustStiffness);
+        });
+    };
     /**
      * Smooth zoom to hotspot with quality limits
      */
@@ -692,25 +775,21 @@ function ArtworkViewer(props) {
         }
 
         const bounds = calculateHotspotBounds(hotspot);
-
         if (!bounds) {
             return;
         }
 
         setIsZoomingToHotspot(true);
 
-        // Store current animation settings
-        const originalAnimationTime = viewer.animationTime;
-        const originalSpringStiffness = viewer.springStiffness;
+        // Calculate viewport aspect ratio FIRST
+        const viewportAspect = viewer.viewport.getAspectRatio();
 
-        // Set smoother animation for zoom
-        viewer.animationTime = 0.8;
-        viewer.springStiffness = 6.5;
+        // Calculate current viewport for distance calculation
+        const currentBounds = viewer.viewport.getBounds();
+        const currentCenter = currentBounds.getCenter();
 
-        // Get hotspot center in image coordinates
+        // Calculate hotspot center in viewport coordinates
         let hotspotCenterImage;
-
-        // Check if renderer has overlays (desktop NativeHotspotRenderer)
         const overlay = components.renderer?.overlays?.get?.(hotspot.id);
 
         if (overlay && overlay.bounds) {
@@ -719,9 +798,7 @@ function ArtworkViewer(props) {
                 (overlay.bounds.minY + overlay.bounds.maxY) / 2
             );
         } else if (hotspot.coordinates) {
-            // Fallback calculation
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-
             const processCoords = (coords) => {
                 if (Array.isArray(coords[0]) && typeof coords[0][0] === 'number') {
                     coords.forEach(([x, y]) => {
@@ -741,7 +818,6 @@ function ArtworkViewer(props) {
                     });
                 }
             };
-
             processCoords(hotspot.coordinates);
             hotspotCenterImage = new OpenSeadragon.Point(
                 (minX + maxX) / 2,
@@ -749,31 +825,63 @@ function ArtworkViewer(props) {
             );
         }
 
-        // Convert to viewport coordinates
         const centerViewport = viewer.viewport.imageToViewportCoordinates(hotspotCenterImage);
 
-        // Calculate zoom needed to fit bounds in viewport
-        const viewportAspect = viewer.viewport.getAspectRatio();
-        const boundsAspect = bounds.width / bounds.height;
+        // Calculate distance and zoom change for dynamic animation timing
+        const distance = Math.sqrt(
+            Math.pow(centerViewport.x - currentCenter.x, 2) +
+            Math.pow(centerViewport.y - currentCenter.y, 2)
+        );
+        const currentZoom = viewer.viewport.getZoom();
+        const targetZoom = Math.min(
+            1.0 / bounds.width,
+            viewportAspect / bounds.height
+        );
+        const zoomChange = Math.abs(Math.log(targetZoom / currentZoom));
 
-        let targetZoom;
-        if (boundsAspect > viewportAspect) {
-            // Bounds are wider than viewport
-            targetZoom = 1.0 / bounds.width;
-        } else {
-            // Bounds are taller than viewport
-            targetZoom = viewportAspect / bounds.height;
-        }
+        // Dynamic animation timing - even longer for ultra-smooth effect
+        // Range from 2.0s to 4.5s for cinematic feel
+        const animTime = Math.min(4.5, Math.max(2.0, distance * 3.0 + zoomChange * 1.2));
 
-        // Apply quality limit
-        const finalZoom = Math.min(targetZoom, bounds.maxZoom);
+        // Much lower stiffness for graceful, flowing curves
+        // Range from 1.2 to 2.5 (ultra-smooth)
+        const stiffness = Math.max(1.2, 2.5 - distance * 1.0);
 
-        // Log for debugging
-        console.log(`Hotspot ${hotspot.id}: size=${bounds.hotspotSizePixels.toFixed(0)}px, targetZoom=${targetZoom.toFixed(2)}, maxZoom=${bounds.maxZoom.toFixed(2)}, finalZoom=${finalZoom.toFixed(2)}`);
+        // Even gentler stiffness for zoom to create floating effect
+        const zoomStiffness = stiffness * 0.7; // 70% of pan stiffness
 
-        // Apply zoom and center with better calculation
-        // Use fitBounds for more reliable centering
-        const paddingFactor = isMobile() ? 0.8 : 0.9; // More padding on mobile
+        // Store original animation settings
+        const originalSettings = {
+            animationTime: viewer.animationTime,
+            springStiffness: viewer.springStiffness,
+            centerXTime: viewer.viewport.centerSpringX.animationTime,
+            centerYTime: viewer.viewport.centerSpringY.animationTime,
+            zoomTime: viewer.viewport.zoomSpring.animationTime,
+            centerXStiff: viewer.viewport.centerSpringX.springStiffness,
+            centerYStiff: viewer.viewport.centerSpringY.springStiffness,
+            zoomStiff: viewer.viewport.zoomSpring.springStiffness
+        };
+
+        // Apply cinematic animation settings
+        viewer.animationTime = animTime;
+        viewer.springStiffness = stiffness;
+
+        // Set spring-specific values for ultra-smooth animation
+        // Different timing for each axis creates more organic movement
+        viewer.viewport.centerSpringX.animationTime = animTime;
+        viewer.viewport.centerSpringY.animationTime = animTime;
+        viewer.viewport.zoomSpring.animationTime = animTime * 1.3; // 30% slower zoom for floating effect
+
+        // Ultra-low stiffness for graceful deceleration
+        viewer.viewport.centerSpringX.springStiffness = stiffness;
+        viewer.viewport.centerSpringY.springStiffness = stiffness;
+        viewer.viewport.zoomSpring.springStiffness = zoomStiffness; // Use the even lower zoom stiffness
+
+        // Add easing to the end of animation for graceful stop
+        viewer.viewport.applyConstraints = false; // Temporarily disable constraints for smoother animation
+
+        // Calculate final bounds with padding
+        const paddingFactor = isMobile() ? 0.75 : 0.85;
         const adjustedBounds = new OpenSeadragon.Rect(
             bounds.x + bounds.width * (1 - paddingFactor) / 2,
             bounds.y + bounds.height * (1 - paddingFactor) / 2,
@@ -781,30 +889,49 @@ function ArtworkViewer(props) {
             bounds.height * paddingFactor
         );
 
-        viewer.viewport.fitBounds(adjustedBounds, false);
+        // Create multi-stage animation for ultra-smooth ending
+        const executeSmootherZoom = () => {
+            // First 80% of animation with current settings
+            viewer.viewport.fitBounds(adjustedBounds, false);
 
-        // Restore original settings after animation starts
+            // Last 20% with even gentler settings for graceful ending
+            setTimeout(() => {
+                viewer.viewport.centerSpringX.springStiffness = 0.8;
+                viewer.viewport.centerSpringY.springStiffness = 0.8;
+                viewer.viewport.zoomSpring.springStiffness = 0.5;
+            }, animTime * 800); // 80% through animation
+        };
+
+        // Execute the smooth zoom with multi-stage approach
+        executeSmootherZoom();
+
+        // Apply smooth easing curve
+        applySmoothEasing(viewer, animTime);
+
+        // Restore original settings after animation completes (SEPARATE setTimeout)
         setTimeout(() => {
-            viewer.animationTime = originalAnimationTime;
-            viewer.springStiffness = originalSpringStiffness;
-        }, 100);
+            viewer.viewport.applyConstraints = true; // Re-enable constraints
+            viewer.animationTime = originalSettings.animationTime;
+            viewer.springStiffness = originalSettings.springStiffness;
+            viewer.viewport.centerSpringX.animationTime = originalSettings.centerXTime;
+            viewer.viewport.centerSpringY.animationTime = originalSettings.centerYTime;
+            viewer.viewport.zoomSpring.animationTime = originalSettings.zoomTime;
+            viewer.viewport.centerSpringX.springStiffness = originalSettings.centerXStiff;
+            viewer.viewport.centerSpringY.springStiffness = originalSettings.centerYStiff;
+            viewer.viewport.zoomSpring.springStiffness = originalSettings.zoomStiff;
+        }, animTime * 1000 + 200); // After full animation + buffer
 
-        // Force update of hotspot overlays after zoom animation
+        // Update hotspot overlays after animation
         setTimeout(() => {
             if (components.renderer) {
                 components.renderer.updateVisibility();
                 viewer.forceRedraw();
             }
-        }, 850);
+        }, animTime * 1000 + 100);
 
-        // Show expand button on mobile after zoom
+        // Show expand button on mobile
         if (isMobile()) {
-            console.log('zoomToHotspot: isMobile=true, setting showExpandButton=true');
             setShowExpandButton(true);
-            // Force check after animation
-            setTimeout(() => {
-                console.log('showExpandButton state:', showExpandButton());
-            }, 1000);
         }
     };
 

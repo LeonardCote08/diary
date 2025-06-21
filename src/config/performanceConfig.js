@@ -131,7 +131,7 @@ const performanceConfig = {
         preloadPadding: 0.2
     },
 
-    // Memory management
+    // Memory managementfalwse
     memory: {
         maxCachedImages: 300,
         maxCachedAudio: 10,
