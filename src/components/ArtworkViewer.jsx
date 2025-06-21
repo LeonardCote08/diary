@@ -713,62 +713,8 @@ function ArtworkViewer(props) {
         return zoomBounds;
     };
 
-    // Utility function for smooth animations
-    const applyCinematicEasing = (viewer, duration = 2.0) => {
-        // Create a more cinematic ease-out curve
-        const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
-
-        // Apply custom easing to springs
-        const originalUpdate = viewer.viewport.zoomSpring.update;
-        viewer.viewport.zoomSpring.update = function () {
-            originalUpdate.call(this);
-            if (this.current.time < duration) {
-                const progress = this.current.time / duration;
-                const easedProgress = easeOutCubic(progress);
-                this.current.value = this.start.value +
-                    (this.target.value - this.start.value) * easedProgress;
-            }
-        };
-
-        // Restore after animation
-        setTimeout(() => {
-            viewer.viewport.zoomSpring.update = originalUpdate;
-        }, duration * 1000);
-    };
-
-    // Smooth cubic ease-out function for graceful deceleration
-    const applySmoothEasing = (viewer, duration) => {
-        const startTime = Date.now();
-        const springs = [
-            viewer.viewport.centerSpringX,
-            viewer.viewport.centerSpringY,
-            viewer.viewport.zoomSpring
-        ];
-
-        springs.forEach(spring => {
-            const originalStiffness = spring.springStiffness;
-
-            const adjustStiffness = () => {
-                const elapsed = (Date.now() - startTime) / 1000;
-                const progress = Math.min(elapsed / duration, 1);
-
-                // Cubic ease-out curve
-                const easeOut = 1 - Math.pow(1 - progress, 3);
-
-                // Gradually reduce stiffness for smoother ending
-                spring.springStiffness = originalStiffness * (1 - easeOut * 0.7);
-
-                if (progress < 1) {
-                    requestAnimationFrame(adjustStiffness);
-                }
-            };
-
-            requestAnimationFrame(adjustStiffness);
-        });
-    };
-    /**
-     * Smooth zoom to hotspot with quality limits
-     */
+    
+    
     const zoomToHotspot = async (hotspot) => {
         if (!viewer || isZoomingToHotspot()) {
             return;
@@ -781,14 +727,14 @@ function ArtworkViewer(props) {
 
         setIsZoomingToHotspot(true);
 
-        // Calculate viewport aspect ratio FIRST
+        // Calculate viewport aspect ratio
         const viewportAspect = viewer.viewport.getAspectRatio();
 
         // Calculate current viewport for distance calculation
         const currentBounds = viewer.viewport.getBounds();
         const currentCenter = currentBounds.getCenter();
 
-        // Calculate hotspot center in viewport coordinates
+        // Calculate hotspot center
         let hotspotCenterImage;
         const overlay = components.renderer?.overlays?.get?.(hotspot.id);
 
@@ -827,58 +773,38 @@ function ArtworkViewer(props) {
 
         const centerViewport = viewer.viewport.imageToViewportCoordinates(hotspotCenterImage);
 
-        // Calculate distance and zoom change for dynamic animation timing
+        // Calculate distance for dynamic timing
         const distance = Math.sqrt(
             Math.pow(centerViewport.x - currentCenter.x, 2) +
             Math.pow(centerViewport.y - currentCenter.y, 2)
         );
-        const currentZoom = viewer.viewport.getZoom();
-        const targetZoom = Math.min(
-            1.0 / bounds.width,
-            viewportAspect / bounds.height
-        );
-        const zoomChange = Math.abs(Math.log(targetZoom / currentZoom));
 
-        // Dynamic animation timing - even longer for ultra-smooth effect
-        // Range from 2.0s to 4.5s for cinematic feel
-        const animTime = Math.min(4.5, Math.max(2.0, distance * 3.0 + zoomChange * 1.2));
-
-        // Much lower stiffness for graceful, flowing curves
-        // Range from 1.2 to 2.5 (ultra-smooth)
-        const stiffness = Math.max(1.2, 2.5 - distance * 1.0);
-
-        // Even gentler stiffness for zoom to create floating effect
-        const zoomStiffness = stiffness * 0.7; // 70% of pan stiffness
-
-        // Store original animation settings
+        // Store original settings
         const originalSettings = {
             animationTime: viewer.animationTime,
-            springStiffness: viewer.springStiffness,
-            centerXTime: viewer.viewport.centerSpringX.animationTime,
-            centerYTime: viewer.viewport.centerSpringY.animationTime,
-            zoomTime: viewer.viewport.zoomSpring.animationTime,
-            centerXStiff: viewer.viewport.centerSpringX.springStiffness,
-            centerYStiff: viewer.viewport.centerSpringY.springStiffness,
-            zoomStiff: viewer.viewport.zoomSpring.springStiffness
+            springStiffness: viewer.springStiffness
         };
 
-        // Apply cinematic animation settings
+        // Set smooth but not too slow animation
+        // Range from 1.2s to 2.5s (not too long)
+        const animTime = Math.min(2.5, Math.max(1.2, distance * 1.5 + 0.5));
+
+        // Use moderate stiffness for smooth but responsive animation
+        // Range from 3.5 to 5.5 (not too low)
+        const stiffness = Math.max(3.5, 5.5 - distance * 1.0);
+
+        // Apply settings to viewer and all springs
         viewer.animationTime = animTime;
         viewer.springStiffness = stiffness;
 
-        // Set spring-specific values for ultra-smooth animation
-        // Different timing for each axis creates more organic movement
+        // Apply to individual springs
         viewer.viewport.centerSpringX.animationTime = animTime;
         viewer.viewport.centerSpringY.animationTime = animTime;
-        viewer.viewport.zoomSpring.animationTime = animTime * 1.3; // 30% slower zoom for floating effect
+        viewer.viewport.zoomSpring.animationTime = animTime;
 
-        // Ultra-low stiffness for graceful deceleration
         viewer.viewport.centerSpringX.springStiffness = stiffness;
         viewer.viewport.centerSpringY.springStiffness = stiffness;
-        viewer.viewport.zoomSpring.springStiffness = zoomStiffness; // Use the even lower zoom stiffness
-
-        // Add easing to the end of animation for graceful stop
-        viewer.viewport.applyConstraints = false; // Temporarily disable constraints for smoother animation
+        viewer.viewport.zoomSpring.springStiffness = stiffness * 0.85; // Slightly softer zoom
 
         // Calculate final bounds with padding
         const paddingFactor = isMobile() ? 0.75 : 0.85;
@@ -889,37 +815,23 @@ function ArtworkViewer(props) {
             bounds.height * paddingFactor
         );
 
-        // Create multi-stage animation for ultra-smooth ending
-        const executeSmootherZoom = () => {
-            // First 80% of animation with current settings
-            viewer.viewport.fitBounds(adjustedBounds, false);
+        // Execute zoom with animation
+        viewer.viewport.fitBounds(adjustedBounds, false); 
 
-            // Last 20% with even gentler settings for graceful ending
-            setTimeout(() => {
-                viewer.viewport.centerSpringX.springStiffness = 0.8;
-                viewer.viewport.centerSpringY.springStiffness = 0.8;
-                viewer.viewport.zoomSpring.springStiffness = 0.5;
-            }, animTime * 800); // 80% through animation
-        };
-
-        // Execute the smooth zoom with multi-stage approach
-        executeSmootherZoom();
-
-        // Apply smooth easing curve
-        applySmoothEasing(viewer, animTime);
-
-        // Restore original settings after animation completes (SEPARATE setTimeout)
+        // Restore original settings after animation
         setTimeout(() => {
-            viewer.viewport.applyConstraints = true; // Re-enable constraints
             viewer.animationTime = originalSettings.animationTime;
             viewer.springStiffness = originalSettings.springStiffness;
-            viewer.viewport.centerSpringX.animationTime = originalSettings.centerXTime;
-            viewer.viewport.centerSpringY.animationTime = originalSettings.centerYTime;
-            viewer.viewport.zoomSpring.animationTime = originalSettings.zoomTime;
-            viewer.viewport.centerSpringX.springStiffness = originalSettings.centerXStiff;
-            viewer.viewport.centerSpringY.springStiffness = originalSettings.centerYStiff;
-            viewer.viewport.zoomSpring.springStiffness = originalSettings.zoomStiff;
-        }, animTime * 1000 + 200); // After full animation + buffer
+
+            // Reset all springs to original values
+            viewer.viewport.centerSpringX.animationTime = originalSettings.animationTime;
+            viewer.viewport.centerSpringY.animationTime = originalSettings.animationTime;
+            viewer.viewport.zoomSpring.animationTime = originalSettings.animationTime;
+
+            viewer.viewport.centerSpringX.springStiffness = originalSettings.springStiffness;
+            viewer.viewport.centerSpringY.springStiffness = originalSettings.springStiffness;
+            viewer.viewport.zoomSpring.springStiffness = originalSettings.springStiffness;
+        }, animTime * 1000 + 200);
 
         // Update hotspot overlays after animation
         setTimeout(() => {
@@ -955,9 +867,8 @@ function ArtworkViewer(props) {
                 await zoomToHotspot(hotspot);
             }
         }
-
-        // Play audio - no delay needed on desktop without zoom
-        const audioDelay = isMobile() ? 800 : 0;
+        // Play audio - adjust delay to match new animation timing
+        const audioDelay = isMobile() ? 1200 : 0; // Changed from 800 to 1200
 
         setTimeout(() => {
             if (components.audioEngine && hotspot.audioUrl) {
