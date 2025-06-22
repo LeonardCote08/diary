@@ -152,8 +152,141 @@ function ArtworkViewer(props) {
         onCleanup(cleanup);
     });
 
+    const optimizeZoomPerformance = () => {
+        let zoomStartTime = null;
+        let lastZoomLevel = null;
+        let tileLoadingPaused = false;
+        let animationFrame = null;
+
+        viewer.addHandler('zoom', (event) => {
+            const currentZoom = viewer.viewport.getZoom();
+
+            // Cancel any pending frame
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+
+            // Defer processing to next frame to prevent blocking
+            animationFrame = requestAnimationFrame(() => {
+                if (!lastZoomLevel || Math.abs(currentZoom - lastZoomLevel) > 0.01) {
+                    // Zoom is active
+                    if (!zoomStartTime) {
+                        zoomStartTime = performance.now();
+
+                        // AGGRESSIVE: Stop ALL tile operations
+                        if (viewer.imageLoader) {
+                            viewer.imageLoader.clear();
+                            tileLoadingPaused = true;
+                        }
+                    }
+
+                    lastZoomLevel = currentZoom;
+                }
+            });
+        });
+
+        viewer.addHandler('animation-finish', () => {
+            if (zoomStartTime) {
+                const zoomDuration = performance.now() - zoomStartTime;
+                console.log(`Zoom completed in ${zoomDuration}ms at level ${lastZoomLevel}`);
+
+                // Resume tile operations after a delay
+                setTimeout(() => {
+                    if (tileLoadingPaused) {
+                        viewer.forceRedraw();
+                        tileLoadingPaused = false;
+                    }
+                }, 100); // Small delay to ensure smooth transition
+
+                zoomStartTime = null;
+            }
+        });
+    };
+
+    const implementProgressiveZoomQuality = () => {
+        let originalQuality = null;
+        let isZooming = false;
+        let zoomTimeout = null;
+
+        viewer.addHandler('zoom', (event) => {
+            const currentZoom = viewer.viewport.getZoom();
+
+            // Clear previous timeout
+            if (zoomTimeout) clearTimeout(zoomTimeout);
+
+            if (!isZooming) {
+                isZooming = true;
+                originalQuality = {
+                    smoothing: viewer.drawer.imageSmoothingEnabled
+                    // NO opacity changes
+                };
+
+                // Reduce quality during zoom - ONLY image smoothing
+                viewer.drawer.imageSmoothingEnabled = false;
+                // NO setOpacity calls - remove ALL of them
+            }
+
+            // Restore quality after zoom stops
+            zoomTimeout = setTimeout(() => {
+                if (originalQuality) {
+                    viewer.drawer.imageSmoothingEnabled = originalQuality.smoothing;
+                    viewer.forceRedraw();
+                }
+                isZooming = false;
+                originalQuality = null;
+            }, 150);
+        });
+    };
+
+
+    const scheduleIdleTask = (callback) => {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(callback, { timeout: 200 });
+        } else {
+            setTimeout(callback, 50);
+        }
+    };
+
     const setupViewerEventHandlers = () => {
+
+        // Override tile drawing for extreme performance at low zoom
+        let skipCounter = 0;
+        viewer.addHandler('tile-drawing', (event) => {
+            const zoom = viewer.viewport.getZoom();
+
+            // Skip drawing if actively zooming
+            if (viewer.skipTileDrawing) {
+                event.preventDefault();
+                return;
+            }
+
+            if (zoom < 2.0) {
+                const tile = event.tile;
+                const size = event.tile.size;
+
+                // Skip tiles that would be smaller than 32 pixels on screen
+                const screenSize = size * zoom;
+                if (screenSize < 32) {
+                    event.preventDefault();
+                    return;
+                }
+
+                // Skip every other tile when zoomed out
+                skipCounter++;
+                if (skipCounter % 2 === 0) {
+                    event.preventDefault();
+                }
+            }
+        });
+
         viewer.addHandler('open', () => {
+            // Call the new progressive quality function
+            implementProgressiveZoomQuality();
+            optimizeZoomPerformance();
+
+            // Limit minimum zoom to prevent performance issues
+            viewer.viewport.minZoomLevel = 0.8; // Allow more zoom out while maintaining performance
+            viewer.viewport.minZoomImageRatio = 0.5; 
             console.log('Viewer ready - initializing systems');
             console.log('Using drawer:', viewer.drawer.getType ? viewer.drawer.getType() : 'canvas');
             setViewerReady(true);
@@ -241,17 +374,22 @@ function ArtworkViewer(props) {
         const updateVisibleContent = () => {
             if (intervals.updateTimer) clearTimeout(intervals.updateTimer);
             intervals.updateTimer = setTimeout(() => {
-                const { viewportManager, spatialIndex, audioEngine } = components;
-                if (!viewportManager || !spatialIndex || !audioEngine) return;
+                // Schedule non-critical updates for idle time
+                scheduleIdleTask(() => {
+                    const { viewportManager, spatialIndex, audioEngine } = components;
+                    if (!viewportManager || !spatialIndex || !audioEngine) return;
 
-                const viewport = viewportManager.getCurrentViewport();
-                const visibleHotspots = spatialIndex.queryViewport(viewport.bounds, viewport.zoom);
-                audioEngine.preloadHotspots(visibleHotspots);
+                    const viewport = viewportManager.getCurrentViewport();
+                    const visibleHotspots = spatialIndex.queryViewport(viewport.bounds, viewport.zoom);
+                    audioEngine.preloadHotspots(visibleHotspots);
+                });
             }, performanceConfig.viewport.updateDebounce);
         };
 
         viewer.addHandler('viewport-change', updateVisibleContent);
     };
+
+    
 
     const setupKeyboardHandler = () => {
         const keyActions = {
@@ -318,6 +456,8 @@ function ArtworkViewer(props) {
         });
         components.resizeObserver.observe(viewerRef);
     };
+
+    
 
     const initializeHotspotSystem = () => {
         if (!viewer) return;

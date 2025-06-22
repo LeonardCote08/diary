@@ -158,6 +158,12 @@
     touch-action: manipulation;
 }
 
+.openseadragon-viewer svg {
+    position: relative;
+    z-index: 10 !important; /* Force hotspots above tiles */
+    pointer-events: auto; /* Ensure they can receive events */
+}
+
 /* Viewer loading indicator */
 .viewer-loading {
     position: absolute;

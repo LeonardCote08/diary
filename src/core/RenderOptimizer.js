@@ -48,6 +48,7 @@ class RenderOptimizer {
 
         this.setupEventHandlers();
         this.applyInitialOptimizations();
+        this.setupAggressiveZoomOptimization();
 
         // Make optimizer globally accessible for synchronization
         window.renderOptimizer = this;
@@ -108,9 +109,14 @@ class RenderOptimizer {
         const frameTime = now - this.state.lastFrameTime;
         this.state.lastFrameTime = now;
 
-        // Only track frame skips, don't apply emergency optimizations
-        if (frameTime > this.config.frameSkipThreshold && this.state.renderMode !== 'static') {
+        // NEW: Skip frame if taking too long during zoom
+        const zoom = this.viewer.viewport.getZoom();
+        if (zoom < 3.0 && frameTime > 20 && this.state.isZooming) {
+            // Skip this frame to maintain animation smoothness
             this.state.frameSkipCount++;
+            if (this.state.frameSkipCount % 2 === 0) {
+                return; // Skip every other frame at low zoom
+            }
         } else {
             this.state.frameSkipCount = 0;
         }
@@ -126,6 +132,50 @@ class RenderOptimizer {
         } else {
             this.state.consecutiveStaticFrames = 0;
         }
+    }
+
+    setupAggressiveZoomOptimization() {
+        let zoomDebounceTimer = null;
+        let isActivelyZooming = false;
+
+        this.viewer.addHandler('zoom', () => {
+            if (!isActivelyZooming) {
+                isActivelyZooming = true;
+
+                // Immediately reduce quality
+                if (this.viewer.drawer && this.viewer.drawer.context) {
+                    const ctx = this.viewer.drawer.context;
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.globalAlpha = 0.8;
+                }
+
+                // Skip tile updates
+                this.viewer.skipTileDrawing = true;
+            }
+
+            // Clear existing timer
+            if (zoomDebounceTimer) {
+                clearTimeout(zoomDebounceTimer);
+            }
+
+            // Set new timer
+            zoomDebounceTimer = setTimeout(() => {
+                isActivelyZooming = false;
+
+                // Restore quality
+                if (this.viewer.drawer && this.viewer.drawer.context) {
+                    const ctx = this.viewer.drawer.context;
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.globalAlpha = 1.0;
+                }
+
+                // Resume tile drawing
+                this.viewer.skipTileDrawing = false;
+                this.viewer.forceRedraw();
+
+                zoomDebounceTimer = null;
+            }, 150);
+        });
     }
 
     handleViewportChange() {

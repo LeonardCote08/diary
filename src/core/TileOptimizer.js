@@ -151,6 +151,15 @@ class TileOptimizer {
         const viewport = this.viewer.viewport;
         const bounds = viewport.getBounds();
         const center = viewport.getCenter();
+        const zoom = viewport.getZoom();
+
+        // NEW: Skip tiny tiles at low zoom
+        if (zoom < 2.0) {
+            const tileWidth = this.viewer.source.getTileWidth(level);
+            const pixelSize = tileWidth * zoom;
+            if (pixelSize < 32) return 999; // Skip rendering
+        }
+
         const tileWidth = this.viewer.source.getTileWidth(level);
         const tileHeight = this.viewer.source.getTileHeight ?
             this.viewer.source.getTileHeight(level) : tileWidth;
@@ -177,7 +186,17 @@ class TileOptimizer {
             tileRect.top > bounds.y + bounds.height
         );
 
-        if (isVisible) return 0;
+        // NEW: Prioritize center tiles at low zoom
+        if (isVisible) {
+            if (zoom < 3.0) {
+                // At low zoom, only high priority for center tiles
+                const centerDistance = Math.abs(tileCenterX - center.x) +
+                    Math.abs(tileCenterY - center.y);
+                return centerDistance < 0.2 ? 0 : 1;
+            }
+            return 0;
+        }
+
         if (distance < bounds.width * this.config.predictiveRadius) return 1;
         return 2;
     }

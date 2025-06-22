@@ -54,6 +54,10 @@ export const buildViewerConfig = (config, dziUrl, drawerType, isMobileDevice) =>
         springStiffness: config.springStiffness,
         blendTime: config.blendTime,
 
+        // NEW: Zoom-specific optimizations
+        zoomPerScroll: 1.1,  // Smaller steps for smoother zoom
+        zoomPerClick: 1.5,   // Less aggressive click zoom
+
         // Controls - all disabled for clean interface
         showNavigationControl: false,
         showZoomControl: false,
@@ -80,7 +84,7 @@ export const buildViewerConfig = (config, dziUrl, drawerType, isMobileDevice) =>
         },
 
         // Touch handling configuration 
-        zoomPerClick: 1.0,
+        // REMOVED zoomPerClick from here as it's already defined above
         dblClickDistThreshold: 20,
         clickDistThreshold: 10,
         clickTimeThreshold: 300,

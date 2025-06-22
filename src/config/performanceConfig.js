@@ -15,21 +15,21 @@ const performanceConfig = {
     // OpenSeadragon viewer settings - OPTIMIZED FOR SHARPNESS + PERFORMANCE
     viewer: {
         // Critical: Tile loading optimization
-        imageLoaderLimit: 6,          // Optimal for parallel loading
-        maxImageCacheCount: 500,      // Desktop default, adjusted by platform
+        imageLoaderLimit: 8,          // Optimal for parallel loading
+        maxImageCacheCount: 2000,      // Desktop default, adjusted by platform
 
         // MODIFIED FOR SHARPNESS: Load higher quality tiles earlier
-        minPixelRatio: 0.5,           // Allow higher resolution tiles at lower zoom
-        minZoomImageRatio: 0.8,       // Load better quality tiles sooner
+        minPixelRatio: 0.3,           // Allow higher resolution tiles at lower zoom
+        minZoomImageRatio: 0.7,       // Load better quality tiles sooner
 
-        smoothTileEdgesMinZoom: Infinity, // Disable for performance
+        smoothTileEdgesMinZoom: 2.0, // Disable for performance
         alwaysBlend: false,           // Critical for zoom performance
 
         // Rendering settings - MAXIMUM PERFORMANCE
         immediateRender: true,        // Critical for responsive zoom
         preserveViewport: true,
         preserveImageSizeOnResize: true,
-        visibilityRatio: 0.5,         // More aggressive culling
+        visibilityRatio: 0.8,         // More aggressive culling
         subPixelRendering: false,     // Disable for performance
         imageSmoothingEnabled: true,  // Keep for quality
 
@@ -38,8 +38,8 @@ const performanceConfig = {
         placeholderFillStyle: 'rgba(26, 26, 26, 1)',
 
         // Animation settings - OPTIMIZED FOR RESPONSIVENESS
-        animationTime: 0.3,           // Much faster animations
-        springStiffness: 10.0,        // Very responsive
+        animationTime: 0.1,           // Much faster animations
+        springStiffness: 12.0,        // Very responsive
         blendTime: 0,                 // Critical: No blending for instant tile switch
         flickEnabled: true,
         flickMinSpeed: 120,
@@ -64,9 +64,10 @@ const performanceConfig = {
 
         // Tile quality settings - MODIFIED FOR HYBRID APPROACH
         minZoomImageRatio: 0.8,       // Load HD tiles at 80% zoom (was 0.9)
-        maxTilesPerFrame: 4,          // Limit for consistent frame rate
+        maxTilesPerFrame: 12,          // Limit for consistent frame rate
         tileRetryMax: 1,              // Fewer retries
         tileRetryDelay: 100,
+        minimumPixelsPerTile: 16,         // skip tiny tiles
 
         // Rendering
         compositeOperation: null,
