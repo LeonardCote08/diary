@@ -154,10 +154,10 @@ class TileOptimizer {
         const zoom = viewport.getZoom();
 
         // NEW: Skip tiny tiles at low zoom
-        if (zoom < 2.0) {
+        if (zoom < 1.5) { // CHANGED from 2.0 to 1.5
             const tileWidth = this.viewer.source.getTileWidth(level);
             const pixelSize = tileWidth * zoom;
-            if (pixelSize < 32) return 999; // Skip rendering
+            if (pixelSize < 64) return 999; // CHANGED from 32 to 64
         }
 
         const tileWidth = this.viewer.source.getTileWidth(level);

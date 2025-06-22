@@ -134,49 +134,10 @@ class RenderOptimizer {
         }
     }
 
-    setupAggressiveZoomOptimization() {
-        let zoomDebounceTimer = null;
-        let isActivelyZooming = false;
-
-        this.viewer.addHandler('zoom', () => {
-            if (!isActivelyZooming) {
-                isActivelyZooming = true;
-
-                // Immediately reduce quality
-                if (this.viewer.drawer && this.viewer.drawer.context) {
-                    const ctx = this.viewer.drawer.context;
-                    ctx.imageSmoothingEnabled = false;
-                    ctx.globalAlpha = 1.0;
-                }
-
-                // Skip tile updates
-                this.viewer.skipTileDrawing = true;
-            }
-
-            // Clear existing timer
-            if (zoomDebounceTimer) {
-                clearTimeout(zoomDebounceTimer);
-            }
-
-            // Set new timer
-            zoomDebounceTimer = setTimeout(() => {
-                isActivelyZooming = false;
-
-                // Restore quality
-                if (this.viewer.drawer && this.viewer.drawer.context) {
-                    const ctx = this.viewer.drawer.context;
-                    ctx.imageSmoothingEnabled = true;
-                    ctx.globalAlpha = 1.0;
-                }
-
-                // Resume tile drawing
-                this.viewer.skipTileDrawing = false;
-                this.viewer.forceRedraw();
-
-                zoomDebounceTimer = null;
-            }, 150);
-        });
-    }
+    setupAggressiveZoomOptimization = () => {
+        // Disabled - aggressive optimization causes visual noise
+        // Keeping minimal optimization only
+    };
 
     handleViewportChange() {
         const currentZoom = this.viewer.viewport.getZoom(true);
@@ -226,6 +187,8 @@ class RenderOptimizer {
 
     applyZoomOptimizations(isZooming) {
 
+       
+
         // Skip zoom optimizations on mobile - they can cause tile loading issues
         if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
             return;
@@ -242,7 +205,7 @@ class RenderOptimizer {
                 const tiledImage = this.viewer.world.getItemAt(0);
                 if (tiledImage) {
                     this.state.lastBlendTime = tiledImage.blendTime;
-                    tiledImage.blendTime = 0; // Instant tile switching
+                    tiledImage.blendTime = 0.05; // CHANGED: Minimum 0.05 instead of 0
                 }
             }
 
