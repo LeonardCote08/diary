@@ -247,7 +247,59 @@ function ArtworkViewer(props) {
         });
     };
 
-    
+    const implementProgressiveZoomQuality = () => {
+        let qualityLevel = 1.0; // 0.0 to 1.0
+        let qualityTimeout = null;
+
+        viewer.addHandler('zoom', (event) => {
+            const currentZoom = viewer.viewport.getZoom();
+            const zoomSpeed = event.speed || 1.0; // If available
+
+            // Clear previous timeout
+            if (qualityTimeout) clearTimeout(qualityTimeout);
+
+            // Progressive quality reduction based on zoom level AND speed
+            let targetQuality = 1.0;
+
+            if (currentZoom < 2.0) {
+                targetQuality = 0.6; // Lower quality at extreme zoom out
+            } else if (currentZoom < 3.5) {
+                targetQuality = 0.8; // Medium quality
+            } else {
+                targetQuality = 1.0; // Full quality when zoomed in
+            }
+
+            // Smoothly transition to target quality
+            const qualityDelta = targetQuality - qualityLevel;
+            qualityLevel += qualityDelta * 0.3; // Smooth transition
+
+            // Apply progressive settings
+            if (viewer.drawer) {
+                // Image smoothing based on quality
+                viewer.drawer.imageSmoothingEnabled = qualityLevel > 0.7;
+
+                // Progressive tile skip
+                const skipRatio = Math.floor((1 - qualityLevel) * 3);
+                viewer.skipTileRatio = skipRatio; // We'll use this in tile-drawing
+            }
+
+            // Restore quality after zoom stops
+            qualityTimeout = setTimeout(() => {
+                // Smooth restoration
+                const restoreInterval = setInterval(() => {
+                    qualityLevel += 0.1;
+                    if (qualityLevel >= 1.0) {
+                        qualityLevel = 1.0;
+                        viewer.drawer.imageSmoothingEnabled = true;
+                        viewer.skipTileRatio = 0;
+                        viewer.forceRedraw();
+                        clearInterval(restoreInterval);
+                    }
+                }, 50);
+            }, 200);
+        });
+    };
+
     const scheduleIdleTask = (callback) => {
         if ('requestIdleCallback' in window) {
             requestIdleCallback(callback, { timeout: 200 });
@@ -292,29 +344,51 @@ function ArtworkViewer(props) {
 
         // Override tile drawing for extreme performance at low zoom
         let tileCounter = 0;
-        
         viewer.addHandler('tile-drawing', (event) => {
             const zoom = viewer.viewport.getZoom();
             const tile = event.tile;
             const size = event.tile.size;
+            const level = event.tile.level;
 
-            // Only skip very tiny tiles at extreme zoom out
-            if (zoom < 1.0) {
-                const screenSize = size * zoom;
-                if (screenSize < 48) {
+            // Progressive tile skipping based on quality level
+            const skipRatio = viewer.skipTileRatio || 0;
+
+            if (skipRatio > 0) {
+                tileCounter++;
+                // Skip tiles based on pattern, not random
+                if (tileCounter % (skipRatio + 1) !== 0) {
                     event.preventDefault();
                     return;
+                }
+            }
+
+            // Still skip tiny tiles
+            if (zoom < 2.0) {
+                const screenSize = size * zoom;
+                if (screenSize < 24) { // Slightly lower threshold
+                    event.preventDefault();
+                    return;
+                }
+            }
+
+            // Prioritize tiles at current zoom level
+            const optimalLevel = Math.floor(Math.log2(zoom));
+            if (Math.abs(level - optimalLevel) > 2) {
+                // Skip tiles too far from optimal level during zoom
+                if (viewer.skipTileRatio > 0) {
+                    event.preventDefault();
                 }
             }
         });
 
         viewer.addHandler('open', () => {
             // Call the new progressive quality function
+            implementProgressiveZoomQuality();
             optimizeZoomPerformance();
 
             // Limit minimum zoom to prevent performance issues
             viewer.viewport.minZoomLevel = 0.8; // Allow more zoom out while maintaining performance
-            viewer.viewport.minZoomImageRatio = 0.5; 
+            viewer.viewport.minZoomImageRatio = 0.5;
             console.log('Viewer ready - initializing systems');
             console.log('Using drawer:', viewer.drawer.getType ? viewer.drawer.getType() : 'canvas');
             setViewerReady(true);
@@ -417,7 +491,7 @@ function ArtworkViewer(props) {
         viewer.addHandler('viewport-change', updateVisibleContent);
     };
 
-    
+
 
     const setupKeyboardHandler = () => {
         const keyActions = {
@@ -485,7 +559,7 @@ function ArtworkViewer(props) {
         components.resizeObserver.observe(viewerRef);
     };
 
-    
+
 
     const initializeHotspotSystem = () => {
         if (!viewer) return;

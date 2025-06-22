@@ -19,11 +19,11 @@ const performanceConfig = {
         maxImageCacheCount: 2000,      // Desktop default, adjusted by platform
 
         // MODIFIED FOR SHARPNESS: Load higher quality tiles earlier
-        minPixelRatio: 0.8,           // Allow higher resolution tiles at lower zoom
-        minZoomImageRatio: 0.9,       // Load better quality tiles sooner
+        minPixelRatio: 0.3,           // Allow higher resolution tiles at lower zoom
+        minZoomImageRatio: 0.7,       // Load better quality tiles sooner
 
-        smoothTileEdgesMinZoom: Infinity, // Disable for performance
-        alwaysBlend: true,           // Critical for zoom performance
+        smoothTileEdgesMinZoom: 2.0, // Disable for performance
+        alwaysBlend: false,           // Critical for zoom performance
 
         // Rendering settings - MAXIMUM PERFORMANCE
         immediateRender: true,        // Critical for responsive zoom
@@ -38,9 +38,9 @@ const performanceConfig = {
         placeholderFillStyle: 'rgba(26, 26, 26, 1)',
 
         // Animation settings - OPTIMIZED FOR RESPONSIVENESS
-        animationTime: 0.4,           
-        springStiffness: 8.0,        
-        blendTime: 0.15,                 
+        animationTime: 0.3,
+        springStiffness: 6.0,
+        blendTime: 0.08,
         flickEnabled: true,
         flickMinSpeed: 120,
         flickMomentum: 0.25,
