@@ -19,11 +19,11 @@ const performanceConfig = {
         maxImageCacheCount: 2000,      // Desktop default, adjusted by platform
 
         // MODIFIED FOR SHARPNESS: Load higher quality tiles earlier
-        minPixelRatio: 0.3,           // Allow higher resolution tiles at lower zoom
-        minZoomImageRatio: 0.7,       // Load better quality tiles sooner
+        minPixelRatio: 0.7,           // Allow higher resolution tiles at lower zoom
+        minZoomImageRatio: 0.5,       // Load better quality tiles sooner
 
-        smoothTileEdgesMinZoom: 2.0, // Disable for performance
-        alwaysBlend: false,           // Critical for zoom performance
+        smoothTileEdgesMinZoom: 3.0, // Disable for performance
+        alwaysBlend: true,           // Critical for zoom performance
 
         // Rendering settings - MAXIMUM PERFORMANCE
         immediateRender: true,        // Critical for responsive zoom
@@ -35,12 +35,12 @@ const performanceConfig = {
 
         // Preload settings
         preload: true,
-        placeholderFillStyle: 'rgba(26, 26, 26, 1)',
+        placeholderFillStyle: null,
 
         // Animation settings - OPTIMIZED FOR RESPONSIVENESS
         animationTime: 0.3,
         springStiffness: 6.0,
-        blendTime: 0.08,
+        blendTime: 0.18,
         flickEnabled: true,
         flickMinSpeed: 120,
         flickMomentum: 0.25,
@@ -50,10 +50,10 @@ const performanceConfig = {
         zoomPerClick: 2.0,
         minZoomLevel: 0.5,
         maxZoomLevel: 40,
-        defaultZoomLevel: 1,
+        defaultZoomLevel: 1.1,
 
         // MODIFIED FOR QUALITY: Allow more pixel density at all zoom levels
-        maxZoomPixelRatio: 4,         // Increased from 2 to allow sharper tiles
+        maxZoomPixelRatio: 6,         // Increased from 2 to allow sharper tiles
 
         // Network optimization
         loadTilesWithAjax: true,
@@ -64,10 +64,10 @@ const performanceConfig = {
 
         // Tile quality settings - MODIFIED FOR HYBRID APPROACH
         minZoomImageRatio: 0.8,       // Load HD tiles at 80% zoom (was 0.9)
-        maxTilesPerFrame: 12,          // Limit for consistent frame rate
+        maxTilesPerFrame: 6,          // Limit for consistent frame rate
         tileRetryMax: 1,              // Fewer retries
         tileRetryDelay: 100,
-        minimumPixelsPerTile: 16,         // skip tiny tiles
+        minimumPixelsPerTile: 12,         // skip tiny tiles
 
         // Rendering
         compositeOperation: null,
