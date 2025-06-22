@@ -146,98 +146,159 @@ function ArtworkViewer(props) {
 
         // Setup event handlers
         setupViewerEventHandlers();
+        setupAdaptiveSprings();
         setupKeyboardHandler();
         setupResizeObserver();
 
         onCleanup(cleanup);
     });
 
+
     const optimizeZoomPerformance = () => {
         let zoomStartTime = null;
         let lastZoomLevel = null;
-        let tileLoadingPaused = false;
-        let animationFrame = null;
+        let zoomPhase = 'idle'; // idle, accelerating, cruising, decelerating
+        let consecutiveZoomEvents = 0;
+        let phaseTimeout = null;
 
         viewer.addHandler('zoom', (event) => {
             const currentZoom = viewer.viewport.getZoom();
+            consecutiveZoomEvents++;
 
-            // Cancel any pending frame
-            if (animationFrame) {
-                cancelAnimationFrame(animationFrame);
-            }
+            // Clear phase timeout
+            if (phaseTimeout) clearTimeout(phaseTimeout);
 
-            // Defer processing to next frame to prevent blocking
-            animationFrame = requestAnimationFrame(() => {
-                if (!lastZoomLevel || Math.abs(currentZoom - lastZoomLevel) > 0.01) {
-                    // Zoom is active
-                    if (!zoomStartTime) {
-                        zoomStartTime = performance.now();
+            if (!lastZoomLevel || Math.abs(currentZoom - lastZoomLevel) > 0.01) {
+                // Detect zoom direction and magnitude
+                const zoomDelta = lastZoomLevel ? currentZoom - lastZoomLevel : 0;
+                const zoomSpeed = Math.abs(zoomDelta);
 
-                        // AGGRESSIVE: Stop ALL tile operations
-                        if (viewer.imageLoader) {
+                // Phase management
+                if (zoomPhase === 'idle') {
+                    // PHASE 1: Acceleration
+                    zoomPhase = 'accelerating';
+                    zoomStartTime = performance.now();
+
+                    // Smooth start - don't stop everything immediately
+                    viewer.viewport.centerSpringX.animationTime = 0.4;
+                    viewer.viewport.centerSpringY.animationTime = 0.4;
+                    viewer.viewport.zoomSpring.animationTime = 0.4;
+
+                    // Gradually reduce tile loading
+                    if (viewer.imageLoader && consecutiveZoomEvents > 3) {
+                        viewer.imageLoader.jobLimit = Math.max(1, viewer.imageLoader.jobLimit - 1);
+                    }
+
+                } else if (zoomPhase === 'accelerating' && consecutiveZoomEvents > 5) {
+                    // PHASE 2: Cruising
+                    zoomPhase = 'cruising';
+
+                    // Optimize for continuous zoom
+                    viewer.viewport.zoomSpring.animationTime = 0.2;
+
+                    // Reduce tile operations more
+                    if (viewer.imageLoader) {
+                        viewer.imageLoader.jobLimit = 1;
+                        // Only clear if zoom is fast
+                        if (zoomSpeed > 0.1) {
                             viewer.imageLoader.clear();
-                            tileLoadingPaused = true;
                         }
                     }
-
-                    lastZoomLevel = currentZoom;
                 }
-            });
-        });
 
-        viewer.addHandler('animation-finish', () => {
-            if (zoomStartTime) {
-                const zoomDuration = performance.now() - zoomStartTime;
-                console.log(`Zoom completed in ${zoomDuration}ms at level ${lastZoomLevel}`);
-
-                // Resume tile operations after a delay
-                setTimeout(() => {
-                    if (tileLoadingPaused) {
-                        viewer.forceRedraw();
-                        tileLoadingPaused = false;
-                    }
-                }, 100); // Small delay to ensure smooth transition
-
-                zoomStartTime = null;
+                lastZoomLevel = currentZoom;
             }
+
+            // Schedule deceleration phase
+            phaseTimeout = setTimeout(() => {
+                if (zoomPhase !== 'idle') {
+                    // PHASE 3: Deceleration
+                    zoomPhase = 'decelerating';
+
+                    // Smooth ending
+                    viewer.viewport.centerSpringX.animationTime = 0.3;
+                    viewer.viewport.centerSpringY.animationTime = 0.3;
+                    viewer.viewport.zoomSpring.animationTime = 0.3;
+
+                    // Start restoring tile loading
+                    if (viewer.imageLoader) {
+                        viewer.imageLoader.jobLimit = 3;
+                    }
+
+                    // Final phase - back to idle
+                    setTimeout(() => {
+                        zoomPhase = 'idle';
+                        consecutiveZoomEvents = 0;
+
+                        // Fully restore
+                        if (viewer.imageLoader) {
+                            viewer.imageLoader.jobLimit = performanceConfig.viewer.imageLoaderLimit;
+                        }
+                        viewer.forceRedraw();
+
+                        if (zoomStartTime) {
+                            const duration = performance.now() - zoomStartTime;
+                            console.log(`Smooth zoom completed in ${duration}ms`);
+                            zoomStartTime = null;
+                        }
+                    }, 200);
+                }
+            }, 100); // Wait 100ms of no zoom activity before starting deceleration
         });
     };
 
     const implementProgressiveZoomQuality = () => {
-        let originalQuality = null;
-        let isZooming = false;
-        let zoomTimeout = null;
+        let qualityLevel = 1.0; // 0.0 to 1.0
+        let qualityTimeout = null;
 
         viewer.addHandler('zoom', (event) => {
             const currentZoom = viewer.viewport.getZoom();
+            const zoomSpeed = event.speed || 1.0; // If available
 
             // Clear previous timeout
-            if (zoomTimeout) clearTimeout(zoomTimeout);
+            if (qualityTimeout) clearTimeout(qualityTimeout);
 
-            if (!isZooming) {
-                isZooming = true;
-                originalQuality = {
-                    smoothing: viewer.drawer.imageSmoothingEnabled
-                    // NO opacity changes
-                };
+            // Progressive quality reduction based on zoom level AND speed
+            let targetQuality = 1.0;
 
-                // Reduce quality during zoom - ONLY image smoothing
-                viewer.drawer.imageSmoothingEnabled = false;
-                // NO setOpacity calls - remove ALL of them
+            if (currentZoom < 2.0) {
+                targetQuality = 0.6; // Lower quality at extreme zoom out
+            } else if (currentZoom < 3.5) {
+                targetQuality = 0.8; // Medium quality
+            } else {
+                targetQuality = 1.0; // Full quality when zoomed in
+            }
+
+            // Smoothly transition to target quality
+            const qualityDelta = targetQuality - qualityLevel;
+            qualityLevel += qualityDelta * 0.3; // Smooth transition
+
+            // Apply progressive settings
+            if (viewer.drawer) {
+                // Image smoothing based on quality
+                viewer.drawer.imageSmoothingEnabled = qualityLevel > 0.7;
+
+                // Progressive tile skip
+                const skipRatio = Math.floor((1 - qualityLevel) * 3);
+                viewer.skipTileRatio = skipRatio; // We'll use this in tile-drawing
             }
 
             // Restore quality after zoom stops
-            zoomTimeout = setTimeout(() => {
-                if (originalQuality) {
-                    viewer.drawer.imageSmoothingEnabled = originalQuality.smoothing;
-                    viewer.forceRedraw();
-                }
-                isZooming = false;
-                originalQuality = null;
-            }, 150);
+            qualityTimeout = setTimeout(() => {
+                // Smooth restoration
+                const restoreInterval = setInterval(() => {
+                    qualityLevel += 0.1;
+                    if (qualityLevel >= 1.0) {
+                        qualityLevel = 1.0;
+                        viewer.drawer.imageSmoothingEnabled = true;
+                        viewer.skipTileRatio = 0;
+                        viewer.forceRedraw();
+                        clearInterval(restoreInterval);
+                    }
+                }, 50);
+            }, 200);
         });
     };
-
 
     const scheduleIdleTask = (callback) => {
         if ('requestIdleCallback' in window) {
@@ -247,33 +308,74 @@ function ArtworkViewer(props) {
         }
     };
 
+    const setupAdaptiveSprings = () => {
+        // Store original spring values
+        const originalSprings = {
+            centerX: viewer.viewport.centerSpringX.springStiffness,
+            centerY: viewer.viewport.centerSpringY.springStiffness,
+            zoom: viewer.viewport.zoomSpring.springStiffness
+        };
+
+        // Adapt springs based on zoom distance
+        viewer.addHandler('zoom-click', (event) => {
+            if (event.quick) return; // Skip for double-click
+
+            const currentZoom = viewer.viewport.getZoom();
+            const targetZoom = event.zoom;
+            const zoomDistance = Math.abs(Math.log2(targetZoom) - Math.log2(currentZoom));
+
+            // Longer animation for bigger jumps
+            const duration = Math.min(0.8, 0.3 + zoomDistance * 0.15);
+            viewer.viewport.zoomSpring.animationTime = duration;
+
+            // Softer springs for bigger jumps
+            const stiffness = Math.max(4, 8 - zoomDistance);
+            viewer.viewport.zoomSpring.springStiffness = stiffness;
+
+            // Restore after animation
+            setTimeout(() => {
+                viewer.viewport.zoomSpring.animationTime = performanceConfig.viewer.animationTime;
+                viewer.viewport.zoomSpring.springStiffness = originalSprings.zoom;
+            }, duration * 1000 + 100);
+        });
+    };
+
     const setupViewerEventHandlers = () => {
 
         // Override tile drawing for extreme performance at low zoom
-        let skipCounter = 0;
+        let tileCounter = 0;
         viewer.addHandler('tile-drawing', (event) => {
             const zoom = viewer.viewport.getZoom();
+            const tile = event.tile;
+            const size = event.tile.size;
+            const level = event.tile.level;
 
-            // Skip drawing if actively zooming
-            if (viewer.skipTileDrawing) {
-                event.preventDefault();
-                return;
-            }
+            // Progressive tile skipping based on quality level
+            const skipRatio = viewer.skipTileRatio || 0;
 
-            if (zoom < 2.0) {
-                const tile = event.tile;
-                const size = event.tile.size;
-
-                // Skip tiles that would be smaller than 32 pixels on screen
-                const screenSize = size * zoom;
-                if (screenSize < 32) {
+            if (skipRatio > 0) {
+                tileCounter++;
+                // Skip tiles based on pattern, not random
+                if (tileCounter % (skipRatio + 1) !== 0) {
                     event.preventDefault();
                     return;
                 }
+            }
 
-                // Skip every other tile when zoomed out
-                skipCounter++;
-                if (skipCounter % 2 === 0) {
+            // Still skip tiny tiles
+            if (zoom < 2.0) {
+                const screenSize = size * zoom;
+                if (screenSize < 24) { // Slightly lower threshold
+                    event.preventDefault();
+                    return;
+                }
+            }
+
+            // Prioritize tiles at current zoom level
+            const optimalLevel = Math.floor(Math.log2(zoom));
+            if (Math.abs(level - optimalLevel) > 2) {
+                // Skip tiles too far from optimal level during zoom
+                if (viewer.skipTileRatio > 0) {
                     event.preventDefault();
                 }
             }

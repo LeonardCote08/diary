@@ -38,9 +38,9 @@ const performanceConfig = {
         placeholderFillStyle: 'rgba(26, 26, 26, 1)',
 
         // Animation settings - OPTIMIZED FOR RESPONSIVENESS
-        animationTime: 0.1,           // Much faster animations
-        springStiffness: 12.0,        // Very responsive
-        blendTime: 0,                 // Critical: No blending for instant tile switch
+        animationTime: 0.3,           
+        springStiffness: 6.0,        
+        blendTime: 0.08,                 
         flickEnabled: true,
         flickMinSpeed: 120,
         flickMomentum: 0.25,

@@ -146,7 +146,7 @@ class RenderOptimizer {
                 if (this.viewer.drawer && this.viewer.drawer.context) {
                     const ctx = this.viewer.drawer.context;
                     ctx.imageSmoothingEnabled = false;
-                    ctx.globalAlpha = 0.8;
+                    ctx.globalAlpha = 1.0;
                 }
 
                 // Skip tile updates
