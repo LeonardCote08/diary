@@ -814,6 +814,7 @@ class NativeHotspotRenderer {
     }
 
     updateVisibility() {
+        if (this.updatesPaused) return;
         const viewport = this.viewer.viewport;
         const bounds = viewport.getBounds();
         const topLeft = viewport.viewportToImageCoordinates(bounds.getTopLeft());
@@ -947,6 +948,15 @@ class NativeHotspotRenderer {
                 (id === this.hoveredHotspot?.id ? 'hover' : 'normal');
             this.applyStyle(overlay.element, overlay.hotspot.type, state);
         });
+    }
+
+    pauseUpdates() {
+        this.updatesPaused = true;
+    }
+
+    resumeUpdates() {
+        this.updatesPaused = false;
+        this.updateVisibility();
     }
 
     destroy() {

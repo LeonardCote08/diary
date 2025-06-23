@@ -214,6 +214,7 @@ class CanvasHotspotRenderer {
     }
 
     updateVisibleHotspots() {
+        if (this.updatesPaused) return;
         const viewport = this.viewer.viewport;
         const bounds = viewport.getBounds();
         const topLeft = viewport.viewportToImageCoordinates(bounds.getTopLeft());
@@ -368,6 +369,14 @@ class CanvasHotspotRenderer {
         this.scheduleRender();
     }
 
+    pauseUpdates() {
+        this.updatesPaused = true;
+    }
+
+    resumeUpdates() {
+        this.updatesPaused = false;
+        this.updateVisibility();
+    }
 
     destroy() {
         // Remove all event handlers

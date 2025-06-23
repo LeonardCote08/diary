@@ -454,13 +454,19 @@ function ArtworkViewer(props) {
             }
         });
 
-        // Handle zoom animation completion
         viewer.addHandler('animation-finish', () => {
             if (isZoomingToHotspot()) {
                 setIsZoomingToHotspot(false);
-                // Force update hotspot positions after zoom
+
+                // Re-enable hotspot updates after cinematic zoom
                 if (components.renderer) {
+                    components.renderer.resumeUpdates();
                     components.renderer.updateVisibility();
+                }
+
+                // End render optimizations
+                if (components.renderOptimizer) {
+                    components.renderOptimizer.endCinematicZoom();
                 }
             }
         });
@@ -606,8 +612,8 @@ function ArtworkViewer(props) {
     };
 
     /**
-     * Smooth zoom to hotspot with quality limits
-     */
+ * Smooth zoom to hotspot with quality limits
+ */
     const zoomToHotspot = async (hotspot) => {
         if (!viewer || isZoomingToHotspot()) {
             return;
@@ -678,13 +684,31 @@ function ArtworkViewer(props) {
             springStiffness: viewer.springStiffness
         };
 
-        // Set smooth but not too slow animation
-        // Range from 1.2s to 2.5s (not too long)
-        const animTime = Math.min(2.5, Math.max(1.2, distance * 1.5 + 0.5));
+        // Optimized for 60 FPS: 0.5s to 0.8s max
+        const animTime = Math.min(0.8, Math.max(0.5, distance * 0.3 + 0.4));
 
-        // Use moderate stiffness for smooth but responsive animation
-        // Range from 3.5 to 5.5 (not too low)
-        const stiffness = Math.max(3.5, 5.5 - distance * 1.0);
+        // Higher stiffness for responsive zoom: 10.0 to 15.0
+        const stiffness = Math.max(10.0, 15.0 - distance * 2.0);
+
+        // NOW we can use animTime - Pause tile cleanup during cinematic zoom for better performance
+        if (components.tileCleanupManager) {
+            components.tileCleanupManager.pauseCleanup(animTime * 1000 + 500);
+        }
+
+        // Clear tile queue to prioritize zoom animation
+        if (viewer.imageLoader) {
+            viewer.imageLoader.clear();
+        }
+
+        // Notify RenderOptimizer about cinematic zoom
+        if (components.renderOptimizer) {
+            components.renderOptimizer.startCinematicZoom();
+        }
+
+        // Pause hotspot updates during zoom for better performance
+        if (components.renderer) {
+            components.renderer.pauseUpdates();
+        }
 
         // Apply settings to viewer and all springs
         viewer.animationTime = animTime;
@@ -724,6 +748,12 @@ function ArtworkViewer(props) {
             viewer.viewport.centerSpringX.springStiffness = originalSettings.springStiffness;
             viewer.viewport.centerSpringY.springStiffness = originalSettings.springStiffness;
             viewer.viewport.zoomSpring.springStiffness = originalSettings.springStiffness;
+
+            // End cinematic zoom optimizations
+            if (components.renderOptimizer) {
+                components.renderOptimizer.endCinematicZoom();
+            }
+
         }, animTime * 1000 + 200);
 
         // Update hotspot overlays after animation

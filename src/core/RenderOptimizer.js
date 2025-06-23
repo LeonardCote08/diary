@@ -18,6 +18,7 @@ class RenderOptimizer {
             consecutiveStaticFrames: 0,
             canvasOptimized: false,
             lastFrameTime: performance.now(),
+            isCinematicZoom: false,
             frameSkipCount: 0
         };
 
@@ -436,6 +437,52 @@ class RenderOptimizer {
 
     updateConfig(newConfig) {
         Object.assign(this.config, newConfig);
+    }
+
+    startCinematicZoom() {
+        this.state.isCinematicZoom = true;
+
+        // Save current settings
+        this.cinematicBackup = {
+            immediateRender: this.viewer.immediateRender,
+            maxTilesPerFrame: this.viewer.maxTilesPerFrame,
+            smoothTileEdges: this.viewer.smoothTileEdgesMinZoom
+        };
+
+        // Apply cinematic zoom optimizations
+        this.viewer.immediateRender = true;
+        this.viewer.maxTilesPerFrame = 1;
+        this.viewer.smoothTileEdgesMinZoom = Infinity; // Disable edge smoothing
+
+        // Disable tile loading during zoom
+        if (this.viewer.imageLoader) {
+            this.viewer.imageLoader.jobLimit = 1;
+        }
+
+        console.log('Cinematic zoom optimization started');
+    }
+
+    endCinematicZoom() {
+        if (!this.state.isCinematicZoom) return;
+
+        this.state.isCinematicZoom = false;
+
+        // Restore settings
+        if (this.cinematicBackup) {
+            this.viewer.immediateRender = this.cinematicBackup.immediateRender;
+            this.viewer.maxTilesPerFrame = this.cinematicBackup.maxTilesPerFrame;
+            this.viewer.smoothTileEdgesMinZoom = this.cinematicBackup.smoothTileEdges;
+
+            // Restore tile loading
+            if (this.viewer.imageLoader) {
+                this.viewer.imageLoader.jobLimit = window.performanceConfig?.viewer?.imageLoaderLimit || 6;
+            }
+        }
+
+        // Force a redraw to ensure quality is restored
+        this.viewer.forceRedraw();
+
+        console.log('Cinematic zoom optimization ended');
     }
 
     destroy() {
