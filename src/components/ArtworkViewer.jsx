@@ -37,8 +37,8 @@ function ArtworkViewer(props) {
     const [showExpandButton, setShowExpandButton] = createSignal(false);
     const [isZoomingToHotspot, setIsZoomingToHotspot] = createSignal(false);
     const [currentPlayingHotspot, setCurrentPlayingHotspot] = createSignal(null);
-    const [debugMode, setDebugMode] = createSignal(
-        localStorage.getItem('debugMode') === 'enabled'
+    const [debugLevel, setDebugLevel] = createSignal(
+        parseInt(localStorage.getItem('debugLevel') || '0')
     );
 
     // Store initial viewport for "Expand to Full View"
@@ -140,7 +140,7 @@ function ArtworkViewer(props) {
         components.tileOptimizer.start();
         components.tileCleanupManager.start();
 
-        if (debugMode()) {
+        if (debugLevel() >= 1) {
             components.performanceMonitor.enableDebugOverlay();
         }
 
@@ -503,19 +503,29 @@ function ArtworkViewer(props) {
             'f': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
             'F': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
             'c': () => {
-                const newDebugState = !debugMode();
-                setDebugMode(newDebugState);
-                localStorage.setItem('debugMode', newDebugState ? 'enabled' : 'disabled');
+                // Cycle through debug levels: 0 -> 1 -> 2 -> 0
+                const currentLevel = debugLevel();
+                const newLevel = (currentLevel + 1) % 3;
+                setDebugLevel(newLevel);
+                localStorage.setItem('debugLevel', newLevel.toString());
 
+                // Handle different debug levels
                 if (components.performanceMonitor) {
-                    newDebugState ?
-                        components.performanceMonitor.enableDebugOverlay() :
+                    if (newLevel >= 1) {
+                        // Level 1 and 2: Show performance monitor
+                        components.performanceMonitor.enableDebugOverlay();
+                    } else {
+                        // Level 0: Hide everything
                         components.performanceMonitor.disableDebugOverlay();
+                    }
                 }
 
                 if (components.renderer) {
-                    components.renderer.setDebugMode(newDebugState);
+                    // Only show renderer debug mode at level 2
+                    components.renderer.setDebugMode(newLevel === 2);
                 }
+
+                console.log(`Debug level: ${newLevel} (0=off, 1=performance only, 2=full debug)`);
             }
         };
 
@@ -574,7 +584,7 @@ function ArtworkViewer(props) {
                     onHotspotHover: setHoveredHotspot,
                     onHotspotClick: handleHotspotClick,
                     visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
-                    debugMode: debugMode()
+                    debugMode: debugLevel() === 2
                 });
                 console.log('Using CanvasHotspotRenderer for mobile');
             });
@@ -590,7 +600,7 @@ function ArtworkViewer(props) {
                 renderDebounceTime: performanceConfig.hotspots.renderDebounceTime,
                 maxVisibleHotspots: performanceConfig.hotspots.maxVisibleHotspots,
                 minZoomForHotspots: performanceConfig.hotspots.minZoomForHotspots,
-                debugMode: debugMode()
+                debugMode: debugLevel() === 2
             });
         }
     };
@@ -814,7 +824,7 @@ function ArtworkViewer(props) {
                     </div>
                 </Show>
 
-                <Show when={viewerReady() && debugMode()}>
+                <Show when={viewerReady() && debugLevel() === 2}>
                     <div class="debug-info">
                         <div>Hovered: {hoveredHotspot()?.id || 'none'}</div>
                         <div>Selected: {selectedHotspot()?.id || 'none'}</div>
