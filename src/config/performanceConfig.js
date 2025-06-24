@@ -15,21 +15,21 @@ const performanceConfig = {
     // OpenSeadragon viewer settings - OPTIMIZED FOR SHARPNESS + PERFORMANCE
     viewer: {
         // Critical: Tile loading optimization
-        imageLoaderLimit: 8,          // Optimal for parallel loading
+        imageLoaderLimit: 4,          // Optimal for parallel loading
         maxImageCacheCount: 2000,      // Desktop default, adjusted by platform
 
         // MODIFIED FOR SHARPNESS: Load higher quality tiles earlier
-        minPixelRatio: 0.7,           // Allow higher resolution tiles at lower zoom
+        minPixelRatio: 0.5,           // Allow higher resolution tiles at lower zoom
         minZoomImageRatio: 0.5,       // Load better quality tiles sooner
 
         smoothTileEdgesMinZoom: 3.0, // Disable for performance
         alwaysBlend: true,           // Critical for zoom performance
 
         // Rendering settings - MAXIMUM PERFORMANCE
-        immediateRender: true,        // Critical for responsive zoom
+        immediateRender: false,        // Critical for responsive zoom
         preserveViewport: true,
         preserveImageSizeOnResize: true,
-        visibilityRatio: 0.8,         // More aggressive culling
+        visibilityRatio: 1.0,         // More aggressive culling
         subPixelRendering: false,     // Disable for performance
         imageSmoothingEnabled: true,  // Keep for quality
 
@@ -112,7 +112,7 @@ const performanceConfig = {
         fadeInDuration: 0,            // Instant appearance
         preloadPadding: 0.2,
         maxVisibleHotspots: 100,
-        minZoomForHotspots: 1.5
+        minZoomForHotspots: 3.0
     },
 
     // Audio settings

@@ -8,6 +8,7 @@ import PerformanceMonitor from '../core/PerformanceMonitor';
 import RenderOptimizer from '../core/RenderOptimizer';
 import TileOptimizer from '../core/TileOptimizer';
 import MemoryManager from '../core/MemoryManager';
+import { applyTileCascadeFix } from '../core/TileCascadeFix';
 import TileCleanupManager from '../core/TileCleanupManager';
 import AudioPlayer from './AudioPlayer';
 import performanceConfig, { adjustSettingsForPerformance } from '../config/performanceConfig';
@@ -91,21 +92,43 @@ function ArtworkViewer(props) {
         // Initialize viewer with optimized configuration
         const config = performanceConfig.viewer;
         const dziUrl = `/images/tiles/${props.artworkId}_1024/${props.artworkId}.dzi`;
+
+        // Add minLevel configuration to prevent tile cascade  
+        const tileSourceConfig = {
+            Image: {
+                xmlns: "http://schemas.microsoft.com/deepzoom/2008",
+                Url: `/images/tiles/${props.artworkId}_1024/${props.artworkId}_files/`,
+                Format: "jpg",
+                Overlap: "2",
+                TileSize: "1024",
+                Size: {
+                    Width: "11244",
+                    Height: "6543"
+                }
+            },
+            minLevel: 8,
+            maxLevel: 14
+        };
+
+
         const isMobileDevice = isMobile();
         const drawerType = getBrowserOptimalDrawer();
 
         // Build viewer configuration
         const viewerConfigOptions = buildViewerConfig(
             config,
-            dziUrl,
+            tileSourceConfig,  // Pass tileSourceConfig instead of dziUrl
             drawerType,
-            isMobileDevice
+            isMobileDevice,
+            tileSourceConfig
         );
 
         viewer = OpenSeadragon({
             element: viewerRef,
             ...viewerConfigOptions
         });
+
+        
 
         // Initialize components
         components = {
@@ -343,48 +366,50 @@ function ArtworkViewer(props) {
     const setupViewerEventHandlers = () => {
 
         // Override tile drawing for extreme performance at low zoom
-        let tileCounter = 0;
-        viewer.addHandler('tile-drawing', (event) => {
-            const zoom = viewer.viewport.getZoom();
-            const tile = event.tile;
-            const size = event.tile.size;
-            const level = event.tile.level;
-
-            // Progressive tile skipping based on quality level
-            const skipRatio = viewer.skipTileRatio || 0;
-
-            if (skipRatio > 0) {
-                tileCounter++;
-                // Skip tiles based on pattern, not random
-                if (tileCounter % (skipRatio + 1) !== 0) {
-                    event.preventDefault();
-                    return;
+        // Only add tile-drawing handler for canvas drawer (not WebGL)
+        if (viewer.drawer && viewer.drawer.getType && viewer.drawer.getType() !== 'webgl') {
+            let tileCounter = 0;
+            viewer.addHandler('tile-drawing', (event) => {
+                const zoom = viewer.viewport.getZoom();
+                const tile = event.tile;
+                const size = event.tile.size;
+                const level = event.tile.level;
+                // Progressive tile skipping based on quality level
+                const skipRatio = viewer.skipTileRatio || 0;
+                if (skipRatio > 0) {
+                    tileCounter++;
+                    // Skip tiles based on pattern, not random
+                    if (tileCounter % (skipRatio + 1) !== 0) {
+                        event.preventDefault();
+                        return;
+                    }
                 }
-            }
-
-            // Still skip tiny tiles
-            if (zoom < 2.0) {
-                const screenSize = size * zoom;
-                if (screenSize < 24) { // Slightly lower threshold
-                    event.preventDefault();
-                    return;
+                // Still skip tiny tiles
+                if (zoom < 2.0) {
+                    const screenSize = size * zoom;
+                    if (screenSize < 24) { // Slightly lower threshold
+                        event.preventDefault();
+                        return;
+                    }
                 }
-            }
-
-            // Prioritize tiles at current zoom level
-            const optimalLevel = Math.floor(Math.log2(zoom));
-            if (Math.abs(level - optimalLevel) > 2) {
-                // Skip tiles too far from optimal level during zoom
-                if (viewer.skipTileRatio > 0) {
-                    event.preventDefault();
+                // Prioritize tiles at current zoom level
+                const optimalLevel = Math.floor(Math.log2(zoom));
+                if (Math.abs(level - optimalLevel) > 2) {
+                    // Skip tiles too far from optimal level during zoom
+                    if (viewer.skipTileRatio > 0) {
+                        event.preventDefault();
+                    }
                 }
-            }
-        });
+            });
+        }
 
         viewer.addHandler('open', () => {
             // Call the new progressive quality function
             implementProgressiveZoomQuality();
             optimizeZoomPerformance();
+
+            // Apply tile cascade fix AFTER viewer is fully initialized
+            applyTileCascadeFix(OpenSeadragon);
 
             // Limit minimum zoom to prevent performance issues
             viewer.viewport.minZoomLevel = 0.8; // Allow more zoom out while maintaining performance
@@ -396,6 +421,8 @@ function ArtworkViewer(props) {
 
             const tiledImage = viewer.world.getItemAt(0);
             const bounds = tiledImage.getBounds();
+
+            
             viewer.viewport.fitBounds(bounds, true);
             viewer.viewport.applyConstraints(true);
 

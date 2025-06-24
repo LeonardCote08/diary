@@ -1,7 +1,7 @@
 /**
  * OpenSeadragon viewer configuration builder
  */
-export const buildViewerConfig = (config, dziUrl, drawerType, isMobileDevice) => {
+export const buildViewerConfig = (config, dziUrl, drawerType, isMobileDevice, tileSourceConfig = null) => {
     // Override critical settings for mobile
     if (isMobileDevice) {
         config.animationTime = 0.2;
@@ -15,7 +15,7 @@ export const buildViewerConfig = (config, dziUrl, drawerType, isMobileDevice) =>
     }
 
     return {
-        tileSources: dziUrl,
+        tileSources: tileSourceConfig || dziUrl,
         prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@5.0.1/build/openseadragon/images/',
 
         // Rendering - use browser-specific drawer

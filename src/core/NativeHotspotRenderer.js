@@ -815,7 +815,30 @@ class NativeHotspotRenderer {
 
     updateVisibility() {
         if (this.updatesPaused) return;
+
         const viewport = this.viewer.viewport;
+        const currentZoom = viewport.getZoom();
+
+        // Special handling for low zoom
+        if (currentZoom < 1.5) {
+            // Keep hotspots interactive but invisible at very low zoom
+            this.overlays.forEach((overlay) => {
+                const isHovered = this.hoveredHotspot?.id === overlay.hotspot.id;
+                const isSelected = this.selectedHotspot?.id === overlay.hotspot.id;
+
+                if (isHovered || isSelected) {
+                    overlay.element.style.opacity = '1';
+                    overlay.element.style.display = 'block';
+                } else {
+                    overlay.element.style.opacity = '0';
+                    overlay.element.style.display = 'block';
+                }
+                overlay.element.style.pointerEvents = 'auto';
+                overlay.isVisible = true;
+            });
+
+            // Don't return early - continue with normal processing
+        }
         const bounds = viewport.getBounds();
         const topLeft = viewport.viewportToImageCoordinates(bounds.getTopLeft());
         const bottomRight = viewport.viewportToImageCoordinates(bounds.getBottomRight());
