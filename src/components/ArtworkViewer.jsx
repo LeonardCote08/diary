@@ -396,7 +396,7 @@ function ArtworkViewer(props) {
                     tileCounter++;
                     // Skip tiles based on pattern, not random
                     if (tileCounter % (skipRatio + 1) !== 0) {
-                        event.preventDefault();
+                        event.preventDefaultAction = true;
                         return;
                     }
                 }
@@ -404,7 +404,7 @@ function ArtworkViewer(props) {
                 if (zoom < 2.0) {
                     const screenSize = size * zoom;
                     if (screenSize < 24) { // Slightly lower threshold
-                        event.preventDefault();
+                        event.preventDefaultAction = true;
                         return;
                     }
                 }
@@ -413,7 +413,7 @@ function ArtworkViewer(props) {
                 if (Math.abs(level - optimalLevel) > 2) {
                     // Skip tiles too far from optimal level during zoom
                     if (viewer.skipTileRatio > 0) {
-                        event.preventDefault();
+                        event.preventDefaultAction = true;
                     }
                 }
             });
@@ -625,37 +625,22 @@ function ArtworkViewer(props) {
     const initializeHotspotSystem = () => {
         if (!viewer) return;
 
-        // Use Canvas renderer for mobile, SVG for desktop
-        if (isMobile()) {
-            // Import dynamically to avoid loading on desktop
-            import('../core/CanvasHotspotRenderer.js').then(({ default: CanvasHotspotRenderer }) => {
-                const renderer = new CanvasHotspotRenderer({
-                    viewer: viewer,
-                    spatialIndex: components().spatialIndex,
-                    onHotspotHover: setHoveredHotspot,
-                    onHotspotClick: handleHotspotClick,
-                    visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
-                    debugMode: debugLevel() === 2
-                });
-                setComponents(prev => ({ ...prev, renderer }));
-                console.log('Using CanvasHotspotRenderer for mobile');
-            });
-        } else {
-            // Desktop keeps the existing SVG renderer
-            const renderer = new NativeHotspotRenderer({
-                viewer: viewer,
-                spatialIndex: components().spatialIndex,
-                onHotspotHover: setHoveredHotspot,
-                onHotspotClick: handleHotspotClick,
-                visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
-                batchSize: performanceConfig.hotspots.batchSize,
-                renderDebounceTime: performanceConfig.hotspots.renderDebounceTime,
-                maxVisibleHotspots: performanceConfig.hotspots.maxVisibleHotspots,
-                minZoomForHotspots: performanceConfig.hotspots.minZoomForHotspots,
-                debugMode: debugLevel() === 2
-            });
-            setComponents(prev => ({ ...prev, renderer }));
-        }
+        // Always use NativeHotspotRenderer for both desktop and mobile
+        const renderer = new NativeHotspotRenderer({
+            viewer: viewer,
+            spatialIndex: components().spatialIndex,
+            onHotspotHover: setHoveredHotspot,
+            onHotspotClick: handleHotspotClick,
+            visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
+            batchSize: performanceConfig.hotspots.batchSize,
+            renderDebounceTime: performanceConfig.hotspots.renderDebounceTime,
+            maxVisibleHotspots: performanceConfig.hotspots.maxVisibleHotspots,
+            minZoomForHotspots: performanceConfig.hotspots.minZoomForHotspots,
+            debugMode: debugLevel() === 2
+        });
+
+        setComponents(prev => ({ ...prev, renderer }));
+        console.log('Using NativeHotspotRenderer for all platforms');
     };
 
     /**
