@@ -6,8 +6,9 @@ export const QUALITY_CONFIG = {
     tileSize: 1024                  // Your tile size configuration
 };
 
-// Zoom behavior configuration
+// ZOOM_CONFIG - Configuration for zoom behavior
+// Note: Auto-zoom on hotspot click is now always enabled for both desktop and mobile
 export const ZOOM_CONFIG = {
     enableDesktopZoom: true,  // Enable for testing
-    minZoomForDetail: 2
+    minZoomForDetail: 3.0
 };

@@ -716,11 +716,11 @@ function ArtworkViewer(props) {
             springStiffness: viewer.springStiffness
         };
 
-        // Optimized for 60 FPS: 0.5s to 0.8s max
-        const animTime = Math.min(0.8, Math.max(0.5, distance * 0.3 + 0.4));
+        // Cinematic zoom: 1.2s to 1.5s for better scale perception
+        const animTime = Math.min(1.5, Math.max(1.2, distance * 0.4 + 1.0));
 
-        // Higher stiffness for responsive zoom: 10.0 to 15.0
-        const stiffness = Math.max(10.0, 15.0 - distance * 2.0);
+        // Softer springs for cinematic feel: 6.0 to 10.0
+        const stiffness = Math.max(6.0, 10.0 - distance * 1.5);
 
         // NOW we can use animTime - Pause tile cleanup during cinematic zoom for better performance
         if (components().tileCleanupManager) {
@@ -756,15 +756,32 @@ function ArtworkViewer(props) {
         viewer.viewport.zoomSpring.springStiffness = stiffness * 0.85; // Slightly softer zoom
 
         // Calculate final bounds with padding
-        const paddingFactor = isMobile() ? 0.75 : 0.85;
+        const paddingFactor = isMobile() ? 0.65 : 0.85;
+
+        // Calculate center point for better mobile centering
+        const centerX = bounds.x + bounds.width / 2;
+        const centerY = bounds.y + bounds.height / 2;
+
+        // Create bounds centered on the hotspot
         const adjustedBounds = new OpenSeadragon.Rect(
-            bounds.x + bounds.width * (1 - paddingFactor) / 2,
-            bounds.y + bounds.height * (1 - paddingFactor) / 2,
+            centerX - (bounds.width * paddingFactor) / 2,
+            centerY - (bounds.height * paddingFactor) / 2,
             bounds.width * paddingFactor,
             bounds.height * paddingFactor
         );
 
-        // Execute zoom with animation
+        // Mobile-specific centering adjustment
+        if (isMobile()) {
+            // Apply a small vertical offset for better visual centering on mobile
+            const mobileOffsetY = adjustedBounds.height * 0.05;
+            adjustedBounds.y -= mobileOffsetY;
+        }
+
+        // Add small offset to force animation even if already at the hotspot
+        const epsilon = 0.00001;
+        adjustedBounds.x += epsilon;
+
+        // Use fitBounds for proper zoom calculation
         viewer.viewport.fitBounds(adjustedBounds, false);
 
         // Restore original settings after animation
@@ -828,16 +845,9 @@ function ArtworkViewer(props) {
             }
         }
 
-        // Zoom behavior (existing code)
-        if (isMobile()) {
-            console.log('Zooming to hotspot on mobile...');
-            await zoomToHotspot(hotspot);
-        } else if (ZOOM_CONFIG.enableDesktopZoom) {
-            const currentZoom = viewer.viewport.getZoom();
-            if (currentZoom < ZOOM_CONFIG.minZoomForDetail) {
-                await zoomToHotspot(hotspot);
-            }
-        }
+        // Always zoom to hotspot on both desktop and mobile, regardless of current zoom level
+        console.log('Zooming to hotspot:', hotspot.id);
+        await zoomToHotspot(hotspot);
 
         // Play audio (existing code)
         const audioDelay = isMobile() ? 1200 : 0;
