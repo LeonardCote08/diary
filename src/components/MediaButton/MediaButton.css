@@ -8,20 +8,22 @@
     animation: fadeIn 0.3s ease-out;
 }
 
-    /* Desktop positioning - below hotspot */
+    /* Desktop positioning - bottom left, safe from audio player */
     .media-button-container.desktop {
-        /* Same position for desktop */
+        position: fixed;
         bottom: 24px;
-        right: 24px;
+        left: 24px;
+        z-index: 100;
     }
 
-    /* Mobile positioning - centered */
+    /* Mobile positioning - bottom left corner */
     .media-button-container.mobile {
         position: fixed !important;
-        left: 50% !important;
-        bottom: 120px !important; /* Above audio player */
-        transform: translateX(-50%) !important;
+        bottom: 16px !important; /* Closer to bottom edge */
+        left: 16px !important;
+        transform: none !important;
         top: auto !important;
+        right: auto !important;
         z-index: 500;
     }
 
@@ -81,14 +83,14 @@
 
 /* Mobile adjustments */
 .media-button-container.mobile .media-button {
-    padding: 12px 20px;
-    font-size: 15px;
-    border-radius: 30px;
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 20px;
 }
 
 .media-button-container.mobile .media-button-icon {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
 }
 
 /* Animation */
@@ -111,12 +113,12 @@
 @keyframes slideUp {
     from {
         opacity: 0;
-        transform: translateX(-50%) translateY(20px);
+        transform: translateY(20px);
     }
 
     to {
         opacity: 1;
-        transform: translateX(-50%) translateY(0);
+        transform: translateY(0);
     }
 }
 

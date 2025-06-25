@@ -18,7 +18,7 @@ function MediaButton(props) {
     const [isClicked, setIsClicked] = createSignal(false);
     
     // Button text based on platform
-    const buttonText = () => isMobile ? 'Show Photo' : 'View Photo';
+    const buttonText = () => 'View Image';
     
     // Handle click with animation
     const handleClick = (e) => {
