@@ -7,9 +7,7 @@
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview",
-        "tiles": "powershell -ExecutionPolicy Bypass -File scripts/generate-optimized-tiles.ps1",
-        "tiles:verify": "powershell -ExecutionPolicy Bypass -File scripts/verify-tiles.ps1",
-        "cleanup": "powershell -ExecutionPolicy Bypass -File scripts/cleanup-project.ps1",
+        "tiles": "powershell -ExecutionPolicy Bypass -File scripts/generate-1024-tiles.ps1",
         "convert:svg": "node scripts/svg-converter.js",
         "deploy": "powershell -ExecutionPolicy Bypass -File scripts/quick-deploy.ps1"
     },
