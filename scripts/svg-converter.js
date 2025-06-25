@@ -16,6 +16,7 @@ program
     .option('-o, --output <path>', 'Output JSON file path')
     .option('-p, --page-id <id>', 'Page ID for this artwork (e.g., "2019-07-17")')
     .option('-b, --base-url <url>', 'Base URL for media files', 'https://example.com')
+    .option('--use-real-images', 'Use real image URLs instead of placeholders')
     .option('-w, --watch', 'Watch for file changes')
     .parse(process.argv);
 
@@ -24,7 +25,7 @@ const options = program.opts();
 // Ensure file paths are relative to script location, not CWD
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const inputSvg = options.input || path.join(__dirname, '..', 'input', 'MVP_hotspots.svg');
-const outputJson = options.output || path.join(__dirname, '..', 'src', 'data', 'hotspots.json');
+const outputJson = options.output || path.join(__dirname, '..', 'public', 'data', 'hotspots.json');
 
 // Updated color mapping based on actual SVG colors
 const colorTypeMap = {
@@ -58,6 +59,17 @@ const colorTypeMap = {
     '#fff700': { type: 5, name: 'audio_sound' }, // Yellow variant
     '#ffee00': { type: 5, name: 'audio_sound' }, // Yellow variant
 };
+
+// Default values for overlay system (Deji's specs)
+const OVERLAY_DEFAULTS = {
+    overlay_auto_reveal: false,  // User must click to reveal
+    overlay_display_mode: 'modal',  // Start with modal mode
+    show_images_button: true,  // Show the button
+    overlay_access: 'free'  // Default to free access
+};
+
+// Placeholder image service for testing
+const PLACEHOLDER_BASE_URL = 'https://picsum.photos';
 
 // Helper function to extract month-day from layer name
 function extractDateFromLayerName(layerName) {
@@ -350,12 +362,37 @@ export async function convertSvgToHotspots(svgPath, options = {}) {
 
         // Type 3 (audio_image) and Type 4 (audio_image_link) have images
         if ([3, 4].includes(typeNumber)) {
-            hotspot.imageUrl = `${baseUrl}/images/${typeName}_${counter}.jpg`;
+            // Use Deji's field naming convention: image_url_1 instead of imageUrl
+            // For testing, use placeholder images from picsum.photos
+            const imageWidth = 800;
+            const imageHeight = 600;
+            const seed = `${typeName}_${counter}`; // Consistent image per hotspot
+            // Use Deji's field naming convention: image_url_1 instead of imageUrl
+            if (options.useRealImages) {
+                // Real image URL
+                hotspot.image_url_1 = `${baseUrl}/images/${typeName}_${counter}.jpg`;
+            } else {
+                // For testing, use placeholder images from picsum.photos
+                const imageWidth = 800;
+                const imageHeight = 600;
+                const seed = `${typeName}_${counter}`; // Consistent image per hotspot
+                hotspot.image_url_1 = `${PLACEHOLDER_BASE_URL}/seed/${seed}/${imageWidth}/${imageHeight}`;
+            }
+
+            // Add overlay control fields
+            hotspot.overlay_auto_reveal = OVERLAY_DEFAULTS.overlay_auto_reveal;
+            hotspot.overlay_display_mode = OVERLAY_DEFAULTS.overlay_display_mode;
+            hotspot.show_images_button = OVERLAY_DEFAULTS.show_images_button;
+            hotspot.overlay_access = OVERLAY_DEFAULTS.overlay_access;
         }
 
         // Type 2 (audio_link) and Type 4 (audio_image_link) have links
         if ([2, 4].includes(typeNumber)) {
             hotspot.linkUrl = `${baseUrl}/diary/${typeName}_${counter}`;
+
+            // Add link button control
+            hotspot.show_links_button = true;
+            hotspot.links_access = 'free';
         }
 
         // Type 5 (audio_sound) might have a secondary sound effect
@@ -378,7 +415,8 @@ async function main() {
 
         const hotspots = await convertSvgToHotspots(inputSvg, {
             pageId: options.pageId,
-            baseUrl: options.baseUrl
+            baseUrl: options.baseUrl,
+            useRealImages: options.useRealImages || false
         });
 
         if (hotspots.length === 0) {

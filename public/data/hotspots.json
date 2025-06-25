@@ -440,7 +440,9 @@
     "title": "audio link Hotspot 014",
     "description": "Excerpt from narration — hotspot 014",
     "audioUrl": "https://example.com/audio/audio_link_014.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_014"
+    "linkUrl": "https://example.com/diary/audio_link_014",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_015",
@@ -476,7 +478,9 @@
     "title": "audio link Hotspot 015",
     "description": "Excerpt from narration — hotspot 015",
     "audioUrl": "https://example.com/audio/audio_link_015.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_015"
+    "linkUrl": "https://example.com/diary/audio_link_015",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_016",
@@ -512,7 +516,9 @@
     "title": "audio link Hotspot 016",
     "description": "Excerpt from narration — hotspot 016",
     "audioUrl": "https://example.com/audio/audio_link_016.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_016"
+    "linkUrl": "https://example.com/diary/audio_link_016",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_017",
@@ -544,7 +550,9 @@
     "title": "audio link Hotspot 017",
     "description": "Excerpt from narration — hotspot 017",
     "audioUrl": "https://example.com/audio/audio_link_017.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_017"
+    "linkUrl": "https://example.com/diary/audio_link_017",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_018",
@@ -564,7 +572,9 @@
     "title": "audio link Hotspot 018",
     "description": "Excerpt from narration — hotspot 018",
     "audioUrl": "https://example.com/audio/audio_link_018.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_018"
+    "linkUrl": "https://example.com/diary/audio_link_018",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_019",
@@ -600,7 +610,9 @@
     "title": "audio link Hotspot 019",
     "description": "Excerpt from narration — hotspot 019",
     "audioUrl": "https://example.com/audio/audio_link_019.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_019"
+    "linkUrl": "https://example.com/diary/audio_link_019",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_020",
@@ -640,7 +652,9 @@
     "title": "audio link Hotspot 020",
     "description": "Excerpt from narration — hotspot 020",
     "audioUrl": "https://example.com/audio/audio_link_020.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_020"
+    "linkUrl": "https://example.com/diary/audio_link_020",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_021",
@@ -676,7 +690,9 @@
     "title": "audio link Hotspot 021",
     "description": "Excerpt from narration — hotspot 021",
     "audioUrl": "https://example.com/audio/audio_link_021.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_021"
+    "linkUrl": "https://example.com/diary/audio_link_021",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_022",
@@ -696,7 +712,9 @@
     "title": "audio link Hotspot 022",
     "description": "Excerpt from narration — hotspot 022",
     "audioUrl": "https://example.com/audio/audio_link_022.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_022"
+    "linkUrl": "https://example.com/diary/audio_link_022",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_023",
@@ -720,7 +738,9 @@
     "title": "audio link Hotspot 023",
     "description": "Excerpt from narration — hotspot 023",
     "audioUrl": "https://example.com/audio/audio_link_023.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_023"
+    "linkUrl": "https://example.com/diary/audio_link_023",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_024",
@@ -740,7 +760,9 @@
     "title": "audio link Hotspot 024",
     "description": "Excerpt from narration — hotspot 024",
     "audioUrl": "https://example.com/audio/audio_link_024.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_024"
+    "linkUrl": "https://example.com/diary/audio_link_024",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_025",
@@ -760,7 +782,9 @@
     "title": "audio link Hotspot 025",
     "description": "Excerpt from narration — hotspot 025",
     "audioUrl": "https://example.com/audio/audio_link_025.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_025"
+    "linkUrl": "https://example.com/diary/audio_link_025",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_026",
@@ -784,7 +808,9 @@
     "title": "audio link Hotspot 026",
     "description": "Excerpt from narration — hotspot 026",
     "audioUrl": "https://example.com/audio/audio_link_026.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_026"
+    "linkUrl": "https://example.com/diary/audio_link_026",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_027",
@@ -820,7 +846,9 @@
     "title": "audio link Hotspot 027",
     "description": "Excerpt from narration — hotspot 027",
     "audioUrl": "https://example.com/audio/audio_link_027.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_027"
+    "linkUrl": "https://example.com/diary/audio_link_027",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_028",
@@ -840,7 +868,9 @@
     "title": "audio link Hotspot 028",
     "description": "Excerpt from narration — hotspot 028",
     "audioUrl": "https://example.com/audio/audio_link_028.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_028"
+    "linkUrl": "https://example.com/diary/audio_link_028",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_029",
@@ -860,7 +890,9 @@
     "title": "audio link Hotspot 029",
     "description": "Excerpt from narration — hotspot 029",
     "audioUrl": "https://example.com/audio/audio_link_029.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_029"
+    "linkUrl": "https://example.com/diary/audio_link_029",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_030",
@@ -884,7 +916,9 @@
     "title": "audio link Hotspot 030",
     "description": "Excerpt from narration — hotspot 030",
     "audioUrl": "https://example.com/audio/audio_link_030.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_030"
+    "linkUrl": "https://example.com/diary/audio_link_030",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_031",
@@ -904,7 +938,9 @@
     "title": "audio link Hotspot 031",
     "description": "Excerpt from narration — hotspot 031",
     "audioUrl": "https://example.com/audio/audio_link_031.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_031"
+    "linkUrl": "https://example.com/diary/audio_link_031",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_032",
@@ -944,7 +980,9 @@
     "title": "audio link Hotspot 032",
     "description": "Excerpt from narration — hotspot 032",
     "audioUrl": "https://example.com/audio/audio_link_032.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_032"
+    "linkUrl": "https://example.com/diary/audio_link_032",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_033",
@@ -964,7 +1002,9 @@
     "title": "audio link Hotspot 033",
     "description": "Excerpt from narration — hotspot 033",
     "audioUrl": "https://example.com/audio/audio_link_033.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_033"
+    "linkUrl": "https://example.com/diary/audio_link_033",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_034",
@@ -992,7 +1032,9 @@
     "title": "audio link Hotspot 034",
     "description": "Excerpt from narration — hotspot 034",
     "audioUrl": "https://example.com/audio/audio_link_034.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_034"
+    "linkUrl": "https://example.com/diary/audio_link_034",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_035",
@@ -1036,7 +1078,11 @@
     "title": "audio image Hotspot 035",
     "description": "Excerpt from narration — hotspot 035",
     "audioUrl": "https://example.com/audio/audio_image_035.mp3",
-    "imageUrl": "https://example.com/images/audio_image_035.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_035/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_036",
@@ -1076,7 +1122,11 @@
     "title": "audio image Hotspot 036",
     "description": "Excerpt from narration — hotspot 036",
     "audioUrl": "https://example.com/audio/audio_image_036.mp3",
-    "imageUrl": "https://example.com/images/audio_image_036.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_036/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_037",
@@ -1100,7 +1150,11 @@
     "title": "audio image Hotspot 037",
     "description": "Excerpt from narration — hotspot 037",
     "audioUrl": "https://example.com/audio/audio_image_037.mp3",
-    "imageUrl": "https://example.com/images/audio_image_037.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_037/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_038",
@@ -1124,7 +1178,11 @@
     "title": "audio image Hotspot 038",
     "description": "Excerpt from narration — hotspot 038",
     "audioUrl": "https://example.com/audio/audio_image_038.mp3",
-    "imageUrl": "https://example.com/images/audio_image_038.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_038/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_039",
@@ -1152,7 +1210,11 @@
     "title": "audio image Hotspot 039",
     "description": "Excerpt from narration — hotspot 039",
     "audioUrl": "https://example.com/audio/audio_image_039.mp3",
-    "imageUrl": "https://example.com/images/audio_image_039.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_039/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_040",
@@ -1176,7 +1238,11 @@
     "title": "audio image Hotspot 040",
     "description": "Excerpt from narration — hotspot 040",
     "audioUrl": "https://example.com/audio/audio_image_040.mp3",
-    "imageUrl": "https://example.com/images/audio_image_040.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_040/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_041",
@@ -1200,7 +1266,11 @@
     "title": "audio image Hotspot 041",
     "description": "Excerpt from narration — hotspot 041",
     "audioUrl": "https://example.com/audio/audio_image_041.mp3",
-    "imageUrl": "https://example.com/images/audio_image_041.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_041/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_042",
@@ -1220,7 +1290,11 @@
     "title": "audio image Hotspot 042",
     "description": "Excerpt from narration — hotspot 042",
     "audioUrl": "https://example.com/audio/audio_image_042.mp3",
-    "imageUrl": "https://example.com/images/audio_image_042.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_042/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_043",
@@ -1240,7 +1314,11 @@
     "title": "audio image Hotspot 043",
     "description": "Excerpt from narration — hotspot 043",
     "audioUrl": "https://example.com/audio/audio_image_043.mp3",
-    "imageUrl": "https://example.com/images/audio_image_043.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_043/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_044",
@@ -1260,7 +1338,11 @@
     "title": "audio image Hotspot 044",
     "description": "Excerpt from narration — hotspot 044",
     "audioUrl": "https://example.com/audio/audio_image_044.mp3",
-    "imageUrl": "https://example.com/images/audio_image_044.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_044/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_045",
@@ -1296,7 +1378,11 @@
     "title": "audio image Hotspot 045",
     "description": "Excerpt from narration — hotspot 045",
     "audioUrl": "https://example.com/audio/audio_image_045.mp3",
-    "imageUrl": "https://example.com/images/audio_image_045.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_045/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_046",
@@ -1332,7 +1418,11 @@
     "title": "audio image Hotspot 046",
     "description": "Excerpt from narration — hotspot 046",
     "audioUrl": "https://example.com/audio/audio_image_046.mp3",
-    "imageUrl": "https://example.com/images/audio_image_046.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_046/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_047",
@@ -1352,7 +1442,11 @@
     "title": "audio image Hotspot 047",
     "description": "Excerpt from narration — hotspot 047",
     "audioUrl": "https://example.com/audio/audio_image_047.mp3",
-    "imageUrl": "https://example.com/images/audio_image_047.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_047/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_048",
@@ -1372,7 +1466,11 @@
     "title": "audio image Hotspot 048",
     "description": "Excerpt from narration — hotspot 048",
     "audioUrl": "https://example.com/audio/audio_image_048.mp3",
-    "imageUrl": "https://example.com/images/audio_image_048.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_048/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_049",
@@ -1392,7 +1490,11 @@
     "title": "audio image Hotspot 049",
     "description": "Excerpt from narration — hotspot 049",
     "audioUrl": "https://example.com/audio/audio_image_049.mp3",
-    "imageUrl": "https://example.com/images/audio_image_049.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_049/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_050",
@@ -1424,7 +1526,11 @@
     "title": "audio image Hotspot 050",
     "description": "Excerpt from narration — hotspot 050",
     "audioUrl": "https://example.com/audio/audio_image_050.mp3",
-    "imageUrl": "https://example.com/images/audio_image_050.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_050/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_051",
@@ -1444,7 +1550,11 @@
     "title": "audio image Hotspot 051",
     "description": "Excerpt from narration — hotspot 051",
     "audioUrl": "https://example.com/audio/audio_image_051.mp3",
-    "imageUrl": "https://example.com/images/audio_image_051.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_051/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_052",
@@ -1464,7 +1574,11 @@
     "title": "audio image Hotspot 052",
     "description": "Excerpt from narration — hotspot 052",
     "audioUrl": "https://example.com/audio/audio_image_052.mp3",
-    "imageUrl": "https://example.com/images/audio_image_052.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_052/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_053",
@@ -1488,7 +1602,11 @@
     "title": "audio image Hotspot 053",
     "description": "Excerpt from narration — hotspot 053",
     "audioUrl": "https://example.com/audio/audio_image_053.mp3",
-    "imageUrl": "https://example.com/images/audio_image_053.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_053/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_054",
@@ -1536,8 +1654,14 @@
     "title": "audio image link Hotspot 054",
     "description": "Excerpt from narration — hotspot 054",
     "audioUrl": "https://example.com/audio/audio_image_link_054.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_054.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_054"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_054/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_054",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_055",
@@ -1569,8 +1693,14 @@
     "title": "audio image link Hotspot 055",
     "description": "Excerpt from narration — hotspot 055",
     "audioUrl": "https://example.com/audio/audio_image_link_055.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_055.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_055"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_055/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_055",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_056",
@@ -1602,8 +1732,14 @@
     "title": "audio image link Hotspot 056",
     "description": "Excerpt from narration — hotspot 056",
     "audioUrl": "https://example.com/audio/audio_image_link_056.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_056.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_056"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_056/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_056",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_057",
@@ -1623,8 +1759,14 @@
     "title": "audio image link Hotspot 057",
     "description": "Excerpt from narration — hotspot 057",
     "audioUrl": "https://example.com/audio/audio_image_link_057.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_057.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_057"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_057/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_057",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_058",
@@ -1660,8 +1802,14 @@
     "title": "audio image link Hotspot 058",
     "description": "Excerpt from narration — hotspot 058",
     "audioUrl": "https://example.com/audio/audio_image_link_058.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_058.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_058"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_058/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_058",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_059",
@@ -1689,8 +1837,14 @@
     "title": "audio image link Hotspot 059",
     "description": "Excerpt from narration — hotspot 059",
     "audioUrl": "https://example.com/audio/audio_image_link_059.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_059.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_059"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_059/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_059",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_060",
@@ -1730,8 +1884,14 @@
     "title": "audio image link Hotspot 060",
     "description": "Excerpt from narration — hotspot 060",
     "audioUrl": "https://example.com/audio/audio_image_link_060.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_060.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_060"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_060/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_060",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_061",
@@ -1751,8 +1911,14 @@
     "title": "audio image link Hotspot 061",
     "description": "Excerpt from narration — hotspot 061",
     "audioUrl": "https://example.com/audio/audio_image_link_061.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_061.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_061"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_061/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_061",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_062",
@@ -1772,8 +1938,14 @@
     "title": "audio image link Hotspot 062",
     "description": "Excerpt from narration — hotspot 062",
     "audioUrl": "https://example.com/audio/audio_image_link_062.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_062.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_062"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_062/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_062",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_063",
@@ -1793,8 +1965,14 @@
     "title": "audio image link Hotspot 063",
     "description": "Excerpt from narration — hotspot 063",
     "audioUrl": "https://example.com/audio/audio_image_link_063.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_063.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_063"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_063/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_063",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_064",
@@ -1814,8 +1992,14 @@
     "title": "audio image link Hotspot 064",
     "description": "Excerpt from narration — hotspot 064",
     "audioUrl": "https://example.com/audio/audio_image_link_064.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_064.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_064"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_064/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_064",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_065",
@@ -1843,8 +2027,14 @@
     "title": "audio image link Hotspot 065",
     "description": "Excerpt from narration — hotspot 065",
     "audioUrl": "https://example.com/audio/audio_image_link_065.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_065.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_065"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_065/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_065",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_066",
@@ -1880,8 +2070,14 @@
     "title": "audio image link Hotspot 066",
     "description": "Excerpt from narration — hotspot 066",
     "audioUrl": "https://example.com/audio/audio_image_link_066.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_066.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_066"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_066/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_066",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_067",
@@ -1901,8 +2097,14 @@
     "title": "audio image link Hotspot 067",
     "description": "Excerpt from narration — hotspot 067",
     "audioUrl": "https://example.com/audio/audio_image_link_067.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_067.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_067"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_067/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_067",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_068",
@@ -1926,8 +2128,14 @@
     "title": "audio image link Hotspot 068",
     "description": "Excerpt from narration — hotspot 068",
     "audioUrl": "https://example.com/audio/audio_image_link_068.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_068.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_068"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_068/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_068",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_069",
@@ -1947,8 +2155,14 @@
     "title": "audio image link Hotspot 069",
     "description": "Excerpt from narration — hotspot 069",
     "audioUrl": "https://example.com/audio/audio_image_link_069.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_069.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_069"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_069/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_069",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_070",
@@ -1980,8 +2194,14 @@
     "title": "audio image link Hotspot 070",
     "description": "Excerpt from narration — hotspot 070",
     "audioUrl": "https://example.com/audio/audio_image_link_070.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_070.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_070"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_070/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_070",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_071",
@@ -2001,8 +2221,14 @@
     "title": "audio image link Hotspot 071",
     "description": "Excerpt from narration — hotspot 071",
     "audioUrl": "https://example.com/audio/audio_image_link_071.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_071.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_071"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_071/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_071",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_072",
@@ -2026,8 +2252,14 @@
     "title": "audio image link Hotspot 072",
     "description": "Excerpt from narration — hotspot 072",
     "audioUrl": "https://example.com/audio/audio_image_link_072.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_072.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_072"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_072/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_072",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_073",
@@ -2047,8 +2279,14 @@
     "title": "audio image link Hotspot 073",
     "description": "Excerpt from narration — hotspot 073",
     "audioUrl": "https://example.com/audio/audio_image_link_073.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_073.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_073"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_073/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_073",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_074",
@@ -2068,8 +2306,14 @@
     "title": "audio image link Hotspot 074",
     "description": "Excerpt from narration — hotspot 074",
     "audioUrl": "https://example.com/audio/audio_image_link_074.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_074.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_074"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_074/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_074",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_075",
@@ -2105,8 +2349,14 @@
     "title": "audio image link Hotspot 075",
     "description": "Excerpt from narration — hotspot 075",
     "audioUrl": "https://example.com/audio/audio_image_link_075.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_075.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_075"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_075/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_075",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_076",
@@ -2126,8 +2376,14 @@
     "title": "audio image link Hotspot 076",
     "description": "Excerpt from narration — hotspot 076",
     "audioUrl": "https://example.com/audio/audio_image_link_076.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_076.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_076"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_076/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_076",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_077",
@@ -2147,8 +2403,14 @@
     "title": "audio image link Hotspot 077",
     "description": "Excerpt from narration — hotspot 077",
     "audioUrl": "https://example.com/audio/audio_image_link_077.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_077.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_077"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_077/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_077",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_078",
@@ -2168,8 +2430,14 @@
     "title": "audio image link Hotspot 078",
     "description": "Excerpt from narration — hotspot 078",
     "audioUrl": "https://example.com/audio/audio_image_link_078.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_078.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_078"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_078/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_078",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_079",
@@ -2193,8 +2461,14 @@
     "title": "audio image link Hotspot 079",
     "description": "Excerpt from narration — hotspot 079",
     "audioUrl": "https://example.com/audio/audio_image_link_079.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_079.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_079"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_079/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_079",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_080",
@@ -2218,8 +2492,14 @@
     "title": "audio image link Hotspot 080",
     "description": "Excerpt from narration — hotspot 080",
     "audioUrl": "https://example.com/audio/audio_image_link_080.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_080.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_080"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_080/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_080",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_081",
@@ -2239,8 +2519,14 @@
     "title": "audio image link Hotspot 081",
     "description": "Excerpt from narration — hotspot 081",
     "audioUrl": "https://example.com/audio/audio_image_link_081.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_081.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_081"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_081/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_081",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_082",
@@ -2264,8 +2550,14 @@
     "title": "audio image link Hotspot 082",
     "description": "Excerpt from narration — hotspot 082",
     "audioUrl": "https://example.com/audio/audio_image_link_082.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_082.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_082"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_082/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_082",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_083",
@@ -2289,8 +2581,14 @@
     "title": "audio image link Hotspot 083",
     "description": "Excerpt from narration — hotspot 083",
     "audioUrl": "https://example.com/audio/audio_image_link_083.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_083.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_083"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_083/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_083",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_084",
@@ -2314,7 +2612,11 @@
     "title": "audio image Hotspot 084",
     "description": "Excerpt from narration — hotspot 084",
     "audioUrl": "https://example.com/audio/audio_image_084.mp3",
-    "imageUrl": "https://example.com/images/audio_image_084.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_084/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_085",
@@ -2342,7 +2644,11 @@
     "title": "audio image Hotspot 085",
     "description": "Excerpt from narration — hotspot 085",
     "audioUrl": "https://example.com/audio/audio_image_085.mp3",
-    "imageUrl": "https://example.com/images/audio_image_085.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_085/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_086",
@@ -2390,7 +2696,11 @@
     "title": "audio image Hotspot 086",
     "description": "Excerpt from narration — hotspot 086",
     "audioUrl": "https://example.com/audio/audio_image_086.mp3",
-    "imageUrl": "https://example.com/images/audio_image_086.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_086/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_087",
@@ -2438,7 +2748,11 @@
     "title": "audio image Hotspot 087",
     "description": "Excerpt from narration — hotspot 087",
     "audioUrl": "https://example.com/audio/audio_image_087.mp3",
-    "imageUrl": "https://example.com/images/audio_image_087.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_087/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_088",
@@ -2458,7 +2772,11 @@
     "title": "audio image Hotspot 088",
     "description": "Excerpt from narration — hotspot 088",
     "audioUrl": "https://example.com/audio/audio_image_088.mp3",
-    "imageUrl": "https://example.com/images/audio_image_088.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_088/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_089",
@@ -2510,7 +2828,11 @@
     "title": "audio image Hotspot 089",
     "description": "Excerpt from narration — hotspot 089",
     "audioUrl": "https://example.com/audio/audio_image_089.mp3",
-    "imageUrl": "https://example.com/images/audio_image_089.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_089/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_090",
@@ -2566,7 +2888,11 @@
     "title": "audio image Hotspot 090",
     "description": "Excerpt from narration — hotspot 090",
     "audioUrl": "https://example.com/audio/audio_image_090.mp3",
-    "imageUrl": "https://example.com/images/audio_image_090.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_090/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_091",
@@ -2610,7 +2936,11 @@
     "title": "audio image Hotspot 091",
     "description": "Excerpt from narration — hotspot 091",
     "audioUrl": "https://example.com/audio/audio_image_091.mp3",
-    "imageUrl": "https://example.com/images/audio_image_091.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_091/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_092",
@@ -2630,7 +2960,11 @@
     "title": "audio image Hotspot 092",
     "description": "Excerpt from narration — hotspot 092",
     "audioUrl": "https://example.com/audio/audio_image_092.mp3",
-    "imageUrl": "https://example.com/images/audio_image_092.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_092/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_093",
@@ -2654,7 +2988,11 @@
     "title": "audio image Hotspot 093",
     "description": "Excerpt from narration — hotspot 093",
     "audioUrl": "https://example.com/audio/audio_image_093.mp3",
-    "imageUrl": "https://example.com/images/audio_image_093.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_093/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_094",
@@ -2674,7 +3012,11 @@
     "title": "audio image Hotspot 094",
     "description": "Excerpt from narration — hotspot 094",
     "audioUrl": "https://example.com/audio/audio_image_094.mp3",
-    "imageUrl": "https://example.com/images/audio_image_094.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_094/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_095",
@@ -2694,7 +3036,11 @@
     "title": "audio image Hotspot 095",
     "description": "Excerpt from narration — hotspot 095",
     "audioUrl": "https://example.com/audio/audio_image_095.mp3",
-    "imageUrl": "https://example.com/images/audio_image_095.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_095/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_096",
@@ -2726,7 +3072,11 @@
     "title": "audio image Hotspot 096",
     "description": "Excerpt from narration — hotspot 096",
     "audioUrl": "https://example.com/audio/audio_image_096.mp3",
-    "imageUrl": "https://example.com/images/audio_image_096.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_096/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_097",
@@ -2782,7 +3132,11 @@
     "title": "audio image Hotspot 097",
     "description": "Excerpt from narration — hotspot 097",
     "audioUrl": "https://example.com/audio/audio_image_097.mp3",
-    "imageUrl": "https://example.com/images/audio_image_097.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_097/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_sound_098",
@@ -3893,7 +4247,11 @@
     "title": "audio image Hotspot 118",
     "description": "Excerpt from narration — hotspot 118",
     "audioUrl": "https://example.com/audio/audio_image_118.mp3",
-    "imageUrl": "https://example.com/images/audio_image_118.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_118/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_119",
@@ -5472,7 +5830,9 @@
     "title": "audio link Hotspot 120",
     "description": "Excerpt from narration — hotspot 120",
     "audioUrl": "https://example.com/audio/audio_link_120.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_120"
+    "linkUrl": "https://example.com/diary/audio_link_120",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_121",
@@ -6182,7 +6542,9 @@
     "title": "audio link Hotspot 121",
     "description": "Excerpt from narration — hotspot 121",
     "audioUrl": "https://example.com/audio/audio_link_121.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_121"
+    "linkUrl": "https://example.com/diary/audio_link_121",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_122",
@@ -8184,7 +8546,9 @@
     "title": "audio link Hotspot 124",
     "description": "Excerpt from narration — hotspot 124",
     "audioUrl": "https://example.com/audio/audio_link_124.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_124"
+    "linkUrl": "https://example.com/diary/audio_link_124",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_125",
@@ -8869,7 +9233,11 @@
     "title": "audio image Hotspot 126",
     "description": "Excerpt from narration — hotspot 126",
     "audioUrl": "https://example.com/audio/audio_image_126.mp3",
-    "imageUrl": "https://example.com/images/audio_image_126.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_126/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_127",
@@ -9748,7 +10116,9 @@
     "title": "audio link Hotspot 128",
     "description": "Excerpt from narration — hotspot 128",
     "audioUrl": "https://example.com/audio/audio_link_128.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_128"
+    "linkUrl": "https://example.com/diary/audio_link_128",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_129",
@@ -10887,7 +11257,11 @@
     "title": "audio image Hotspot 130",
     "description": "Excerpt from narration — hotspot 130",
     "audioUrl": "https://example.com/audio/audio_image_130.mp3",
-    "imageUrl": "https://example.com/images/audio_image_130.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_130/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_131",
@@ -11331,7 +11705,11 @@
     "title": "audio image Hotspot 131",
     "description": "Excerpt from narration — hotspot 131",
     "audioUrl": "https://example.com/audio/audio_image_131.mp3",
-    "imageUrl": "https://example.com/images/audio_image_131.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_131/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_132",
@@ -12092,7 +12470,9 @@
     "title": "audio link Hotspot 133",
     "description": "Excerpt from narration — hotspot 133",
     "audioUrl": "https://example.com/audio/audio_link_133.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_133"
+    "linkUrl": "https://example.com/diary/audio_link_133",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_134",
@@ -15952,7 +16332,11 @@
     "title": "audio image Hotspot 140",
     "description": "Excerpt from narration — hotspot 140",
     "audioUrl": "https://example.com/audio/audio_image_140.mp3",
-    "imageUrl": "https://example.com/images/audio_image_140.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_140/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_141",
@@ -17731,7 +18115,11 @@
     "title": "audio image Hotspot 144",
     "description": "Excerpt from narration — hotspot 144",
     "audioUrl": "https://example.com/audio/audio_image_144.mp3",
-    "imageUrl": "https://example.com/images/audio_image_144.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_144/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_145",
@@ -19408,7 +19796,9 @@
     "title": "audio link Hotspot 146",
     "description": "Excerpt from narration — hotspot 146",
     "audioUrl": "https://example.com/audio/audio_link_146.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_146"
+    "linkUrl": "https://example.com/diary/audio_link_146",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_147",
@@ -20341,8 +20731,14 @@
     "title": "audio image link Hotspot 150",
     "description": "Excerpt from narration — hotspot 150",
     "audioUrl": "https://example.com/audio/audio_image_link_150.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_150.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_150"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_150/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_150",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_151",
@@ -20508,8 +20904,14 @@
     "title": "audio image link Hotspot 151",
     "description": "Excerpt from narration — hotspot 151",
     "audioUrl": "https://example.com/audio/audio_image_link_151.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_151.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_151"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_151/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_151",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_152",
@@ -21824,7 +22226,11 @@
     "title": "audio image Hotspot 155",
     "description": "Excerpt from narration — hotspot 155",
     "audioUrl": "https://example.com/audio/audio_image_155.mp3",
-    "imageUrl": "https://example.com/images/audio_image_155.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_155/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_156",
@@ -21884,7 +22290,11 @@
     "title": "audio image Hotspot 156",
     "description": "Excerpt from narration — hotspot 156",
     "audioUrl": "https://example.com/audio/audio_image_156.mp3",
-    "imageUrl": "https://example.com/images/audio_image_156.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_156/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_157",
@@ -22068,7 +22478,9 @@
     "title": "audio link Hotspot 157",
     "description": "Excerpt from narration — hotspot 157",
     "audioUrl": "https://example.com/audio/audio_link_157.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_157"
+    "linkUrl": "https://example.com/diary/audio_link_157",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_158",
@@ -22236,7 +22648,9 @@
     "title": "audio link Hotspot 158",
     "description": "Excerpt from narration — hotspot 158",
     "audioUrl": "https://example.com/audio/audio_link_158.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_158"
+    "linkUrl": "https://example.com/diary/audio_link_158",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_159",
@@ -22853,7 +23267,11 @@
     "title": "audio image Hotspot 160",
     "description": "Excerpt from narration — hotspot 160",
     "audioUrl": "https://example.com/audio/audio_image_160.mp3",
-    "imageUrl": "https://example.com/images/audio_image_160.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_160/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_161",
@@ -23659,7 +24077,11 @@
     "title": "audio image Hotspot 167",
     "description": "Excerpt from narration — hotspot 167",
     "audioUrl": "https://example.com/audio/audio_image_167.mp3",
-    "imageUrl": "https://example.com/images/audio_image_167.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_167/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_168",
@@ -23791,7 +24213,11 @@
     "title": "audio image Hotspot 168",
     "description": "Excerpt from narration — hotspot 168",
     "audioUrl": "https://example.com/audio/audio_image_168.mp3",
-    "imageUrl": "https://example.com/images/audio_image_168.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_168/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_169",
@@ -23859,7 +24285,9 @@
     "title": "audio link Hotspot 169",
     "description": "Excerpt from narration — hotspot 169",
     "audioUrl": "https://example.com/audio/audio_link_169.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_169"
+    "linkUrl": "https://example.com/diary/audio_link_169",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_170",
@@ -23971,7 +24399,9 @@
     "title": "audio link Hotspot 170",
     "description": "Excerpt from narration — hotspot 170",
     "audioUrl": "https://example.com/audio/audio_link_170.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_170"
+    "linkUrl": "https://example.com/diary/audio_link_170",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_171",
@@ -24051,7 +24481,9 @@
     "title": "audio link Hotspot 171",
     "description": "Excerpt from narration — hotspot 171",
     "audioUrl": "https://example.com/audio/audio_link_171.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_171"
+    "linkUrl": "https://example.com/diary/audio_link_171",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_172",
@@ -24147,7 +24579,9 @@
     "title": "audio link Hotspot 172",
     "description": "Excerpt from narration — hotspot 172",
     "audioUrl": "https://example.com/audio/audio_link_172.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_172"
+    "linkUrl": "https://example.com/diary/audio_link_172",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_173",
@@ -24650,7 +25084,9 @@
     "title": "audio link Hotspot 174",
     "description": "Excerpt from narration — hotspot 174",
     "audioUrl": "https://example.com/audio/audio_link_174.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_174"
+    "linkUrl": "https://example.com/diary/audio_link_174",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_175",
@@ -25387,7 +25823,11 @@
     "title": "audio image Hotspot 176",
     "description": "Excerpt from narration — hotspot 176",
     "audioUrl": "https://example.com/audio/audio_image_176.mp3",
-    "imageUrl": "https://example.com/images/audio_image_176.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_176/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_177",
@@ -26378,7 +26818,11 @@
     "title": "audio image Hotspot 178",
     "description": "Excerpt from narration — hotspot 178",
     "audioUrl": "https://example.com/audio/audio_image_178.mp3",
-    "imageUrl": "https://example.com/images/audio_image_178.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_178/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_sound_179",
@@ -26554,7 +26998,11 @@
     "title": "audio image Hotspot 180",
     "description": "Excerpt from narration — hotspot 180",
     "audioUrl": "https://example.com/audio/audio_image_180.mp3",
-    "imageUrl": "https://example.com/images/audio_image_180.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_180/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_181",
@@ -26658,7 +27106,11 @@
     "title": "audio image Hotspot 181",
     "description": "Excerpt from narration — hotspot 181",
     "audioUrl": "https://example.com/audio/audio_image_181.mp3",
-    "imageUrl": "https://example.com/images/audio_image_181.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_181/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_182",
@@ -26809,7 +27261,11 @@
     "title": "audio image Hotspot 183",
     "description": "Excerpt from narration — hotspot 183",
     "audioUrl": "https://example.com/audio/audio_image_183.mp3",
-    "imageUrl": "https://example.com/images/audio_image_183.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_183/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_184",
@@ -27196,7 +27652,9 @@
     "title": "audio link Hotspot 185",
     "description": "Excerpt from narration — hotspot 185",
     "audioUrl": "https://example.com/audio/audio_link_185.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_185"
+    "linkUrl": "https://example.com/diary/audio_link_185",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_186",
@@ -27649,7 +28107,9 @@
     "title": "audio link Hotspot 189",
     "description": "Excerpt from narration — hotspot 189",
     "audioUrl": "https://example.com/audio/audio_link_189.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_189"
+    "linkUrl": "https://example.com/diary/audio_link_189",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_190",
@@ -27761,7 +28221,11 @@
     "title": "audio image Hotspot 190",
     "description": "Excerpt from narration — hotspot 190",
     "audioUrl": "https://example.com/audio/audio_image_190.mp3",
-    "imageUrl": "https://example.com/images/audio_image_190.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_190/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_191",
@@ -28001,7 +28465,9 @@
     "title": "audio link Hotspot 191",
     "description": "Excerpt from narration — hotspot 191",
     "audioUrl": "https://example.com/audio/audio_link_191.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_191"
+    "linkUrl": "https://example.com/diary/audio_link_191",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_192",
@@ -28534,7 +29000,9 @@
     "title": "audio link Hotspot 193",
     "description": "Excerpt from narration — hotspot 193",
     "audioUrl": "https://example.com/audio/audio_link_193.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_193"
+    "linkUrl": "https://example.com/diary/audio_link_193",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_194",
@@ -29119,8 +29587,14 @@
     "title": "audio image link Hotspot 197",
     "description": "Excerpt from narration — hotspot 197",
     "audioUrl": "https://example.com/audio/audio_image_link_197.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_197.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_197"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_197/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_197",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_198",
@@ -29600,7 +30074,11 @@
     "title": "audio image Hotspot 198",
     "description": "Excerpt from narration — hotspot 198",
     "audioUrl": "https://example.com/audio/audio_image_198.mp3",
-    "imageUrl": "https://example.com/images/audio_image_198.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_198/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_199",
@@ -29987,7 +30465,9 @@
     "title": "audio link Hotspot 200",
     "description": "Excerpt from narration — hotspot 200",
     "audioUrl": "https://example.com/audio/audio_link_200.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_200"
+    "linkUrl": "https://example.com/diary/audio_link_200",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_201",
@@ -30864,7 +31344,11 @@
     "title": "audio image Hotspot 202",
     "description": "Excerpt from narration — hotspot 202",
     "audioUrl": "https://example.com/audio/audio_image_202.mp3",
-    "imageUrl": "https://example.com/images/audio_image_202.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_202/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_203",
@@ -31214,7 +31698,9 @@
     "title": "audio link Hotspot 205",
     "description": "Excerpt from narration — hotspot 205",
     "audioUrl": "https://example.com/audio/audio_link_205.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_205"
+    "linkUrl": "https://example.com/diary/audio_link_205",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_206",
@@ -31274,7 +31760,11 @@
     "title": "audio image Hotspot 206",
     "description": "Excerpt from narration — hotspot 206",
     "audioUrl": "https://example.com/audio/audio_image_206.mp3",
-    "imageUrl": "https://example.com/images/audio_image_206.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_206/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_207",
@@ -31728,7 +32218,11 @@
     "title": "audio image Hotspot 207",
     "description": "Excerpt from narration — hotspot 207",
     "audioUrl": "https://example.com/audio/audio_image_207.mp3",
-    "imageUrl": "https://example.com/images/audio_image_207.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_207/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_208",
@@ -32641,7 +33135,11 @@
     "title": "audio image Hotspot 209",
     "description": "Excerpt from narration — hotspot 209",
     "audioUrl": "https://example.com/audio/audio_image_209.mp3",
-    "imageUrl": "https://example.com/images/audio_image_209.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_209/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_210",
@@ -32705,8 +33203,14 @@
     "title": "audio image link Hotspot 210",
     "description": "Excerpt from narration — hotspot 210",
     "audioUrl": "https://example.com/audio/audio_image_link_210.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_210.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_210"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_210/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_210",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_211",
@@ -32985,8 +33489,14 @@
     "title": "audio image link Hotspot 212",
     "description": "Excerpt from narration — hotspot 212",
     "audioUrl": "https://example.com/audio/audio_image_link_212.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_212.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_212"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_212/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_212",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_213",
@@ -33210,7 +33720,9 @@
     "title": "audio link Hotspot 213",
     "description": "Excerpt from narration — hotspot 213",
     "audioUrl": "https://example.com/audio/audio_link_213.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_213"
+    "linkUrl": "https://example.com/diary/audio_link_213",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_214",
@@ -33682,7 +34194,11 @@
     "title": "audio image Hotspot 214",
     "description": "Excerpt from narration — hotspot 214",
     "audioUrl": "https://example.com/audio/audio_image_214.mp3",
-    "imageUrl": "https://example.com/images/audio_image_214.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_214/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_215",
@@ -34405,7 +34921,11 @@
     "title": "audio image Hotspot 216",
     "description": "Excerpt from narration — hotspot 216",
     "audioUrl": "https://example.com/audio/audio_image_216.mp3",
-    "imageUrl": "https://example.com/images/audio_image_216.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_216/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_217",
@@ -34889,7 +35409,9 @@
     "title": "audio link Hotspot 217",
     "description": "Excerpt from narration — hotspot 217",
     "audioUrl": "https://example.com/audio/audio_link_217.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_217"
+    "linkUrl": "https://example.com/diary/audio_link_217",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_218",
@@ -34989,8 +35511,14 @@
     "title": "audio image link Hotspot 218",
     "description": "Excerpt from narration — hotspot 218",
     "audioUrl": "https://example.com/audio/audio_image_link_218.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_218.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_218"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_218/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_218",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_219",
@@ -35420,7 +35948,11 @@
     "title": "audio image Hotspot 219",
     "description": "Excerpt from narration — hotspot 219",
     "audioUrl": "https://example.com/audio/audio_image_219.mp3",
-    "imageUrl": "https://example.com/images/audio_image_219.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_219/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_220",
@@ -36052,7 +36584,9 @@
     "title": "audio link Hotspot 220",
     "description": "Excerpt from narration — hotspot 220",
     "audioUrl": "https://example.com/audio/audio_link_220.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_220"
+    "linkUrl": "https://example.com/diary/audio_link_220",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_221",
@@ -36466,7 +37000,11 @@
     "title": "audio image Hotspot 221",
     "description": "Excerpt from narration — hotspot 221",
     "audioUrl": "https://example.com/audio/audio_image_221.mp3",
-    "imageUrl": "https://example.com/images/audio_image_221.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_221/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_222",
@@ -36526,7 +37064,9 @@
     "title": "audio link Hotspot 222",
     "description": "Excerpt from narration — hotspot 222",
     "audioUrl": "https://example.com/audio/audio_link_222.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_222"
+    "linkUrl": "https://example.com/diary/audio_link_222",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_223",
@@ -36773,7 +37313,11 @@
     "title": "audio image Hotspot 224",
     "description": "Excerpt from narration — hotspot 224",
     "audioUrl": "https://example.com/audio/audio_image_224.mp3",
-    "imageUrl": "https://example.com/images/audio_image_224.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_224/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_225",
@@ -37227,7 +37771,11 @@
     "title": "audio image Hotspot 227",
     "description": "Excerpt from narration — hotspot 227",
     "audioUrl": "https://example.com/audio/audio_image_227.mp3",
-    "imageUrl": "https://example.com/images/audio_image_227.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_227/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_228",
@@ -37595,7 +38143,11 @@
     "title": "audio image Hotspot 228",
     "description": "Excerpt from narration — hotspot 228",
     "audioUrl": "https://example.com/audio/audio_image_228.mp3",
-    "imageUrl": "https://example.com/images/audio_image_228.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_228/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_229",
@@ -37747,7 +38299,11 @@
     "title": "audio image Hotspot 229",
     "description": "Excerpt from narration — hotspot 229",
     "audioUrl": "https://example.com/audio/audio_image_229.mp3",
-    "imageUrl": "https://example.com/images/audio_image_229.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_229/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_230",
@@ -37959,7 +38515,11 @@
     "title": "audio image Hotspot 230",
     "description": "Excerpt from narration — hotspot 230",
     "audioUrl": "https://example.com/audio/audio_image_230.mp3",
-    "imageUrl": "https://example.com/images/audio_image_230.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_230/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_231",
@@ -38023,7 +38583,11 @@
     "title": "audio image Hotspot 231",
     "description": "Excerpt from narration — hotspot 231",
     "audioUrl": "https://example.com/audio/audio_image_231.mp3",
-    "imageUrl": "https://example.com/images/audio_image_231.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_231/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_232",
@@ -38370,7 +38934,9 @@
     "title": "audio link Hotspot 233",
     "description": "Excerpt from narration — hotspot 233",
     "audioUrl": "https://example.com/audio/audio_link_233.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_233"
+    "linkUrl": "https://example.com/diary/audio_link_233",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_234",
@@ -38573,7 +39139,9 @@
     "title": "audio link Hotspot 235",
     "description": "Excerpt from narration — hotspot 235",
     "audioUrl": "https://example.com/audio/audio_link_235.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_235"
+    "linkUrl": "https://example.com/diary/audio_link_235",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_236",
@@ -39509,7 +40077,11 @@
     "title": "audio image Hotspot 238",
     "description": "Excerpt from narration — hotspot 238",
     "audioUrl": "https://example.com/audio/audio_image_238.mp3",
-    "imageUrl": "https://example.com/images/audio_image_238.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_238/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_239",
@@ -39764,7 +40336,11 @@
     "title": "audio image Hotspot 240",
     "description": "Excerpt from narration — hotspot 240",
     "audioUrl": "https://example.com/audio/audio_image_240.mp3",
-    "imageUrl": "https://example.com/images/audio_image_240.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_240/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_241",
@@ -39828,7 +40404,11 @@
     "title": "audio image Hotspot 241",
     "description": "Excerpt from narration — hotspot 241",
     "audioUrl": "https://example.com/audio/audio_image_241.mp3",
-    "imageUrl": "https://example.com/images/audio_image_241.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_241/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_242",
@@ -40628,7 +41208,11 @@
     "title": "audio image Hotspot 244",
     "description": "Excerpt from narration — hotspot 244",
     "audioUrl": "https://example.com/audio/audio_image_244.mp3",
-    "imageUrl": "https://example.com/images/audio_image_244.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_244/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_245",
@@ -40700,7 +41284,11 @@
     "title": "audio image Hotspot 245",
     "description": "Excerpt from narration — hotspot 245",
     "audioUrl": "https://example.com/audio/audio_image_245.mp3",
-    "imageUrl": "https://example.com/images/audio_image_245.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_245/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_246",
@@ -40736,7 +41324,11 @@
     "title": "audio image Hotspot 246",
     "description": "Excerpt from narration — hotspot 246",
     "audioUrl": "https://example.com/audio/audio_image_246.mp3",
-    "imageUrl": "https://example.com/images/audio_image_246.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_246/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_247",
@@ -41074,7 +41666,11 @@
     "title": "audio image Hotspot 249",
     "description": "Excerpt from narration — hotspot 249",
     "audioUrl": "https://example.com/audio/audio_image_249.mp3",
-    "imageUrl": "https://example.com/images/audio_image_249.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_249/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_250",
@@ -41226,7 +41822,9 @@
     "title": "audio link Hotspot 250",
     "description": "Excerpt from narration — hotspot 250",
     "audioUrl": "https://example.com/audio/audio_link_250.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_250"
+    "linkUrl": "https://example.com/diary/audio_link_250",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_251",
@@ -41517,7 +42115,9 @@
     "title": "audio link Hotspot 252",
     "description": "Excerpt from narration — hotspot 252",
     "audioUrl": "https://example.com/audio/audio_link_252.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_252"
+    "linkUrl": "https://example.com/diary/audio_link_252",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_253",
@@ -41605,7 +42205,9 @@
     "title": "audio link Hotspot 253",
     "description": "Excerpt from narration — hotspot 253",
     "audioUrl": "https://example.com/audio/audio_link_253.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_253"
+    "linkUrl": "https://example.com/diary/audio_link_253",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_254",
@@ -42478,7 +43080,11 @@
     "title": "audio image Hotspot 255",
     "description": "Excerpt from narration — hotspot 255",
     "audioUrl": "https://example.com/audio/audio_image_255.mp3",
-    "imageUrl": "https://example.com/images/audio_image_255.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_255/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_256",
@@ -42613,7 +43219,11 @@
     "title": "audio image Hotspot 257",
     "description": "Excerpt from narration — hotspot 257",
     "audioUrl": "https://example.com/audio/audio_image_257.mp3",
-    "imageUrl": "https://example.com/images/audio_image_257.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_257/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_258",
@@ -42764,7 +43374,9 @@
     "title": "audio link Hotspot 259",
     "description": "Excerpt from narration — hotspot 259",
     "audioUrl": "https://example.com/audio/audio_link_259.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_259"
+    "linkUrl": "https://example.com/diary/audio_link_259",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_260",
@@ -43134,7 +43746,9 @@
     "title": "audio link Hotspot 262",
     "description": "Excerpt from narration — hotspot 262",
     "audioUrl": "https://example.com/audio/audio_link_262.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_262"
+    "linkUrl": "https://example.com/diary/audio_link_262",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_263",
@@ -43716,7 +44330,11 @@
     "title": "audio image Hotspot 263",
     "description": "Excerpt from narration — hotspot 263",
     "audioUrl": "https://example.com/audio/audio_image_263.mp3",
-    "imageUrl": "https://example.com/images/audio_image_263.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_263/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_264",
@@ -44259,7 +44877,11 @@
     "title": "audio image Hotspot 265",
     "description": "Excerpt from narration — hotspot 265",
     "audioUrl": "https://example.com/audio/audio_image_265.mp3",
-    "imageUrl": "https://example.com/images/audio_image_265.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_265/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_266",
@@ -44323,7 +44945,9 @@
     "title": "audio link Hotspot 266",
     "description": "Excerpt from narration — hotspot 266",
     "audioUrl": "https://example.com/audio/audio_link_266.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_266"
+    "linkUrl": "https://example.com/diary/audio_link_266",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_267",
@@ -44403,7 +45027,9 @@
     "title": "audio link Hotspot 267",
     "description": "Excerpt from narration — hotspot 267",
     "audioUrl": "https://example.com/audio/audio_link_267.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_267"
+    "linkUrl": "https://example.com/diary/audio_link_267",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_268",
@@ -44495,7 +45121,11 @@
     "title": "audio image Hotspot 268",
     "description": "Excerpt from narration — hotspot 268",
     "audioUrl": "https://example.com/audio/audio_image_268.mp3",
-    "imageUrl": "https://example.com/images/audio_image_268.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_268/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_269",
@@ -44591,7 +45221,9 @@
     "title": "audio link Hotspot 269",
     "description": "Excerpt from narration — hotspot 269",
     "audioUrl": "https://example.com/audio/audio_link_269.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_269"
+    "linkUrl": "https://example.com/diary/audio_link_269",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_270",
@@ -44663,7 +45295,11 @@
     "title": "audio image Hotspot 270",
     "description": "Excerpt from narration — hotspot 270",
     "audioUrl": "https://example.com/audio/audio_image_270.mp3",
-    "imageUrl": "https://example.com/images/audio_image_270.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_270/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_271",
@@ -44743,8 +45379,14 @@
     "title": "audio image link Hotspot 271",
     "description": "Excerpt from narration — hotspot 271",
     "audioUrl": "https://example.com/audio/audio_image_link_271.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_271.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_271"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_271/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_271",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_272",
@@ -45256,7 +45898,11 @@
     "title": "audio image Hotspot 272",
     "description": "Excerpt from narration — hotspot 272",
     "audioUrl": "https://example.com/audio/audio_image_272.mp3",
-    "imageUrl": "https://example.com/images/audio_image_272.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_272/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_273",
@@ -45953,7 +46599,11 @@
     "title": "audio image Hotspot 274",
     "description": "Excerpt from narration — hotspot 274",
     "audioUrl": "https://example.com/audio/audio_image_274.mp3",
-    "imageUrl": "https://example.com/images/audio_image_274.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_274/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_275",
@@ -46525,7 +47175,11 @@
     "title": "audio image Hotspot 279",
     "description": "Excerpt from narration — hotspot 279",
     "audioUrl": "https://example.com/audio/audio_image_279.mp3",
-    "imageUrl": "https://example.com/images/audio_image_279.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_279/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_280",
@@ -46733,7 +47387,11 @@
     "title": "audio image Hotspot 280",
     "description": "Excerpt from narration — hotspot 280",
     "audioUrl": "https://example.com/audio/audio_image_280.mp3",
-    "imageUrl": "https://example.com/images/audio_image_280.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_280/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_281",
@@ -47636,7 +48294,11 @@
     "title": "audio image Hotspot 284",
     "description": "Excerpt from narration — hotspot 284",
     "audioUrl": "https://example.com/audio/audio_image_284.mp3",
-    "imageUrl": "https://example.com/images/audio_image_284.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_284/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_285",
@@ -47708,7 +48370,11 @@
     "title": "audio image Hotspot 285",
     "description": "Excerpt from narration — hotspot 285",
     "audioUrl": "https://example.com/audio/audio_image_285.mp3",
-    "imageUrl": "https://example.com/images/audio_image_285.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_285/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_286",
@@ -47911,7 +48577,9 @@
     "title": "audio link Hotspot 287",
     "description": "Excerpt from narration — hotspot 287",
     "audioUrl": "https://example.com/audio/audio_link_287.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_287"
+    "linkUrl": "https://example.com/diary/audio_link_287",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_288",
@@ -48027,7 +48695,11 @@
     "title": "audio image Hotspot 288",
     "description": "Excerpt from narration — hotspot 288",
     "audioUrl": "https://example.com/audio/audio_image_288.mp3",
-    "imageUrl": "https://example.com/images/audio_image_288.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_288/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_289",
@@ -48297,7 +48969,11 @@
     "title": "audio image Hotspot 291",
     "description": "Excerpt from narration — hotspot 291",
     "audioUrl": "https://example.com/audio/audio_image_291.mp3",
-    "imageUrl": "https://example.com/images/audio_image_291.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_291/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_292",
@@ -49454,7 +50130,11 @@
     "title": "audio image Hotspot 295",
     "description": "Excerpt from narration — hotspot 295",
     "audioUrl": "https://example.com/audio/audio_image_295.mp3",
-    "imageUrl": "https://example.com/images/audio_image_295.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_295/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_296",
@@ -49939,7 +50619,9 @@
     "title": "audio link Hotspot 299",
     "description": "Excerpt from narration — hotspot 299",
     "audioUrl": "https://example.com/audio/audio_link_299.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_299"
+    "linkUrl": "https://example.com/diary/audio_link_299",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_300",
@@ -50023,7 +50705,11 @@
     "title": "audio image Hotspot 300",
     "description": "Excerpt from narration — hotspot 300",
     "audioUrl": "https://example.com/audio/audio_image_300.mp3",
-    "imageUrl": "https://example.com/images/audio_image_300.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_300/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_301",
@@ -50075,7 +50761,9 @@
     "title": "audio link Hotspot 301",
     "description": "Excerpt from narration — hotspot 301",
     "audioUrl": "https://example.com/audio/audio_link_301.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_301"
+    "linkUrl": "https://example.com/diary/audio_link_301",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_302",
@@ -50139,7 +50827,9 @@
     "title": "audio link Hotspot 302",
     "description": "Excerpt from narration — hotspot 302",
     "audioUrl": "https://example.com/audio/audio_link_302.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_302"
+    "linkUrl": "https://example.com/diary/audio_link_302",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_303",
@@ -50179,7 +50869,11 @@
     "title": "audio image Hotspot 303",
     "description": "Excerpt from narration — hotspot 303",
     "audioUrl": "https://example.com/audio/audio_image_303.mp3",
-    "imageUrl": "https://example.com/images/audio_image_303.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_303/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_304",
@@ -50235,7 +50929,11 @@
     "title": "audio image Hotspot 304",
     "description": "Excerpt from narration — hotspot 304",
     "audioUrl": "https://example.com/audio/audio_image_304.mp3",
-    "imageUrl": "https://example.com/images/audio_image_304.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_304/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_305",
@@ -50311,7 +51009,11 @@
     "title": "audio image Hotspot 305",
     "description": "Excerpt from narration — hotspot 305",
     "audioUrl": "https://example.com/audio/audio_image_305.mp3",
-    "imageUrl": "https://example.com/images/audio_image_305.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_305/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_306",
@@ -50347,7 +51049,11 @@
     "title": "audio image Hotspot 306",
     "description": "Excerpt from narration — hotspot 306",
     "audioUrl": "https://example.com/audio/audio_image_306.mp3",
-    "imageUrl": "https://example.com/images/audio_image_306.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_306/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_307",
@@ -50431,7 +51137,11 @@
     "title": "audio image Hotspot 307",
     "description": "Excerpt from narration — hotspot 307",
     "audioUrl": "https://example.com/audio/audio_image_307.mp3",
-    "imageUrl": "https://example.com/images/audio_image_307.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_307/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_308",
@@ -50487,7 +51197,11 @@
     "title": "audio image Hotspot 308",
     "description": "Excerpt from narration — hotspot 308",
     "audioUrl": "https://example.com/audio/audio_image_308.mp3",
-    "imageUrl": "https://example.com/images/audio_image_308.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_308/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_309",
@@ -50523,7 +51237,11 @@
     "title": "audio image Hotspot 309",
     "description": "Excerpt from narration — hotspot 309",
     "audioUrl": "https://example.com/audio/audio_image_309.mp3",
-    "imageUrl": "https://example.com/images/audio_image_309.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_309/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_310",
@@ -50599,7 +51317,11 @@
     "title": "audio image Hotspot 310",
     "description": "Excerpt from narration — hotspot 310",
     "audioUrl": "https://example.com/audio/audio_image_310.mp3",
-    "imageUrl": "https://example.com/images/audio_image_310.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_310/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_311",
@@ -50683,8 +51405,14 @@
     "title": "audio image link Hotspot 311",
     "description": "Excerpt from narration — hotspot 311",
     "audioUrl": "https://example.com/audio/audio_image_link_311.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_311.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_311"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_311/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_311",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_312",
@@ -51383,7 +52111,11 @@
     "title": "audio image Hotspot 313",
     "description": "Excerpt from narration — hotspot 313",
     "audioUrl": "https://example.com/audio/audio_image_313.mp3",
-    "imageUrl": "https://example.com/images/audio_image_313.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_313/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_314",
@@ -52340,8 +53072,14 @@
     "title": "audio image link Hotspot 315",
     "description": "Excerpt from narration — hotspot 315",
     "audioUrl": "https://example.com/audio/audio_image_link_315.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_315.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_315"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_315/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_315",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_316",
@@ -52524,7 +53262,11 @@
     "title": "audio image Hotspot 317",
     "description": "Excerpt from narration — hotspot 317",
     "audioUrl": "https://example.com/audio/audio_image_317.mp3",
-    "imageUrl": "https://example.com/images/audio_image_317.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_317/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_318",
@@ -53244,8 +53986,14 @@
     "title": "audio image link Hotspot 320",
     "description": "Excerpt from narration — hotspot 320",
     "audioUrl": "https://example.com/audio/audio_image_link_320.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_320.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_320"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_320/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_320",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_321",
@@ -53776,7 +54524,11 @@
     "title": "audio image Hotspot 322",
     "description": "Excerpt from narration — hotspot 322",
     "audioUrl": "https://example.com/audio/audio_image_322.mp3",
-    "imageUrl": "https://example.com/images/audio_image_322.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_322/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_323",
@@ -53936,7 +54688,9 @@
     "title": "audio link Hotspot 323",
     "description": "Excerpt from narration — hotspot 323",
     "audioUrl": "https://example.com/audio/audio_link_323.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_323"
+    "linkUrl": "https://example.com/diary/audio_link_323",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_324",
@@ -55344,7 +56098,9 @@
     "title": "audio link Hotspot 326",
     "description": "Excerpt from narration — hotspot 326",
     "audioUrl": "https://example.com/audio/audio_link_326.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_326"
+    "linkUrl": "https://example.com/diary/audio_link_326",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_327",
@@ -55420,7 +56176,9 @@
     "title": "audio link Hotspot 327",
     "description": "Excerpt from narration — hotspot 327",
     "audioUrl": "https://example.com/audio/audio_link_327.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_327"
+    "linkUrl": "https://example.com/diary/audio_link_327",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_328",
@@ -56019,7 +56777,11 @@
     "title": "audio image Hotspot 329",
     "description": "Excerpt from narration — hotspot 329",
     "audioUrl": "https://example.com/audio/audio_image_329.mp3",
-    "imageUrl": "https://example.com/images/audio_image_329.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_329/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_330",
@@ -56143,7 +56905,11 @@
     "title": "audio image Hotspot 330",
     "description": "Excerpt from narration — hotspot 330",
     "audioUrl": "https://example.com/audio/audio_image_330.mp3",
-    "imageUrl": "https://example.com/images/audio_image_330.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_330/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_331",
@@ -56307,7 +57073,9 @@
     "title": "audio link Hotspot 331",
     "description": "Excerpt from narration — hotspot 331",
     "audioUrl": "https://example.com/audio/audio_link_331.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_331"
+    "linkUrl": "https://example.com/diary/audio_link_331",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_332",
@@ -56442,7 +57210,9 @@
     "title": "audio link Hotspot 333",
     "description": "Excerpt from narration — hotspot 333",
     "audioUrl": "https://example.com/audio/audio_link_333.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_333"
+    "linkUrl": "https://example.com/diary/audio_link_333",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_334",
@@ -57272,8 +58042,14 @@
     "title": "audio image link Hotspot 338",
     "description": "Excerpt from narration — hotspot 338",
     "audioUrl": "https://example.com/audio/audio_image_link_338.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_338.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_338"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_338/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_338",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_339",
@@ -58304,7 +59080,9 @@
     "title": "audio link Hotspot 340",
     "description": "Excerpt from narration — hotspot 340",
     "audioUrl": "https://example.com/audio/audio_link_340.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_340"
+    "linkUrl": "https://example.com/diary/audio_link_340",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_341",
@@ -59402,7 +60180,11 @@
     "title": "audio image Hotspot 343",
     "description": "Excerpt from narration — hotspot 343",
     "audioUrl": "https://example.com/audio/audio_image_343.mp3",
-    "imageUrl": "https://example.com/images/audio_image_343.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_343/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_344",
@@ -59581,7 +60363,9 @@
     "title": "audio link Hotspot 345",
     "description": "Excerpt from narration — hotspot 345",
     "audioUrl": "https://example.com/audio/audio_link_345.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_345"
+    "linkUrl": "https://example.com/diary/audio_link_345",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_346",
@@ -59879,7 +60663,11 @@
     "title": "audio image Hotspot 346",
     "description": "Excerpt from narration — hotspot 346",
     "audioUrl": "https://example.com/audio/audio_image_346.mp3",
-    "imageUrl": "https://example.com/images/audio_image_346.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_346/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_347",
@@ -59927,7 +60715,9 @@
     "title": "audio link Hotspot 347",
     "description": "Excerpt from narration — hotspot 347",
     "audioUrl": "https://example.com/audio/audio_link_347.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_347"
+    "linkUrl": "https://example.com/diary/audio_link_347",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_348",
@@ -60425,7 +61215,9 @@
     "title": "audio link Hotspot 350",
     "description": "Excerpt from narration — hotspot 350",
     "audioUrl": "https://example.com/audio/audio_link_350.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_350"
+    "linkUrl": "https://example.com/diary/audio_link_350",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_351",
@@ -60461,7 +61253,9 @@
     "title": "audio link Hotspot 351",
     "description": "Excerpt from narration — hotspot 351",
     "audioUrl": "https://example.com/audio/audio_link_351.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_351"
+    "linkUrl": "https://example.com/diary/audio_link_351",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_352",
@@ -60493,7 +61287,9 @@
     "title": "audio link Hotspot 352",
     "description": "Excerpt from narration — hotspot 352",
     "audioUrl": "https://example.com/audio/audio_link_352.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_352"
+    "linkUrl": "https://example.com/diary/audio_link_352",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_353",
@@ -60529,7 +61325,9 @@
     "title": "audio link Hotspot 353",
     "description": "Excerpt from narration — hotspot 353",
     "audioUrl": "https://example.com/audio/audio_link_353.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_353"
+    "linkUrl": "https://example.com/diary/audio_link_353",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_354",
@@ -61086,7 +61884,11 @@
     "title": "audio image Hotspot 355",
     "description": "Excerpt from narration — hotspot 355",
     "audioUrl": "https://example.com/audio/audio_image_355.mp3",
-    "imageUrl": "https://example.com/images/audio_image_355.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_355/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_356",
@@ -61162,7 +61964,11 @@
     "title": "audio image Hotspot 356",
     "description": "Excerpt from narration — hotspot 356",
     "audioUrl": "https://example.com/audio/audio_image_356.mp3",
-    "imageUrl": "https://example.com/images/audio_image_356.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_356/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_357",
@@ -61238,7 +62044,11 @@
     "title": "audio image Hotspot 357",
     "description": "Excerpt from narration — hotspot 357",
     "audioUrl": "https://example.com/audio/audio_image_357.mp3",
-    "imageUrl": "https://example.com/images/audio_image_357.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_357/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_358",
@@ -61290,7 +62100,9 @@
     "title": "audio link Hotspot 358",
     "description": "Excerpt from narration — hotspot 358",
     "audioUrl": "https://example.com/audio/audio_link_358.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_358"
+    "linkUrl": "https://example.com/diary/audio_link_358",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_359",
@@ -61382,7 +62194,9 @@
     "title": "audio link Hotspot 359",
     "description": "Excerpt from narration — hotspot 359",
     "audioUrl": "https://example.com/audio/audio_link_359.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_359"
+    "linkUrl": "https://example.com/diary/audio_link_359",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_360",
@@ -61557,7 +62371,9 @@
     "title": "audio link Hotspot 361",
     "description": "Excerpt from narration — hotspot 361",
     "audioUrl": "https://example.com/audio/audio_link_361.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_361"
+    "linkUrl": "https://example.com/diary/audio_link_361",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_362",
@@ -61821,7 +62637,11 @@
     "title": "audio image Hotspot 362",
     "description": "Excerpt from narration — hotspot 362",
     "audioUrl": "https://example.com/audio/audio_image_362.mp3",
-    "imageUrl": "https://example.com/images/audio_image_362.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_362/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_363",
@@ -62024,7 +62844,9 @@
     "title": "audio link Hotspot 364",
     "description": "Excerpt from narration — hotspot 364",
     "audioUrl": "https://example.com/audio/audio_link_364.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_364"
+    "linkUrl": "https://example.com/diary/audio_link_364",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_365",
@@ -62136,7 +62958,9 @@
     "title": "audio link Hotspot 365",
     "description": "Excerpt from narration — hotspot 365",
     "audioUrl": "https://example.com/audio/audio_link_365.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_365"
+    "linkUrl": "https://example.com/diary/audio_link_365",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_366",
@@ -62232,7 +63056,9 @@
     "title": "audio link Hotspot 366",
     "description": "Excerpt from narration — hotspot 366",
     "audioUrl": "https://example.com/audio/audio_link_366.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_366"
+    "linkUrl": "https://example.com/diary/audio_link_366",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_367",
@@ -62332,7 +63158,9 @@
     "title": "audio link Hotspot 367",
     "description": "Excerpt from narration — hotspot 367",
     "audioUrl": "https://example.com/audio/audio_link_367.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_367"
+    "linkUrl": "https://example.com/diary/audio_link_367",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_368",
@@ -62511,7 +63339,11 @@
     "title": "audio image Hotspot 369",
     "description": "Excerpt from narration — hotspot 369",
     "audioUrl": "https://example.com/audio/audio_image_369.mp3",
-    "imageUrl": "https://example.com/images/audio_image_369.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_369/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_370",
@@ -62627,7 +63459,11 @@
     "title": "audio image Hotspot 370",
     "description": "Excerpt from narration — hotspot 370",
     "audioUrl": "https://example.com/audio/audio_image_370.mp3",
-    "imageUrl": "https://example.com/images/audio_image_370.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_370/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_371",
@@ -62683,7 +63519,11 @@
     "title": "audio image Hotspot 371",
     "description": "Excerpt from narration — hotspot 371",
     "audioUrl": "https://example.com/audio/audio_image_371.mp3",
-    "imageUrl": "https://example.com/images/audio_image_371.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_371/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_372",
@@ -62755,7 +63595,11 @@
     "title": "audio image Hotspot 372",
     "description": "Excerpt from narration — hotspot 372",
     "audioUrl": "https://example.com/audio/audio_image_372.mp3",
-    "imageUrl": "https://example.com/images/audio_image_372.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_372/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_373",
@@ -62799,7 +63643,11 @@
     "title": "audio image Hotspot 373",
     "description": "Excerpt from narration — hotspot 373",
     "audioUrl": "https://example.com/audio/audio_image_373.mp3",
-    "imageUrl": "https://example.com/images/audio_image_373.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_373/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_374",
@@ -63077,7 +63925,11 @@
     "title": "audio image Hotspot 374",
     "description": "Excerpt from narration — hotspot 374",
     "audioUrl": "https://example.com/audio/audio_image_374.mp3",
-    "imageUrl": "https://example.com/images/audio_image_374.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_374/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_375",
@@ -63177,7 +64029,11 @@
     "title": "audio image Hotspot 375",
     "description": "Excerpt from narration — hotspot 375",
     "audioUrl": "https://example.com/audio/audio_image_375.mp3",
-    "imageUrl": "https://example.com/images/audio_image_375.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_375/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_376",
@@ -63280,7 +64136,9 @@
     "title": "audio link Hotspot 377",
     "description": "Excerpt from narration — hotspot 377",
     "audioUrl": "https://example.com/audio/audio_link_377.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_377"
+    "linkUrl": "https://example.com/diary/audio_link_377",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_378",
@@ -63328,7 +64186,11 @@
     "title": "audio image Hotspot 378",
     "description": "Excerpt from narration — hotspot 378",
     "audioUrl": "https://example.com/audio/audio_image_378.mp3",
-    "imageUrl": "https://example.com/images/audio_image_378.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_378/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_379",
@@ -63396,7 +64258,11 @@
     "title": "audio image Hotspot 379",
     "description": "Excerpt from narration — hotspot 379",
     "audioUrl": "https://example.com/audio/audio_image_379.mp3",
-    "imageUrl": "https://example.com/images/audio_image_379.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_379/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_380",
@@ -63452,7 +64318,11 @@
     "title": "audio image Hotspot 380",
     "description": "Excerpt from narration — hotspot 380",
     "audioUrl": "https://example.com/audio/audio_image_380.mp3",
-    "imageUrl": "https://example.com/images/audio_image_380.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_380/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_381",
@@ -63559,7 +64429,9 @@
     "title": "audio link Hotspot 382",
     "description": "Excerpt from narration — hotspot 382",
     "audioUrl": "https://example.com/audio/audio_link_382.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_382"
+    "linkUrl": "https://example.com/diary/audio_link_382",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_383",
@@ -63623,7 +64495,9 @@
     "title": "audio link Hotspot 383",
     "description": "Excerpt from narration — hotspot 383",
     "audioUrl": "https://example.com/audio/audio_link_383.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_383"
+    "linkUrl": "https://example.com/diary/audio_link_383",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_384",
@@ -63929,7 +64803,11 @@
     "title": "audio image Hotspot 384",
     "description": "Excerpt from narration — hotspot 384",
     "audioUrl": "https://example.com/audio/audio_image_384.mp3",
-    "imageUrl": "https://example.com/images/audio_image_384.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_384/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_385",
@@ -64220,7 +65098,9 @@
     "title": "audio link Hotspot 386",
     "description": "Excerpt from narration — hotspot 386",
     "audioUrl": "https://example.com/audio/audio_link_386.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_386"
+    "linkUrl": "https://example.com/diary/audio_link_386",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_387",
@@ -64419,7 +65299,11 @@
     "title": "audio image Hotspot 388",
     "description": "Excerpt from narration — hotspot 388",
     "audioUrl": "https://example.com/audio/audio_image_388.mp3",
-    "imageUrl": "https://example.com/images/audio_image_388.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_388/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_389",
@@ -64491,7 +65375,11 @@
     "title": "audio image Hotspot 389",
     "description": "Excerpt from narration — hotspot 389",
     "audioUrl": "https://example.com/audio/audio_image_389.mp3",
-    "imageUrl": "https://example.com/images/audio_image_389.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_389/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_390",
@@ -64579,7 +65467,11 @@
     "title": "audio image Hotspot 390",
     "description": "Excerpt from narration — hotspot 390",
     "audioUrl": "https://example.com/audio/audio_image_390.mp3",
-    "imageUrl": "https://example.com/images/audio_image_390.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_390/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_391",
@@ -64651,7 +65543,9 @@
     "title": "audio link Hotspot 391",
     "description": "Excerpt from narration — hotspot 391",
     "audioUrl": "https://example.com/audio/audio_link_391.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_391"
+    "linkUrl": "https://example.com/diary/audio_link_391",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_392",
@@ -64989,7 +65883,11 @@
     "title": "audio image Hotspot 392",
     "description": "Excerpt from narration — hotspot 392",
     "audioUrl": "https://example.com/audio/audio_image_392.mp3",
-    "imageUrl": "https://example.com/images/audio_image_392.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_392/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_393",
@@ -65452,8 +66350,14 @@
     "title": "audio image link Hotspot 394",
     "description": "Excerpt from narration — hotspot 394",
     "audioUrl": "https://example.com/audio/audio_image_link_394.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_394.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_394"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_394/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_394",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_395",
@@ -65834,7 +66738,11 @@
     "title": "audio image Hotspot 396",
     "description": "Excerpt from narration — hotspot 396",
     "audioUrl": "https://example.com/audio/audio_image_396.mp3",
-    "imageUrl": "https://example.com/images/audio_image_396.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_396/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_397",
@@ -65898,7 +66806,9 @@
     "title": "audio link Hotspot 397",
     "description": "Excerpt from narration — hotspot 397",
     "audioUrl": "https://example.com/audio/audio_link_397.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_397"
+    "linkUrl": "https://example.com/diary/audio_link_397",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_398",
@@ -65986,7 +66896,11 @@
     "title": "audio image Hotspot 398",
     "description": "Excerpt from narration — hotspot 398",
     "audioUrl": "https://example.com/audio/audio_image_398.mp3",
-    "imageUrl": "https://example.com/images/audio_image_398.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_398/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_399",
@@ -66810,7 +67724,11 @@
     "title": "audio image Hotspot 401",
     "description": "Excerpt from narration — hotspot 401",
     "audioUrl": "https://example.com/audio/audio_image_401.mp3",
-    "imageUrl": "https://example.com/images/audio_image_401.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_401/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_402",
@@ -67152,7 +68070,11 @@
     "title": "audio image Hotspot 402",
     "description": "Excerpt from narration — hotspot 402",
     "audioUrl": "https://example.com/audio/audio_image_402.mp3",
-    "imageUrl": "https://example.com/images/audio_image_402.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_402/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_403",
@@ -67228,7 +68150,11 @@
     "title": "audio image Hotspot 403",
     "description": "Excerpt from narration — hotspot 403",
     "audioUrl": "https://example.com/audio/audio_image_403.mp3",
-    "imageUrl": "https://example.com/images/audio_image_403.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_403/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_404",
@@ -67288,7 +68214,11 @@
     "title": "audio image Hotspot 404",
     "description": "Excerpt from narration — hotspot 404",
     "audioUrl": "https://example.com/audio/audio_image_404.mp3",
-    "imageUrl": "https://example.com/images/audio_image_404.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_404/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_405",
@@ -67661,7 +68591,11 @@
     "title": "audio image Hotspot 406",
     "description": "Excerpt from narration — hotspot 406",
     "audioUrl": "https://example.com/audio/audio_image_406.mp3",
-    "imageUrl": "https://example.com/images/audio_image_406.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_406/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_407",
@@ -68388,7 +69322,11 @@
     "title": "audio image Hotspot 410",
     "description": "Excerpt from narration — hotspot 410",
     "audioUrl": "https://example.com/audio/audio_image_410.mp3",
-    "imageUrl": "https://example.com/images/audio_image_410.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_410/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_411",
@@ -68428,7 +69366,11 @@
     "title": "audio image Hotspot 411",
     "description": "Excerpt from narration — hotspot 411",
     "audioUrl": "https://example.com/audio/audio_image_411.mp3",
-    "imageUrl": "https://example.com/images/audio_image_411.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_411/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_412",
@@ -68664,7 +69606,11 @@
     "title": "audio image Hotspot 412",
     "description": "Excerpt from narration — hotspot 412",
     "audioUrl": "https://example.com/audio/audio_image_412.mp3",
-    "imageUrl": "https://example.com/images/audio_image_412.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_412/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_413",
@@ -69119,7 +70065,11 @@
     "title": "audio image Hotspot 414",
     "description": "Excerpt from narration — hotspot 414",
     "audioUrl": "https://example.com/audio/audio_image_414.mp3",
-    "imageUrl": "https://example.com/images/audio_image_414.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_414/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_415",
@@ -69167,7 +70117,9 @@
     "title": "audio link Hotspot 415",
     "description": "Excerpt from narration — hotspot 415",
     "audioUrl": "https://example.com/audio/audio_link_415.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_415"
+    "linkUrl": "https://example.com/diary/audio_link_415",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_416",
@@ -69590,7 +70542,11 @@
     "title": "audio image Hotspot 417",
     "description": "Excerpt from narration — hotspot 417",
     "audioUrl": "https://example.com/audio/audio_image_417.mp3",
-    "imageUrl": "https://example.com/images/audio_image_417.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_417/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_418",
@@ -69861,7 +70817,9 @@
     "title": "audio link Hotspot 419",
     "description": "Excerpt from narration — hotspot 419",
     "audioUrl": "https://example.com/audio/audio_link_419.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_419"
+    "linkUrl": "https://example.com/diary/audio_link_419",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_420",
@@ -70614,7 +71572,11 @@
     "title": "audio image Hotspot 421",
     "description": "Excerpt from narration — hotspot 421",
     "audioUrl": "https://example.com/audio/audio_image_421.mp3",
-    "imageUrl": "https://example.com/images/audio_image_421.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_421/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_422",
@@ -71501,7 +72463,11 @@
     "title": "audio image Hotspot 425",
     "description": "Excerpt from narration — hotspot 425",
     "audioUrl": "https://example.com/audio/audio_image_425.mp3",
-    "imageUrl": "https://example.com/images/audio_image_425.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_425/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_426",
@@ -71557,7 +72523,11 @@
     "title": "audio image Hotspot 426",
     "description": "Excerpt from narration — hotspot 426",
     "audioUrl": "https://example.com/audio/audio_image_426.mp3",
-    "imageUrl": "https://example.com/images/audio_image_426.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_426/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_427",
@@ -71857,7 +72827,11 @@
     "title": "audio image Hotspot 427",
     "description": "Excerpt from narration — hotspot 427",
     "audioUrl": "https://example.com/audio/audio_image_427.mp3",
-    "imageUrl": "https://example.com/images/audio_image_427.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_427/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_428",
@@ -73454,7 +74428,11 @@
     "title": "audio image Hotspot 431",
     "description": "Excerpt from narration — hotspot 431",
     "audioUrl": "https://example.com/audio/audio_image_431.mp3",
-    "imageUrl": "https://example.com/images/audio_image_431.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_431/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_432",
@@ -74409,7 +75387,11 @@
     "title": "audio image Hotspot 433",
     "description": "Excerpt from narration — hotspot 433",
     "audioUrl": "https://example.com/audio/audio_image_433.mp3",
-    "imageUrl": "https://example.com/images/audio_image_433.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_433/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_434",
@@ -74758,7 +75740,11 @@
     "title": "audio image Hotspot 435",
     "description": "Excerpt from narration — hotspot 435",
     "audioUrl": "https://example.com/audio/audio_image_435.mp3",
-    "imageUrl": "https://example.com/images/audio_image_435.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_435/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_436",
@@ -75052,7 +76038,11 @@
     "title": "audio image Hotspot 436",
     "description": "Excerpt from narration — hotspot 436",
     "audioUrl": "https://example.com/audio/audio_image_436.mp3",
-    "imageUrl": "https://example.com/images/audio_image_436.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_436/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_437",
@@ -76767,7 +77757,11 @@
     "title": "audio image Hotspot 444",
     "description": "Excerpt from narration — hotspot 444",
     "audioUrl": "https://example.com/audio/audio_image_444.mp3",
-    "imageUrl": "https://example.com/images/audio_image_444.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_444/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_445",
@@ -76839,7 +77833,11 @@
     "title": "audio image Hotspot 445",
     "description": "Excerpt from narration — hotspot 445",
     "audioUrl": "https://example.com/audio/audio_image_445.mp3",
-    "imageUrl": "https://example.com/images/audio_image_445.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_445/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_446",
@@ -77245,8 +78243,14 @@
     "title": "audio image link Hotspot 448",
     "description": "Excerpt from narration — hotspot 448",
     "audioUrl": "https://example.com/audio/audio_image_link_448.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_448.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_448"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_448/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_448",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_449",
@@ -78114,7 +79118,11 @@
     "title": "audio image Hotspot 451",
     "description": "Excerpt from narration — hotspot 451",
     "audioUrl": "https://example.com/audio/audio_image_451.mp3",
-    "imageUrl": "https://example.com/images/audio_image_451.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_451/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_452",
@@ -78555,7 +79563,9 @@
     "title": "audio link Hotspot 455",
     "description": "Excerpt from narration — hotspot 455",
     "audioUrl": "https://example.com/audio/audio_link_455.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_455"
+    "linkUrl": "https://example.com/diary/audio_link_455",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_456",
@@ -78651,7 +79661,11 @@
     "title": "audio image Hotspot 456",
     "description": "Excerpt from narration — hotspot 456",
     "audioUrl": "https://example.com/audio/audio_image_456.mp3",
-    "imageUrl": "https://example.com/images/audio_image_456.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_456/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_457",
@@ -78934,7 +79948,11 @@
     "title": "audio image Hotspot 458",
     "description": "Excerpt from narration — hotspot 458",
     "audioUrl": "https://example.com/audio/audio_image_458.mp3",
-    "imageUrl": "https://example.com/images/audio_image_458.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_458/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_459",
@@ -79120,8 +80138,14 @@
     "title": "audio image link Hotspot 461",
     "description": "Excerpt from narration — hotspot 461",
     "audioUrl": "https://example.com/audio/audio_image_link_461.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_461.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_461"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_461/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_461",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_462",
@@ -79445,7 +80469,11 @@
     "title": "audio image Hotspot 462",
     "description": "Excerpt from narration — hotspot 462",
     "audioUrl": "https://example.com/audio/audio_image_462.mp3",
-    "imageUrl": "https://example.com/images/audio_image_462.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_462/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_463",
@@ -80184,7 +81212,9 @@
     "title": "audio link Hotspot 464",
     "description": "Excerpt from narration — hotspot 464",
     "audioUrl": "https://example.com/audio/audio_link_464.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_464"
+    "linkUrl": "https://example.com/diary/audio_link_464",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_465",
@@ -80402,7 +81432,11 @@
     "title": "audio image Hotspot 467",
     "description": "Excerpt from narration — hotspot 467",
     "audioUrl": "https://example.com/audio/audio_image_467.mp3",
-    "imageUrl": "https://example.com/images/audio_image_467.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_467/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_468",
@@ -80783,8 +81817,14 @@
     "title": "audio image link Hotspot 471",
     "description": "Excerpt from narration — hotspot 471",
     "audioUrl": "https://example.com/audio/audio_image_link_471.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_471.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_471"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_471/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_471",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_link_472",
@@ -80884,8 +81924,14 @@
     "title": "audio image link Hotspot 472",
     "description": "Excerpt from narration — hotspot 472",
     "audioUrl": "https://example.com/audio/audio_image_link_472.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_472.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_472"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_472/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_472",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_473",
@@ -81190,7 +82236,11 @@
     "title": "audio image Hotspot 474",
     "description": "Excerpt from narration — hotspot 474",
     "audioUrl": "https://example.com/audio/audio_image_474.mp3",
-    "imageUrl": "https://example.com/images/audio_image_474.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_474/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_475",
@@ -82019,8 +83069,14 @@
     "title": "audio image link Hotspot 478",
     "description": "Excerpt from narration — hotspot 478",
     "audioUrl": "https://example.com/audio/audio_image_link_478.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_478.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_478"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_478/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_478",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_479",
@@ -82615,7 +83671,11 @@
     "title": "audio image Hotspot 480",
     "description": "Excerpt from narration — hotspot 480",
     "audioUrl": "https://example.com/audio/audio_image_480.mp3",
-    "imageUrl": "https://example.com/images/audio_image_480.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_480/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_481",
@@ -82984,8 +84044,14 @@
     "title": "audio image link Hotspot 484",
     "description": "Excerpt from narration — hotspot 484",
     "audioUrl": "https://example.com/audio/audio_image_link_484.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_484.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_484"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_484/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_484",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_485",
@@ -83144,8 +84210,14 @@
     "title": "audio image link Hotspot 486",
     "description": "Excerpt from narration — hotspot 486",
     "audioUrl": "https://example.com/audio/audio_image_link_486.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_486.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_486"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_486/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_486",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_487",
@@ -83300,7 +84372,11 @@
     "title": "audio image Hotspot 488",
     "description": "Excerpt from narration — hotspot 488",
     "audioUrl": "https://example.com/audio/audio_image_488.mp3",
-    "imageUrl": "https://example.com/images/audio_image_488.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_488/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_489",
@@ -83344,7 +84420,11 @@
     "title": "audio image Hotspot 489",
     "description": "Excerpt from narration — hotspot 489",
     "audioUrl": "https://example.com/audio/audio_image_489.mp3",
-    "imageUrl": "https://example.com/images/audio_image_489.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_489/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_490",
@@ -83475,8 +84555,14 @@
     "title": "audio image link Hotspot 491",
     "description": "Excerpt from narration — hotspot 491",
     "audioUrl": "https://example.com/audio/audio_image_link_491.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_491.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_491"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_491/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_491",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_492",
@@ -83568,7 +84654,9 @@
     "title": "audio link Hotspot 492",
     "description": "Excerpt from narration — hotspot 492",
     "audioUrl": "https://example.com/audio/audio_link_492.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_492"
+    "linkUrl": "https://example.com/diary/audio_link_492",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_493",
@@ -83704,7 +84792,9 @@
     "title": "audio link Hotspot 493",
     "description": "Excerpt from narration — hotspot 493",
     "audioUrl": "https://example.com/audio/audio_link_493.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_493"
+    "linkUrl": "https://example.com/diary/audio_link_493",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_494",
@@ -84169,7 +85259,11 @@
     "title": "audio image Hotspot 495",
     "description": "Excerpt from narration — hotspot 495",
     "audioUrl": "https://example.com/audio/audio_image_495.mp3",
-    "imageUrl": "https://example.com/images/audio_image_495.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_495/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_496",
@@ -84751,7 +85845,9 @@
     "title": "audio link Hotspot 498",
     "description": "Excerpt from narration — hotspot 498",
     "audioUrl": "https://example.com/audio/audio_link_498.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_498"
+    "linkUrl": "https://example.com/diary/audio_link_498",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_499",
@@ -85158,7 +86254,11 @@
     "title": "audio image Hotspot 500",
     "description": "Excerpt from narration — hotspot 500",
     "audioUrl": "https://example.com/audio/audio_image_500.mp3",
-    "imageUrl": "https://example.com/images/audio_image_500.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_500/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_501",
@@ -86178,7 +87278,11 @@
     "title": "audio image Hotspot 505",
     "description": "Excerpt from narration — hotspot 505",
     "audioUrl": "https://example.com/audio/audio_image_505.mp3",
-    "imageUrl": "https://example.com/images/audio_image_505.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_505/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_506",
@@ -86218,7 +87322,11 @@
     "title": "audio image Hotspot 506",
     "description": "Excerpt from narration — hotspot 506",
     "audioUrl": "https://example.com/audio/audio_image_506.mp3",
-    "imageUrl": "https://example.com/images/audio_image_506.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_506/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_507",
@@ -86274,7 +87382,9 @@
     "title": "audio link Hotspot 507",
     "description": "Excerpt from narration — hotspot 507",
     "audioUrl": "https://example.com/audio/audio_link_507.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_507"
+    "linkUrl": "https://example.com/diary/audio_link_507",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_508",
@@ -86394,7 +87504,9 @@
     "title": "audio link Hotspot 508",
     "description": "Excerpt from narration — hotspot 508",
     "audioUrl": "https://example.com/audio/audio_link_508.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_508"
+    "linkUrl": "https://example.com/diary/audio_link_508",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_509",
@@ -86494,7 +87606,9 @@
     "title": "audio link Hotspot 509",
     "description": "Excerpt from narration — hotspot 509",
     "audioUrl": "https://example.com/audio/audio_link_509.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_509"
+    "linkUrl": "https://example.com/diary/audio_link_509",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_510",
@@ -86744,7 +87858,9 @@
     "title": "audio link Hotspot 512",
     "description": "Excerpt from narration — hotspot 512",
     "audioUrl": "https://example.com/audio/audio_link_512.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_512"
+    "linkUrl": "https://example.com/diary/audio_link_512",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_513",
@@ -86978,7 +88094,11 @@
     "title": "audio image Hotspot 513",
     "description": "Excerpt from narration — hotspot 513",
     "audioUrl": "https://example.com/audio/audio_image_513.mp3",
-    "imageUrl": "https://example.com/images/audio_image_513.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_513/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_514",
@@ -87214,7 +88334,9 @@
     "title": "audio link Hotspot 514",
     "description": "Excerpt from narration — hotspot 514",
     "audioUrl": "https://example.com/audio/audio_link_514.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_514"
+    "linkUrl": "https://example.com/diary/audio_link_514",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_515",
@@ -88035,7 +89157,11 @@
     "title": "audio image Hotspot 516",
     "description": "Excerpt from narration — hotspot 516",
     "audioUrl": "https://example.com/audio/audio_image_516.mp3",
-    "imageUrl": "https://example.com/images/audio_image_516.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_516/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_517",
@@ -89112,7 +90238,9 @@
     "title": "audio link Hotspot 520",
     "description": "Excerpt from narration — hotspot 520",
     "audioUrl": "https://example.com/audio/audio_link_520.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_520"
+    "linkUrl": "https://example.com/diary/audio_link_520",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_521",
@@ -89387,7 +90515,9 @@
     "title": "audio link Hotspot 522",
     "description": "Excerpt from narration — hotspot 522",
     "audioUrl": "https://example.com/audio/audio_link_522.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_522"
+    "linkUrl": "https://example.com/diary/audio_link_522",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_523",
@@ -90174,7 +91304,9 @@
     "title": "audio link Hotspot 526",
     "description": "Excerpt from narration — hotspot 526",
     "audioUrl": "https://example.com/audio/audio_link_526.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_526"
+    "linkUrl": "https://example.com/diary/audio_link_526",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_527",
@@ -90238,7 +91370,11 @@
     "title": "audio image Hotspot 527",
     "description": "Excerpt from narration — hotspot 527",
     "audioUrl": "https://example.com/audio/audio_image_527.mp3",
-    "imageUrl": "https://example.com/images/audio_image_527.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_527/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_528",
@@ -90453,8 +91589,14 @@
     "title": "audio image link Hotspot 529",
     "description": "Excerpt from narration — hotspot 529",
     "audioUrl": "https://example.com/audio/audio_image_link_529.mp3",
-    "imageUrl": "https://example.com/images/audio_image_link_529.jpg",
-    "linkUrl": "https://example.com/diary/audio_image_link_529"
+    "image_url_1": "https://picsum.photos/seed/audio_image_link_529/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free",
+    "linkUrl": "https://example.com/diary/audio_image_link_529",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_530",
@@ -90784,7 +91926,11 @@
     "title": "audio image Hotspot 530",
     "description": "Excerpt from narration — hotspot 530",
     "audioUrl": "https://example.com/audio/audio_image_530.mp3",
-    "imageUrl": "https://example.com/images/audio_image_530.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_530/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_531",
@@ -91908,7 +93054,11 @@
     "title": "audio image Hotspot 533",
     "description": "Excerpt from narration — hotspot 533",
     "audioUrl": "https://example.com/audio/audio_image_533.mp3",
-    "imageUrl": "https://example.com/images/audio_image_533.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_533/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_534",
@@ -93130,7 +94280,11 @@
     "title": "audio image Hotspot 536",
     "description": "Excerpt from narration — hotspot 536",
     "audioUrl": "https://example.com/audio/audio_image_536.mp3",
-    "imageUrl": "https://example.com/images/audio_image_536.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_536/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_537",
@@ -94190,7 +95344,11 @@
     "title": "audio image Hotspot 539",
     "description": "Excerpt from narration — hotspot 539",
     "audioUrl": "https://example.com/audio/audio_image_539.mp3",
-    "imageUrl": "https://example.com/images/audio_image_539.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_539/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_540",
@@ -94334,7 +95492,9 @@
     "title": "audio link Hotspot 540",
     "description": "Excerpt from narration — hotspot 540",
     "audioUrl": "https://example.com/audio/audio_link_540.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_540"
+    "linkUrl": "https://example.com/diary/audio_link_540",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_541",
@@ -94909,7 +96069,11 @@
     "title": "audio image Hotspot 542",
     "description": "Excerpt from narration — hotspot 542",
     "audioUrl": "https://example.com/audio/audio_image_542.mp3",
-    "imageUrl": "https://example.com/images/audio_image_542.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_542/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_543",
@@ -95156,7 +96320,9 @@
     "title": "audio link Hotspot 544",
     "description": "Excerpt from narration — hotspot 544",
     "audioUrl": "https://example.com/audio/audio_link_544.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_544"
+    "linkUrl": "https://example.com/diary/audio_link_544",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_545",
@@ -95204,7 +96370,11 @@
     "title": "audio image Hotspot 545",
     "description": "Excerpt from narration — hotspot 545",
     "audioUrl": "https://example.com/audio/audio_image_545.mp3",
-    "imageUrl": "https://example.com/images/audio_image_545.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_545/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_546",
@@ -95375,7 +96545,11 @@
     "title": "audio image Hotspot 547",
     "description": "Excerpt from narration — hotspot 547",
     "audioUrl": "https://example.com/audio/audio_image_547.mp3",
-    "imageUrl": "https://example.com/images/audio_image_547.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_547/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_548",
@@ -95511,7 +96685,9 @@
     "title": "audio link Hotspot 548",
     "description": "Excerpt from narration — hotspot 548",
     "audioUrl": "https://example.com/audio/audio_link_548.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_548"
+    "linkUrl": "https://example.com/diary/audio_link_548",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_549",
@@ -95571,7 +96747,11 @@
     "title": "audio image Hotspot 549",
     "description": "Excerpt from narration — hotspot 549",
     "audioUrl": "https://example.com/audio/audio_image_549.mp3",
-    "imageUrl": "https://example.com/images/audio_image_549.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_549/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_550",
@@ -95611,7 +96791,11 @@
     "title": "audio image Hotspot 550",
     "description": "Excerpt from narration — hotspot 550",
     "audioUrl": "https://example.com/audio/audio_image_550.mp3",
-    "imageUrl": "https://example.com/images/audio_image_550.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_550/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_551",
@@ -95671,7 +96855,11 @@
     "title": "audio image Hotspot 551",
     "description": "Excerpt from narration — hotspot 551",
     "audioUrl": "https://example.com/audio/audio_image_551.mp3",
-    "imageUrl": "https://example.com/images/audio_image_551.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_551/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_552",
@@ -95883,7 +97071,9 @@
     "title": "audio link Hotspot 552",
     "description": "Excerpt from narration — hotspot 552",
     "audioUrl": "https://example.com/audio/audio_link_552.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_552"
+    "linkUrl": "https://example.com/diary/audio_link_552",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_553",
@@ -95939,7 +97129,11 @@
     "title": "audio image Hotspot 553",
     "description": "Excerpt from narration — hotspot 553",
     "audioUrl": "https://example.com/audio/audio_image_553.mp3",
-    "imageUrl": "https://example.com/images/audio_image_553.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_553/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_554",
@@ -95979,7 +97173,11 @@
     "title": "audio image Hotspot 554",
     "description": "Excerpt from narration — hotspot 554",
     "audioUrl": "https://example.com/audio/audio_image_554.mp3",
-    "imageUrl": "https://example.com/images/audio_image_554.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_554/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_555",
@@ -96119,7 +97317,11 @@
     "title": "audio image Hotspot 555",
     "description": "Excerpt from narration — hotspot 555",
     "audioUrl": "https://example.com/audio/audio_image_555.mp3",
-    "imageUrl": "https://example.com/images/audio_image_555.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_555/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_556",
@@ -97165,7 +98367,11 @@
     "title": "audio image Hotspot 558",
     "description": "Excerpt from narration — hotspot 558",
     "audioUrl": "https://example.com/audio/audio_image_558.mp3",
-    "imageUrl": "https://example.com/images/audio_image_558.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_558/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_559",
@@ -98214,7 +99420,9 @@
     "title": "audio link Hotspot 564",
     "description": "Excerpt from narration — hotspot 564",
     "audioUrl": "https://example.com/audio/audio_link_564.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_564"
+    "linkUrl": "https://example.com/diary/audio_link_564",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_565",
@@ -99654,7 +100862,11 @@
     "title": "audio image Hotspot 567",
     "description": "Excerpt from narration — hotspot 567",
     "audioUrl": "https://example.com/audio/audio_image_567.mp3",
-    "imageUrl": "https://example.com/images/audio_image_567.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_567/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_568",
@@ -100557,7 +101769,11 @@
     "title": "audio image Hotspot 571",
     "description": "Excerpt from narration — hotspot 571",
     "audioUrl": "https://example.com/audio/audio_image_571.mp3",
-    "imageUrl": "https://example.com/images/audio_image_571.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_571/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_572",
@@ -100677,7 +101893,11 @@
     "title": "audio image Hotspot 572",
     "description": "Excerpt from narration — hotspot 572",
     "audioUrl": "https://example.com/audio/audio_image_572.mp3",
-    "imageUrl": "https://example.com/images/audio_image_572.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_572/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_573",
@@ -100861,7 +102081,9 @@
     "title": "audio link Hotspot 573",
     "description": "Excerpt from narration — hotspot 573",
     "audioUrl": "https://example.com/audio/audio_link_573.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_573"
+    "linkUrl": "https://example.com/diary/audio_link_573",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_574",
@@ -101620,7 +102842,11 @@
     "title": "audio image Hotspot 575",
     "description": "Excerpt from narration — hotspot 575",
     "audioUrl": "https://example.com/audio/audio_image_575.mp3",
-    "imageUrl": "https://example.com/images/audio_image_575.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_575/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_576",
@@ -103246,7 +104472,9 @@
     "title": "audio link Hotspot 580",
     "description": "Excerpt from narration — hotspot 580",
     "audioUrl": "https://example.com/audio/audio_link_580.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_580"
+    "linkUrl": "https://example.com/diary/audio_link_580",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_581",
@@ -103573,7 +104801,9 @@
     "title": "audio link Hotspot 582",
     "description": "Excerpt from narration — hotspot 582",
     "audioUrl": "https://example.com/audio/audio_link_582.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_582"
+    "linkUrl": "https://example.com/diary/audio_link_582",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_583",
@@ -105218,7 +106448,11 @@
     "title": "audio image Hotspot 586",
     "description": "Excerpt from narration — hotspot 586",
     "audioUrl": "https://example.com/audio/audio_image_586.mp3",
-    "imageUrl": "https://example.com/images/audio_image_586.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_586/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_587",
@@ -106276,7 +107510,11 @@
     "title": "audio image Hotspot 593",
     "description": "Excerpt from narration — hotspot 593",
     "audioUrl": "https://example.com/audio/audio_image_593.mp3",
-    "imageUrl": "https://example.com/images/audio_image_593.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_593/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_594",
@@ -107005,7 +108243,11 @@
     "title": "audio image Hotspot 595",
     "description": "Excerpt from narration — hotspot 595",
     "audioUrl": "https://example.com/audio/audio_image_595.mp3",
-    "imageUrl": "https://example.com/images/audio_image_595.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_595/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_596",
@@ -109705,7 +110947,11 @@
     "title": "audio image Hotspot 600",
     "description": "Excerpt from narration — hotspot 600",
     "audioUrl": "https://example.com/audio/audio_image_600.mp3",
-    "imageUrl": "https://example.com/images/audio_image_600.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_600/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_601",
@@ -110461,7 +111707,11 @@
     "title": "audio image Hotspot 605",
     "description": "Excerpt from narration — hotspot 605",
     "audioUrl": "https://example.com/audio/audio_image_605.mp3",
-    "imageUrl": "https://example.com/images/audio_image_605.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_605/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_606",
@@ -111266,7 +112516,11 @@
     "title": "audio image Hotspot 607",
     "description": "Excerpt from narration — hotspot 607",
     "audioUrl": "https://example.com/audio/audio_image_607.mp3",
-    "imageUrl": "https://example.com/images/audio_image_607.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_607/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_608",
@@ -112088,7 +113342,11 @@
     "title": "audio image Hotspot 610",
     "description": "Excerpt from narration — hotspot 610",
     "audioUrl": "https://example.com/audio/audio_image_610.mp3",
-    "imageUrl": "https://example.com/images/audio_image_610.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_610/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_611",
@@ -112664,7 +113922,11 @@
     "title": "audio image Hotspot 611",
     "description": "Excerpt from narration — hotspot 611",
     "audioUrl": "https://example.com/audio/audio_image_611.mp3",
-    "imageUrl": "https://example.com/images/audio_image_611.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_611/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_612",
@@ -112716,7 +113978,11 @@
     "title": "audio image Hotspot 612",
     "description": "Excerpt from narration — hotspot 612",
     "audioUrl": "https://example.com/audio/audio_image_612.mp3",
-    "imageUrl": "https://example.com/images/audio_image_612.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_612/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_613",
@@ -112776,7 +114042,9 @@
     "title": "audio link Hotspot 613",
     "description": "Excerpt from narration — hotspot 613",
     "audioUrl": "https://example.com/audio/audio_link_613.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_613"
+    "linkUrl": "https://example.com/diary/audio_link_613",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_614",
@@ -112832,7 +114100,11 @@
     "title": "audio image Hotspot 614",
     "description": "Excerpt from narration — hotspot 614",
     "audioUrl": "https://example.com/audio/audio_image_614.mp3",
-    "imageUrl": "https://example.com/images/audio_image_614.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_614/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_615",
@@ -112916,7 +114188,11 @@
     "title": "audio image Hotspot 615",
     "description": "Excerpt from narration — hotspot 615",
     "audioUrl": "https://example.com/audio/audio_image_615.mp3",
-    "imageUrl": "https://example.com/images/audio_image_615.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_615/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_link_616",
@@ -113220,7 +114496,9 @@
     "title": "audio link Hotspot 616",
     "description": "Excerpt from narration — hotspot 616",
     "audioUrl": "https://example.com/audio/audio_link_616.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_616"
+    "linkUrl": "https://example.com/diary/audio_link_616",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_link_617",
@@ -113268,7 +114546,9 @@
     "title": "audio link Hotspot 617",
     "description": "Excerpt from narration — hotspot 617",
     "audioUrl": "https://example.com/audio/audio_link_617.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_617"
+    "linkUrl": "https://example.com/diary/audio_link_617",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_618",
@@ -113288,7 +114568,11 @@
     "title": "audio image Hotspot 618",
     "description": "Excerpt from narration — hotspot 618",
     "audioUrl": "https://example.com/audio/audio_image_618.mp3",
-    "imageUrl": "https://example.com/images/audio_image_618.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_618/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_619",
@@ -113360,7 +114644,11 @@
     "title": "audio image Hotspot 619",
     "description": "Excerpt from narration — hotspot 619",
     "audioUrl": "https://example.com/audio/audio_image_619.mp3",
-    "imageUrl": "https://example.com/images/audio_image_619.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_619/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_620",
@@ -113504,7 +114792,11 @@
     "title": "audio image Hotspot 620",
     "description": "Excerpt from narration — hotspot 620",
     "audioUrl": "https://example.com/audio/audio_image_620.mp3",
-    "imageUrl": "https://example.com/images/audio_image_620.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_620/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_621",
@@ -113711,7 +115003,9 @@
     "title": "audio link Hotspot 622",
     "description": "Excerpt from narration — hotspot 622",
     "audioUrl": "https://example.com/audio/audio_link_622.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_622"
+    "linkUrl": "https://example.com/diary/audio_link_622",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_image_623",
@@ -113751,7 +115045,11 @@
     "title": "audio image Hotspot 623",
     "description": "Excerpt from narration — hotspot 623",
     "audioUrl": "https://example.com/audio/audio_image_623.mp3",
-    "imageUrl": "https://example.com/images/audio_image_623.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_623/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_image_624",
@@ -113835,7 +115133,11 @@
     "title": "audio image Hotspot 624",
     "description": "Excerpt from narration — hotspot 624",
     "audioUrl": "https://example.com/audio/audio_image_624.mp3",
-    "imageUrl": "https://example.com/images/audio_image_624.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_624/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_625",
@@ -114258,7 +115560,11 @@
     "title": "audio image Hotspot 626",
     "description": "Excerpt from narration — hotspot 626",
     "audioUrl": "https://example.com/audio/audio_image_626.mp3",
-    "imageUrl": "https://example.com/images/audio_image_626.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_626/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_627",
@@ -115062,7 +116368,11 @@
     "title": "audio image Hotspot 631",
     "description": "Excerpt from narration — hotspot 631",
     "audioUrl": "https://example.com/audio/audio_image_631.mp3",
-    "imageUrl": "https://example.com/images/audio_image_631.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_631/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_632",
@@ -115217,7 +116527,11 @@
     "title": "audio image Hotspot 633",
     "description": "Excerpt from narration — hotspot 633",
     "audioUrl": "https://example.com/audio/audio_image_633.mp3",
-    "imageUrl": "https://example.com/images/audio_image_633.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_633/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_634",
@@ -116127,7 +117441,11 @@
     "title": "audio image Hotspot 636",
     "description": "Excerpt from narration — hotspot 636",
     "audioUrl": "https://example.com/audio/audio_image_636.mp3",
-    "imageUrl": "https://example.com/images/audio_image_636.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_636/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_637",
@@ -116406,7 +117724,9 @@
     "title": "audio link Hotspot 638",
     "description": "Excerpt from narration — hotspot 638",
     "audioUrl": "https://example.com/audio/audio_link_638.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_638"
+    "linkUrl": "https://example.com/diary/audio_link_638",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_639",
@@ -116802,7 +118122,9 @@
     "title": "audio link Hotspot 643",
     "description": "Excerpt from narration — hotspot 643",
     "audioUrl": "https://example.com/audio/audio_link_643.mp3",
-    "linkUrl": "https://example.com/diary/audio_link_643"
+    "linkUrl": "https://example.com/diary/audio_link_643",
+    "show_links_button": true,
+    "links_access": "free"
   },
   {
     "id": "hotspot_audio_only_644",
@@ -117754,7 +119076,11 @@
     "title": "audio image Hotspot 646",
     "description": "Excerpt from narration — hotspot 646",
     "audioUrl": "https://example.com/audio/audio_image_646.mp3",
-    "imageUrl": "https://example.com/images/audio_image_646.jpg"
+    "image_url_1": "https://picsum.photos/seed/audio_image_646/800/600",
+    "overlay_auto_reveal": false,
+    "overlay_display_mode": "modal",
+    "show_images_button": true,
+    "overlay_access": "free"
   },
   {
     "id": "hotspot_audio_only_647",

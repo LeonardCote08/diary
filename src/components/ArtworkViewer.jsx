@@ -1,24 +1,35 @@
+// 1. External libraries
 import { onMount, createSignal, onCleanup, Show } from 'solid-js';
 import OpenSeadragon from 'openseadragon';
-import NativeHotspotRenderer from '../core/NativeHotspotRenderer';
-import ViewportManager from '../core/ViewportManager';
-import SpatialIndex from '../core/SpatialIndex';
+
+// 2. Core modules
 import AudioEngine from '../core/AudioEngine';
+import ImageOverlayManager from '../core/ImageOverlayManager';
+import MemoryManager from '../core/MemoryManager';
+import NativeHotspotRenderer from '../core/NativeHotspotRenderer';
 import PerformanceMonitor from '../core/PerformanceMonitor';
 import RenderOptimizer from '../core/RenderOptimizer';
-import TileOptimizer from '../core/TileOptimizer';
-import MemoryManager from '../core/MemoryManager';
-import { applyTileCascadeFix } from '../core/TileCascadeFix';
+import SpatialIndex from '../core/SpatialIndex';
 import TileCleanupManager from '../core/TileCleanupManager';
-import AudioPlayer from './AudioPlayer';
-import performanceConfig, { adjustSettingsForPerformance } from '../config/performanceConfig';
+import TileOptimizer from '../core/TileOptimizer';
+import { applyTileCascadeFix } from '../core/TileCascadeFix';
+import ViewportManager from '../core/ViewportManager';
 
-// New imports
+// 3. Components
+import AudioPlayer from './AudioPlayer';
+import MediaButton from './MediaButton/MediaButton';
+import ImageOverlay from './ImageOverlay/ImageOverlay';
+
+// 4. Config
+import performanceConfig, { adjustSettingsForPerformance } from '../config/performanceConfig';
+import { QUALITY_CONFIG, ZOOM_CONFIG } from '../config/constants';
+import { buildViewerConfig } from '../config/viewerConfig';
+
+// 5. Utils
 import { getBrowserOptimalDrawer, isMobile } from '../utils/browserDetection';
 import { calculateHotspotBounds } from '../utils/hotspotCalculations';
-import { buildViewerConfig } from '../config/viewerConfig';
-import { QUALITY_CONFIG, ZOOM_CONFIG } from '../config/constants';
 
+// 6. Module-level variables
 let hotspotData = [];
 
 /**
@@ -27,7 +38,6 @@ let hotspotData = [];
 function ArtworkViewer(props) {
     let viewerRef;
     let viewer = null;
-    let components = {};
     let intervals = {};
 
     const [isLoading, setIsLoading] = createSignal(true);
@@ -38,6 +48,10 @@ function ArtworkViewer(props) {
     const [showExpandButton, setShowExpandButton] = createSignal(false);
     const [isZoomingToHotspot, setIsZoomingToHotspot] = createSignal(false);
     const [currentPlayingHotspot, setCurrentPlayingHotspot] = createSignal(null);
+    const [showMediaButton, setShowMediaButton] = createSignal(false);
+    const [mediaButtonPosition, setMediaButtonPosition] = createSignal({ x: 0, y: 0 });
+    const [currentMediaHotspot, setCurrentMediaHotspot] = createSignal(null);
+    const [components, setComponents] = createSignal({});
     const [debugLevel, setDebugLevel] = createSignal(
         parseInt(localStorage.getItem('debugLevel') || '0')
     );
@@ -54,11 +68,11 @@ function ArtworkViewer(props) {
             if (typeof interval === 'number') clearInterval(interval);
         });
 
-        if (components.resizeObserver && viewerRef) {
-            components.resizeObserver.disconnect();
+        if (components().resizeObserver && viewerRef) {
+            components().resizeObserver.disconnect();
         }
 
-        Object.values(components).forEach(component => {
+        Object.values(components()).forEach(component => {
             if (component && typeof component.destroy === 'function') {
                 component.destroy();
             }
@@ -67,7 +81,7 @@ function ArtworkViewer(props) {
         if (viewer) viewer.destroy();
 
         ['performanceMonitor', 'viewer', 'tileOptimizer'].forEach(prop => {
-            if (window[prop] === components[prop] || window[prop] === viewer) {
+            if (window[prop] === components()[prop] || window[prop] === viewer) {
                 delete window[prop];
             }
         });
@@ -76,7 +90,7 @@ function ArtworkViewer(props) {
     onMount(async () => {
         // Load hotspots
         try {
-            const response = await fetch('/data/hotspots.json');
+            const response = await fetch(`/data/hotspots.json?t=${Date.now()}`);
             hotspotData = await response.json();
             console.log(`Loaded ${hotspotData.length} hotspots`);
         } catch (error) {
@@ -110,14 +124,13 @@ function ArtworkViewer(props) {
             maxLevel: 14
         };
 
-
         const isMobileDevice = isMobile();
         const drawerType = getBrowserOptimalDrawer();
 
         // Build viewer configuration
         const viewerConfigOptions = buildViewerConfig(
             config,
-            tileSourceConfig,  // Pass tileSourceConfig instead of dziUrl
+            tileSourceConfig,
             drawerType,
             isMobileDevice,
             tileSourceConfig
@@ -128,10 +141,8 @@ function ArtworkViewer(props) {
             ...viewerConfigOptions
         });
 
-        
-
         // Initialize components
-        components = {
+        const componentsObj = {
             spatialIndex: new SpatialIndex(),
             viewportManager: new ViewportManager(viewer),
             audioEngine: new AudioEngine(),
@@ -139,32 +150,37 @@ function ArtworkViewer(props) {
             renderOptimizer: new RenderOptimizer(viewer),
             tileOptimizer: new TileOptimizer(viewer),
             memoryManager: new MemoryManager(viewer),
-            tileCleanupManager: new TileCleanupManager(viewer)
+            tileCleanupManager: new TileCleanupManager(viewer),
+            imageOverlayManager: new ImageOverlayManager()
         };
 
+        // Set the signal
+        setComponents(componentsObj);
+
         // Simplified audio engine setup
-        window.audioEngine = components.audioEngine;
-        components.audioEngine.onPlaybackEnd = (hotspotId) => {
+        window.audioEngine = componentsObj.audioEngine; 
+        componentsObj.audioEngine.onPlaybackEnd = (hotspotId) => {  
             console.log(`Finished playing audio for hotspot ${hotspotId}`);
             // TODO: Auto-advance to next hotspot if enabled
         };
 
-        components.spatialIndex.loadHotspots(hotspotData);
+        componentsObj.spatialIndex.loadHotspots(hotspotData); 
+        componentsObj.imageOverlayManager.loadHotspots(hotspotData); 
 
         // Global access for debugging
         window.viewer = viewer;
-        window.performanceMonitor = components.performanceMonitor;
-        window.tileOptimizer = components.tileOptimizer;
-        window.tileCleanupManager = components.tileCleanupManager;
+        window.performanceMonitor = componentsObj.performanceMonitor;  
+        window.tileOptimizer = componentsObj.tileOptimizer;  
+        window.tileCleanupManager = componentsObj.tileCleanupManager; 
 
         // Start all performance systems
-        components.performanceMonitor.start();
-        components.memoryManager.start();
-        components.tileOptimizer.start();
-        components.tileCleanupManager.start();
+        componentsObj.performanceMonitor.start();  
+        componentsObj.memoryManager.start();  
+        componentsObj.tileOptimizer.start();  
+        componentsObj.tileCleanupManager.start();  
 
         if (debugLevel() >= 1) {
-            components.performanceMonitor.enableDebugOverlay();
+            componentsObj.performanceMonitor.enableDebugOverlay(); 
         }
 
         // Setup event handlers
@@ -434,8 +450,8 @@ function ArtworkViewer(props) {
 
         // Prevent tile cleanup during critical operations
         viewer.addHandler('zoom', () => {
-            if (components.tileCleanupManager) {
-                components.tileCleanupManager.setPressure('normal');
+            if (components().tileCleanupManager) {
+                components().tileCleanupManager.setPressure('normal');
             }
 
             if (isZoomingToHotspot() && viewer.imageLoader) {
@@ -445,29 +461,29 @@ function ArtworkViewer(props) {
         });
 
         viewer.addHandler('pan', () => {
-            if (components.tileCleanupManager) {
-                components.tileCleanupManager.setPressure('normal');
+            if (components().tileCleanupManager) {
+                components().tileCleanupManager.setPressure('normal');
             }
         });
 
         viewer.addHandler('tile-loaded', (event) => {
-            if (event.tile && components.tileOptimizer) {
+            if (event.tile && components().tileOptimizer) {
                 const loadTime = event.tile.loadTime || event.tiledImage?.lastResetTime || 100;
-                components.tileOptimizer.trackLoadTime(loadTime);
+                components().tileOptimizer.trackLoadTime(loadTime);
 
                 const tileKey = `${event.tile.level || 0}_${event.tile.x || 0}_${event.tile.y || 0}`;
-                components.tileOptimizer.loadingTiles.delete(tileKey);
+                components().tileOptimizer.loadingTiles.delete(tileKey);
             }
         });
 
         viewer.addHandler('animation', () => {
-            if (components.performanceMonitor) {
-                const metrics = components.performanceMonitor.getMetrics();
+            if (components().performanceMonitor) {
+                const metrics = components().performanceMonitor.getMetrics();
                 if (metrics.averageFPS < performanceConfig.debug.warnThreshold.fps) {
                     const performanceMode = adjustSettingsForPerformance(metrics.averageFPS, metrics.memoryUsage);
 
                     // Adjust tile cleanup pressure based on performance mode
-                    if (components.tileCleanupManager) {
+                    if (components().tileCleanupManager) {
                         const pressureMap = {
                             'emergency': 'critical',
                             'critical': 'critical',
@@ -475,7 +491,7 @@ function ArtworkViewer(props) {
                             'memory-limited': 'high',
                             'normal': 'normal'
                         };
-                        components.tileCleanupManager.setPressure(pressureMap[performanceMode] || 'normal');
+                        components().tileCleanupManager.setPressure(pressureMap[performanceMode] || 'normal');
                     }
                 }
             }
@@ -486,14 +502,14 @@ function ArtworkViewer(props) {
                 setIsZoomingToHotspot(false);
 
                 // Re-enable hotspot updates after cinematic zoom
-                if (components.renderer) {
-                    components.renderer.resumeUpdates();
-                    components.renderer.updateVisibility();
+                if (components().renderer) {
+                    components().renderer.resumeUpdates();
+                    components().renderer.updateVisibility();
                 }
 
                 // End render optimizations
-                if (components.renderOptimizer) {
-                    components.renderOptimizer.endCinematicZoom();
+                if (components().renderOptimizer) {
+                    components().renderOptimizer.endCinematicZoom();
                 }
             }
         });
@@ -501,8 +517,8 @@ function ArtworkViewer(props) {
         // Optimize tile loading during zoom animations
         viewer.addHandler('animation-start', (event) => {
             // Pause tile cleanup during zoom animation
-            if (isZoomingToHotspot() && components.tileCleanupManager) {
-                components.tileCleanupManager.pauseCleanup(3000); // Pause for 3 seconds
+            if (isZoomingToHotspot() && components().tileCleanupManager) {
+                components().tileCleanupManager.pauseCleanup(3000); // Pause for 3 seconds
             }
         });
 
@@ -511,7 +527,7 @@ function ArtworkViewer(props) {
             intervals.updateTimer = setTimeout(() => {
                 // Schedule non-critical updates for idle time
                 scheduleIdleTask(() => {
-                    const { viewportManager, spatialIndex, audioEngine } = components;
+                    const { viewportManager, spatialIndex, audioEngine } = components();
                     if (!viewportManager || !spatialIndex || !audioEngine) return;
 
                     const viewport = viewportManager.getCurrentViewport();
@@ -543,19 +559,19 @@ function ArtworkViewer(props) {
                 localStorage.setItem('debugLevel', newLevel.toString());
 
                 // Handle different debug levels
-                if (components.performanceMonitor) {
+                if (components().performanceMonitor) {
                     if (newLevel >= 1) {
                         // Level 1 and 2: Show performance monitor
-                        components.performanceMonitor.enableDebugOverlay();
+                        components().performanceMonitor.enableDebugOverlay();
                     } else {
                         // Level 0: Hide everything
-                        components.performanceMonitor.disableDebugOverlay();
+                        components().performanceMonitor.disableDebugOverlay();
                     }
                 }
 
-                if (components.renderer) {
+                if (components().renderer) {
                     // Only show renderer debug mode at level 2
-                    components.renderer.setDebugMode(newLevel === 2);
+                    components().renderer.setDebugMode(newLevel === 2);
                 }
 
                 console.log(`Debug level: ${newLevel} (0=off, 1=performance only, 2=full debug)`);
@@ -575,7 +591,7 @@ function ArtworkViewer(props) {
     };
 
     const setupResizeObserver = () => {
-        components.resizeObserver = new ResizeObserver((entries) => {
+        const resizeObserver = new ResizeObserver((entries) => {
             if (!viewer?.viewport || !viewer.isOpen()) return;
 
             for (let entry of entries) {
@@ -599,9 +615,11 @@ function ArtworkViewer(props) {
                 }
             }
         });
-        components.resizeObserver.observe(viewerRef);
-    };
+        resizeObserver.observe(viewerRef);
 
+        // Store in components
+        setComponents(prev => ({ ...prev, resizeObserver }));
+    };
 
 
     const initializeHotspotSystem = () => {
@@ -611,21 +629,22 @@ function ArtworkViewer(props) {
         if (isMobile()) {
             // Import dynamically to avoid loading on desktop
             import('../core/CanvasHotspotRenderer.js').then(({ default: CanvasHotspotRenderer }) => {
-                components.renderer = new CanvasHotspotRenderer({
+                const renderer = new CanvasHotspotRenderer({
                     viewer: viewer,
-                    spatialIndex: components.spatialIndex,
+                    spatialIndex: components().spatialIndex,
                     onHotspotHover: setHoveredHotspot,
                     onHotspotClick: handleHotspotClick,
                     visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
                     debugMode: debugLevel() === 2
                 });
+                setComponents(prev => ({ ...prev, renderer }));
                 console.log('Using CanvasHotspotRenderer for mobile');
             });
         } else {
             // Desktop keeps the existing SVG renderer
-            components.renderer = new NativeHotspotRenderer({
+            const renderer = new NativeHotspotRenderer({
                 viewer: viewer,
-                spatialIndex: components.spatialIndex,
+                spatialIndex: components().spatialIndex,
                 onHotspotHover: setHoveredHotspot,
                 onHotspotClick: handleHotspotClick,
                 visibilityCheckInterval: performanceConfig.hotspots.visibilityCheckInterval,
@@ -635,6 +654,7 @@ function ArtworkViewer(props) {
                 minZoomForHotspots: performanceConfig.hotspots.minZoomForHotspots,
                 debugMode: debugLevel() === 2
             });
+            setComponents(prev => ({ ...prev, renderer }));
         }
     };
 
@@ -662,7 +682,7 @@ function ArtworkViewer(props) {
 
         // Calculate hotspot center
         let hotspotCenterImage;
-        const overlay = components.renderer?.overlays?.get?.(hotspot.id);
+        const overlay = components().renderer?.overlays?.get?.(hotspot.id);
 
         if (overlay && overlay.bounds) {
             hotspotCenterImage = new OpenSeadragon.Point(
@@ -718,8 +738,8 @@ function ArtworkViewer(props) {
         const stiffness = Math.max(10.0, 15.0 - distance * 2.0);
 
         // NOW we can use animTime - Pause tile cleanup during cinematic zoom for better performance
-        if (components.tileCleanupManager) {
-            components.tileCleanupManager.pauseCleanup(animTime * 1000 + 500);
+        if (components().tileCleanupManager) {
+            components().tileCleanupManager.pauseCleanup(animTime * 1000 + 500);
         }
 
         // Clear tile queue to prioritize zoom animation
@@ -728,13 +748,13 @@ function ArtworkViewer(props) {
         }
 
         // Notify RenderOptimizer about cinematic zoom
-        if (components.renderOptimizer) {
-            components.renderOptimizer.startCinematicZoom();
+        if (components().renderOptimizer) {
+            components().renderOptimizer.startCinematicZoom();
         }
 
         // Pause hotspot updates during zoom for better performance
-        if (components.renderer) {
-            components.renderer.pauseUpdates();
+        if (components().renderer) {
+            components().renderer.pauseUpdates();
         }
 
         // Apply settings to viewer and all springs
@@ -777,16 +797,16 @@ function ArtworkViewer(props) {
             viewer.viewport.zoomSpring.springStiffness = originalSettings.springStiffness;
 
             // End cinematic zoom optimizations
-            if (components.renderOptimizer) {
-                components.renderOptimizer.endCinematicZoom();
+            if (components().renderOptimizer) {
+                components().renderOptimizer.endCinematicZoom();
             }
 
         }, animTime * 1000 + 200);
 
         // Update hotspot overlays after animation
         setTimeout(() => {
-            if (components.renderer) {
-                components.renderer.updateVisibility();
+            if (components().renderer) {
+                components().renderer.updateVisibility();
                 viewer.forceRedraw();
             }
         }, animTime * 1000 + 100);
@@ -802,30 +822,57 @@ function ArtworkViewer(props) {
      */
     const handleHotspotClick = async (hotspot) => {
         console.log('Hotspot clicked:', hotspot.id, 'isMobile:', isMobile());
+
+        // Hide previous media button
+        setShowMediaButton(false);
         setSelectedHotspot(hotspot);
         setCurrentPlayingHotspot(hotspot);
 
-        // Zoom behavior
+        // Check if hotspot has image
+        const hasImage = hotspot.image_url_1 || components().imageOverlayManager?.getOverlay(hotspot.id);
+
+        if (hasImage) {
+            // Check if should auto-reveal
+            if (components().imageOverlayManager.shouldAutoReveal(hotspot.id)) {
+                // Auto-open overlay
+                handleMediaButtonClick(hotspot.id);
+            } else if (components().imageOverlayManager.shouldShowButton(hotspot.id)) {
+                // Show button
+                setCurrentMediaHotspot(hotspot);
+                setShowMediaButton(true);
+            }
+        }
+
+        // Zoom behavior (existing code)
         if (isMobile()) {
             console.log('Zooming to hotspot on mobile...');
-            // Mobile: Always zoom to hotspot
             await zoomToHotspot(hotspot);
         } else if (ZOOM_CONFIG.enableDesktopZoom) {
-            // Desktop: Optional zoom
             const currentZoom = viewer.viewport.getZoom();
             if (currentZoom < ZOOM_CONFIG.minZoomForDetail) {
                 await zoomToHotspot(hotspot);
             }
         }
 
-        // Play audio - adjust delay to match new animation timing
+        // Play audio (existing code)
         const audioDelay = isMobile() ? 1200 : 0;
-
         setTimeout(() => {
-            if (components.audioEngine && hotspot.audioUrl) {
-                components.audioEngine.play(hotspot.id);
+            if (components().audioEngine && hotspot.audioUrl) {
+                components().audioEngine.play(hotspot.id);
             }
         }, audioDelay);
+    };
+
+    const handleMediaButtonClick = (hotspotId) => {
+        console.log('Media button clicked for:', hotspotId);
+        setShowMediaButton(false);
+
+        // Open overlay through manager
+        if (components().imageOverlayManager) {
+            components().imageOverlayManager.openOverlay(hotspotId);
+        }
+
+        // TODO: Show ImageOverlay component (next step)
     };
 
     /**
@@ -845,21 +892,6 @@ function ArtworkViewer(props) {
         setTimeout(() => {
             viewer.animationTime = originalAnimationTime;
         }, 100);
-    };
-
-    const handleZoomIn = () => {
-        viewer.viewport.zoomBy(performanceConfig.viewer.zoomPerClick);
-        viewer.viewport.applyConstraints();
-    };
-
-    const handleZoomOut = () => {
-        viewer.viewport.zoomBy(1 / performanceConfig.viewer.zoomPerClick);
-        viewer.viewport.applyConstraints();
-    };
-
-    const handleHome = () => {
-        viewer.viewport.goHome();
-        setShowExpandButton(false);
     };
 
     return (
@@ -891,13 +923,6 @@ function ArtworkViewer(props) {
                     </div>
                 </Show>
 
-                <Show when={viewerReady() && window.innerWidth <= 768}>
-                    <div class="mobile-controls">
-                        <button class="zoom-btn zoom-in" onClick={handleZoomIn}>+</button>
-                        <button class="zoom-btn zoom-out" onClick={handleZoomOut}>−</button>
-                        <button class="zoom-btn zoom-home" onClick={handleHome}>⌂</button>
-                    </div>
-                </Show>
 
                 {/* Expand to Full View button for mobile */}
                 <Show when={viewerReady() && showExpandButton() && isMobile()}>
@@ -907,12 +932,33 @@ function ArtworkViewer(props) {
                         </button>
                     </div>
                 </Show>
+
+                {/* Media Button */}
+                <Show when={showMediaButton() && currentMediaHotspot()}>
+                    <MediaButton
+                        hotspotId={currentMediaHotspot()?.id}
+                        onClick={handleMediaButtonClick}
+                        position={mediaButtonPosition()}
+                        isMobile={isMobile()}
+                    />
+                </Show>
+
+               
+
+                {/* Image Overlay */}
+                <Show when={viewerReady() && components().imageOverlayManager}>
+                    <ImageOverlay
+                        imageOverlayManager={components().imageOverlayManager}
+                        currentHotspot={currentMediaHotspot}
+                    />
+                </Show>
+
             </div>
 
             {/* Audio Player - Outside viewer container to avoid overflow hidden */}
-            <Show when={viewerReady() && components.audioEngine}>
+            <Show when={viewerReady() && components().audioEngine}>
                 <AudioPlayer
-                    audioEngine={components.audioEngine}
+                    audioEngine={components().audioEngine}
                     currentHotspot={currentPlayingHotspot}
                 />
             </Show>
