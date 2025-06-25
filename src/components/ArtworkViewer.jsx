@@ -643,6 +643,55 @@ function ArtworkViewer(props) {
         console.log('Using NativeHotspotRenderer for all platforms');
     };
 
+
+    /**
+     * Check if a hotspot is already well-framed in the current viewport
+     */
+    const isHotspotWellFramed = (hotspot, bounds) => {
+        if (!viewer || !bounds) return false;
+
+        const currentBounds = viewer.viewport.getBounds();
+        const currentZoom = viewer.viewport.getZoom();
+
+        // Convert image bounds to viewport coordinates
+        const hotspotViewportBounds = viewer.viewport.imageToViewportRectangle(
+            bounds.x,
+            bounds.y,
+            bounds.width,
+            bounds.height
+        );
+
+        // Check how much of the hotspot is visible
+        const intersection = currentBounds.intersection(hotspotViewportBounds);
+        if (!intersection) return false;
+
+        // Calculate overlap percentage
+        const hotspotArea = hotspotViewportBounds.width * hotspotViewportBounds.height;
+        const intersectionArea = intersection.width * intersection.height;
+        const overlapRatio = intersectionArea / hotspotArea;
+
+        // Check if center is close
+        const hotspotCenter = hotspotViewportBounds.getCenter();
+        const viewportCenter = currentBounds.getCenter();
+
+        // Calculate distance manually
+        const centerDistance = Math.sqrt(
+            Math.pow(hotspotCenter.x - viewportCenter.x, 2) +
+            Math.pow(hotspotCenter.y - viewportCenter.y, 2)
+        );
+
+        // Consider well-framed if 80% visible AND center is close
+        const isWellFramed = overlapRatio > 0.8 && centerDistance < 0.1;
+
+        console.log('Well-framed check:', {
+            overlapRatio,
+            centerDistance,
+            isWellFramed
+        });
+
+        return isWellFramed;
+    };
+
     /**
  * Smooth zoom to hotspot with quality limits
  */
@@ -655,6 +704,9 @@ function ArtworkViewer(props) {
         if (!bounds) {
             return;
         }
+
+        // Check if hotspot is already well-framed
+        const alreadyFramed = isHotspotWellFramed(hotspot, bounds);
 
         setIsZoomingToHotspot(true);
 
@@ -756,32 +808,75 @@ function ArtworkViewer(props) {
         viewer.viewport.zoomSpring.springStiffness = stiffness * 0.85; // Slightly softer zoom
 
         // Calculate final bounds with padding
-        const paddingFactor = isMobile() ? 0.65 : 0.85;
+        const paddingFactor = isMobile() ? 0.7 : 0.85;
 
         // Calculate center point for better mobile centering
         const centerX = bounds.x + bounds.width / 2;
         const centerY = bounds.y + bounds.height / 2;
 
         // Create bounds centered on the hotspot
-        const adjustedBounds = new OpenSeadragon.Rect(
+        let adjustedBounds = new OpenSeadragon.Rect(
             centerX - (bounds.width * paddingFactor) / 2,
             centerY - (bounds.height * paddingFactor) / 2,
             bounds.width * paddingFactor,
             bounds.height * paddingFactor
         );
 
-        // Mobile-specific centering adjustment
+        // FORCE ANIMATION: Slightly modify the bounds size to trigger animation
+        // This keeps perfect centering while ensuring animation
+        if (alreadyFramed || true) { // Always force for now
+            // Make bounds 1% smaller - this will zoom in slightly more
+            const shrinkFactor = 0.99;
+            const centerX = adjustedBounds.x + adjustedBounds.width / 2;
+            const centerY = adjustedBounds.y + adjustedBounds.height / 2;
+
+            adjustedBounds.width *= shrinkFactor;
+            adjustedBounds.height *= shrinkFactor;
+            adjustedBounds.x = centerX - adjustedBounds.width / 2;
+            adjustedBounds.y = centerY - adjustedBounds.height / 2;
+        }
+        
+
+        // Mobile centering adjustment - using different approach
         if (isMobile()) {
-            // Apply a small vertical offset for better visual centering on mobile
-            const mobileOffsetY = adjustedBounds.height * 0.05;
-            adjustedBounds.y -= mobileOffsetY;
+            // Get container size in pixels
+            const containerSize = viewer.viewport.getContainerSize();
+
+            // Calculate offset in viewport coordinates
+            // Offset by 10% of viewport height upward for better mobile centering
+            const offsetPixels = containerSize.y * 0.1;
+            const offsetViewport = viewer.viewport.deltaPointsFromPixels(new OpenSeadragon.Point(0, -offsetPixels));
+
+            // Apply offset to bounds
+            adjustedBounds.y += offsetViewport.y;
         }
 
-        // Add small offset to force animation even if already at the hotspot
-        const epsilon = 0.00001;
-        adjustedBounds.x += epsilon;
+        // Debug log to understand what's happening
+        console.log('Zoom attempt:', {
+            currentZoom: viewer.viewport.getZoom(),
+            currentCenter: viewer.viewport.getCenter(),
+            targetBounds: adjustedBounds,
+            alreadyFramed: alreadyFramed
+        });
 
-        // Use fitBounds for proper zoom calculation
+        // Debug: Check if bounds are reasonable
+        console.log('Adjusted bounds:', {
+            x: adjustedBounds.x,
+            y: adjustedBounds.y,
+            width: adjustedBounds.width,
+            height: adjustedBounds.height,
+            viewportBounds: viewer.viewport.getBounds()
+        });
+
+        // Safety check: ensure bounds are within reasonable range
+        if (adjustedBounds.width > 1 || adjustedBounds.height > 1) {
+            console.error('Bounds too large - using fallback');
+            // Fallback to safe zoom
+            viewer.viewport.zoomTo(3, centerViewport, false);
+            return;
+        }
+
+        // Use fitBounds for both desktop and mobile
         viewer.viewport.fitBounds(adjustedBounds, false);
 
         // Restore original settings after animation
