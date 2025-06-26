@@ -1170,6 +1170,14 @@ function ArtworkViewer(props) {
         setShowExpandButton(false);
         setIsExpandingToFullView(true);
 
+        // Hide button immediately to avoid style recalculation
+        if (isMobile()) {
+            const expandButton = document.querySelector('.expand-button-container');
+            if (expandButton) {
+                expandButton.style.display = 'none';
+            }
+        }
+
         // Safety timeout in case animation doesn't complete properly
         const expandSafetyTimeout = setTimeout(() => {
             console.log('Safety timeout: forcing isExpandingToFullView to false (was:', isExpandingToFullView(), ')');
@@ -1229,9 +1237,14 @@ function ArtworkViewer(props) {
             components().renderOptimizer.startCinematicZoom();
         }
 
-        // Pause hotspot updates
+        // Pause hotspot updates AND hide overlay on mobile
         if (components().renderer) {
             components().renderer.pauseUpdates();
+
+            // Hide entire SVG overlay during full view animation
+            if (isMobile()) {
+                components().renderer.hideOverlay();
+            }
         }
 
         // Apply cinematic settings
@@ -1259,19 +1272,25 @@ function ArtworkViewer(props) {
             zoomTime: viewer.viewport.zoomSpring.animationTime
         });
 
-        // Force animation by slightly modifying bounds (same technique as zoomToHotspot)
-        const expandFactor = 1.01; // Slightly expand to force animation
-        const centerX = imageBounds.x + imageBounds.width / 2;
-        const centerY = imageBounds.y + imageBounds.height / 2;
+        // Simplified bounds calculation for mobile
+        if (isMobile()) {
+            // Direct fit without modification for better performance
+            viewer.viewport.fitBounds(imageBounds, false);
+        } else {
+            // Desktop keeps the animation trick
+            const expandFactor = 1.01;
+            const centerX = imageBounds.x + imageBounds.width / 2;
+            const centerY = imageBounds.y + imageBounds.height / 2;
 
-        const animatedBounds = new OpenSeadragon.Rect(
-            centerX - (imageBounds.width * expandFactor) / 2,
-            centerY - (imageBounds.height * expandFactor) / 2,
-            imageBounds.width * expandFactor,
-            imageBounds.height * expandFactor
-        );
+            const animatedBounds = new OpenSeadragon.Rect(
+                centerX - (imageBounds.width * expandFactor) / 2,
+                centerY - (imageBounds.height * expandFactor) / 2,
+                imageBounds.width * expandFactor,
+                imageBounds.height * expandFactor
+            );
 
-        viewer.viewport.fitBounds(animatedBounds, false);
+            viewer.viewport.fitBounds(animatedBounds, false);
+        }
         // Remove applyConstraints(true) as it forces immediate application
 
         // Log actual values after fitBounds
@@ -1313,9 +1332,17 @@ function ArtworkViewer(props) {
         // Resume hotspot updates after animation
         setTimeout(() => {
             if (components().renderer) {
-                components().renderer.resumeUpdates();
-                components().renderer.updateVisibility();
-                viewer.forceRedraw();
+                // Show overlay first on mobile
+                if (isMobile()) {
+                    components().renderer.showOverlay();
+                }
+
+                // Delay resume to avoid style recalculation during animation tail
+                setTimeout(() => {
+                    components().renderer.resumeUpdates();
+                    components().renderer.updateVisibility();
+                    viewer.forceRedraw();
+                }, 200);
             }
         }, animTime * 1000 + 100);
     };
