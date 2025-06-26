@@ -428,6 +428,22 @@ function ArtworkViewer(props) {
 
         viewer.addHandler('open', () => {
 
+            //  Throttle animation frames on mobile
+            if (isMobile()) {
+                let lastAnimationFrame = 0;
+                const frameThrottle = 33; // 30 FPS for mobile during animations
+
+                viewer.addHandler('update-viewport', (event) => {
+                    const now = performance.now();
+                    // Use viewer directly, not this.viewer
+                    if (viewer.isAnimating() && now - lastAnimationFrame < frameThrottle) {
+                        event.preventDefaultAction = true;
+                        return;
+                    }
+                    lastAnimationFrame = now;
+                });
+            }
+
             // Limit minimum zoom to prevent performance issues
             viewer.viewport.minZoomLevel = 0.8; // Allow more zoom out while maintaining performance
             viewer.viewport.minZoomImageRatio = 0.5;
@@ -575,6 +591,27 @@ function ArtworkViewer(props) {
         };
 
         viewer.addHandler('viewport-change', updateVisibleContent);
+
+        // Completely disable viewport updates during zoom animation
+        let viewportUpdatesPaused = false;
+
+        viewer.addHandler('animation-start', () => {
+            if (isMobile() && (isZoomingToHotspot() || isExpandingToFullView())) {
+                viewportUpdatesPaused = true;
+                // Disable all viewport change handlers temporarily
+                viewer.removeHandler('viewport-change', updateVisibleContent);
+            }
+        });
+
+        viewer.addHandler('animation-finish', () => {
+            if (viewportUpdatesPaused) {
+                viewportUpdatesPaused = false;
+                // Re-enable viewport change handler
+                viewer.addHandler('viewport-change', updateVisibleContent);
+                // Force one update after animation
+                setTimeout(updateVisibleContent, 100);
+            }
+        });
     };
 
 
@@ -850,14 +887,40 @@ function ArtworkViewer(props) {
             components().renderOptimizer.startCinematicZoom();
         }
 
+        // Pause performance monitoring during animation
+        if (components().performanceMonitor && isMobile()) {
+            components().performanceMonitor.pauseMonitoring();
+        }
+
         // Pause hotspot updates during zoom for better performance
         if (components().renderer) {
             components().renderer.pauseUpdates();
+
+            // RADICAL: Hide entire SVG overlay on mobile during zoom
+            if (isMobile()) {
+                components().renderer.hideOverlay();
+            }
         }
 
         // Apply settings to viewer and all springs
         viewer.animationTime = animTime;
         viewer.springStiffness = stiffness;
+
+        // MOBILE OPTIMIZATION: Use linear animation instead of spring physics
+        if (isMobile()) {
+            viewer.animationTime = 0.8; // Shorter, fixed duration
+            viewer.springStiffness = 20.0; // Much higher = less spring effect
+
+            // Disable smooth animations
+            viewer.viewport.centerSpringX.animationTime = 0.8;
+            viewer.viewport.centerSpringY.animationTime = 0.8;
+            viewer.viewport.zoomSpring.animationTime = 0.8;
+
+            // Very high stiffness = almost linear
+            viewer.viewport.centerSpringX.springStiffness = 20.0;
+            viewer.viewport.centerSpringY.springStiffness = 20.0;
+            viewer.viewport.zoomSpring.springStiffness = 20.0;
+        }
 
         // Apply to individual springs
         viewer.viewport.centerSpringX.animationTime = animTime;
@@ -871,6 +934,25 @@ function ArtworkViewer(props) {
         // Force update to ensure settings are applied
         viewer.viewport.applyConstraints();
         console.log('Springs configured with animTime:', animTime);
+
+        // On mobile, use simpler bounds calculation
+        if (isMobile()) {
+            // Skip complex calculations, use pre-calculated bounds if available
+            const simpleBounds = new OpenSeadragon.Rect(
+                bounds.x - bounds.width * 0.2,
+                bounds.y - bounds.height * 0.2,
+                bounds.width * 1.4,
+                bounds.height * 1.4
+            );
+            viewer.viewport.fitBounds(simpleBounds, false);
+
+            // IMPORTANT: Defer showing the expand button to avoid style recalculation
+            setTimeout(() => {
+                setShowExpandButton(true);
+            }, 100);
+
+            return; // Skip the rest of the complex calculations
+        }
 
         // Calculate final bounds with padding
         const paddingFactor = isMobile() ? 0.7 : 0.85;
@@ -955,15 +1037,29 @@ function ArtworkViewer(props) {
                 components().renderOptimizer.endCinematicZoom();
             }
 
+            // Resume performance monitoring
+            if (components().performanceMonitor && isMobile()) {
+                components().performanceMonitor.resumeMonitoring();
+            }
+
         }, animTime * 1000 + 200);
 
         // Update hotspot overlays after animation
         setTimeout(() => {
             if (components().renderer) {
                 console.log('Calling resumeUpdates from second setTimeout');
-                components().renderer.resumeUpdates();
-                components().renderer.updateVisibility();
-                viewer.forceRedraw();
+
+                // RADICAL: Show SVG overlay after animation
+                if (isMobile()) {
+                    components().renderer.showOverlay();
+                }
+
+                // Longer delay to ensure animation is completely finished
+                setTimeout(() => {
+                    components().renderer.resumeUpdates();
+                    components().renderer.updateVisibility();
+                    viewer.forceRedraw();
+                }, 200);
             }
         }, animTime * 1000 + 100);
 

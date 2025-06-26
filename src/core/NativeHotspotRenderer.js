@@ -47,6 +47,10 @@ class NativeHotspotRenderer {
         this.lastPointerDownPoint = null;
         this.isPinching = false;
 
+        // Track zoom state to prevent updates during animation
+        this.isViewerZooming = false;
+        this.lastZoomValue = null;
+
         this.initStyles();
         this.init();
     }
@@ -396,12 +400,22 @@ class NativeHotspotRenderer {
             activePointers: this.activePointers.size,
             timestamp: Date.now()
         });
+
         // Prevent if clicking on controls
         if (event.target.closest('.openseadragon-controls')) {
             return;
         }
 
-        // Get click position relative to the viewer
+        // OPTIMIZATION: Use cached last hover position on mobile
+        if (this.isMobile && this.hoveredHotspot) {
+            console.log('Using cached hover hotspot for mobile click');
+            event.stopPropagation();
+            event.preventDefault();
+            this.activateHotspot(this.hoveredHotspot);
+            return;
+        }
+
+        // Desktop continues with full calculation
         const rect = this.viewer.element.getBoundingClientRect();
         const pixelPoint = new OpenSeadragon.Point(
             event.clientX - rect.left,
@@ -674,13 +688,30 @@ class NativeHotspotRenderer {
             console.log('updateVisibility SKIPPED - updates are paused');
             return;
         }
+
+        // Check if viewer is actively zooming
+        const currentZoom = this.viewer.viewport.getZoom();
+        const targetZoom = this.viewer.viewport.zoomSpring.target.value;
+        const isZooming = Math.abs(currentZoom - targetZoom) > 0.001;
+
+        if (isZooming) {
+            console.log('updateVisibility SKIPPED - viewer is zooming');
+            return;
+        }
+
+        // Skip updates during any animation
+        if (this.viewer.isAnimating()) {
+            console.log('updateVisibility SKIPPED - viewer is animating');
+            return;
+        }
+
         console.log('updateVisibility running');
 
         const viewport = this.viewer.viewport;
-        const currentZoom = viewport.getZoom();
+        const currentZoomLevel = viewport.getZoom();
 
         // Special handling for low zoom
-        if (currentZoom < 1.5) {
+        if (currentZoomLevel < 1.5) {
             // Keep hotspots interactive but invisible at very low zoom
             this.overlays.forEach((overlay) => {
                 const isHovered = this.hoveredHotspot?.id === overlay.hotspot.id;
@@ -699,6 +730,7 @@ class NativeHotspotRenderer {
 
             // Don't return early - continue with normal processing
         }
+
         const bounds = viewport.getBounds();
         const topLeft = viewport.viewportToImageCoordinates(bounds.getTopLeft());
         const bottomRight = viewport.viewportToImageCoordinates(bounds.getBottomRight());
@@ -836,12 +868,43 @@ class NativeHotspotRenderer {
     pauseUpdates() {
         console.log('pauseUpdates called - hotspots will stop updating');
         this.updatesPaused = true;
+
+        if (this.selectedHotspot) {
+            this.overlays.forEach((overlay, id) => {
+                if (id !== this.selectedHotspot.id && id !== this.hoveredHotspot?.id) {
+                    overlay.element.style.visibility = 'hidden';
+                }
+            });
+        }
     }
 
     resumeUpdates() {
         console.log('resumeUpdates called - hotspots will update again');
         this.updatesPaused = false;
-        this.updateVisibility();
+
+        // NEW: Restore visibility
+        this.overlays.forEach((overlay) => {
+            overlay.element.style.visibility = 'visible';
+        });
+
+        // Delay the update to ensure animation is truly finished
+        setTimeout(() => {
+            this.updateVisibility();
+        }, 100);
+    }
+
+    hideOverlay() {
+        console.log('Hiding entire SVG overlay');
+        if (this.svg) {
+            this.svg.style.display = 'none';
+        }
+    }
+
+    showOverlay() {
+        console.log('Showing SVG overlay');
+        if (this.svg) {
+            this.svg.style.display = '';
+        }
     }
 
     destroy() {

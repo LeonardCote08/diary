@@ -80,6 +80,16 @@ class PerformanceMonitor {
         console.log('Performance monitoring stopped');
     }
 
+    pauseMonitoring() {
+        this.isPaused = true;
+        console.log('Performance monitoring paused');
+    }
+
+    resumeMonitoring() {
+        this.isPaused = false;
+        console.log('Performance monitoring resumed');
+    }
+
     setupEventHandlers() {
         const handlers = {
             'tile-loaded': this.onTileLoaded,
@@ -99,7 +109,7 @@ class PerformanceMonitor {
     }
 
     measureFrame() {
-        if (!this.isMonitoring) return;
+        if (!this.isMonitoring || this.isPaused) return;
 
         const currentTime = performance.now();
         const deltaTime = currentTime - this.lastTime;

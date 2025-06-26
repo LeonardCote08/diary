@@ -439,6 +439,7 @@ class RenderOptimizer {
         Object.assign(this.config, newConfig);
     }
 
+
     startCinematicZoom() {
         this.state.isCinematicZoom = true;
 
@@ -446,21 +447,24 @@ class RenderOptimizer {
         this.cinematicBackup = {
             immediateRender: this.viewer.immediateRender,
             maxTilesPerFrame: this.viewer.maxTilesPerFrame,
-            smoothTileEdges: this.viewer.smoothTileEdgesMinZoom
+            smoothTileEdges: this.viewer.smoothTileEdgesMinZoom,
+            preserveViewport: this.viewer.preserveViewport
         };
 
         // Apply cinematic zoom optimizations
         this.viewer.immediateRender = true;
-        this.viewer.maxTilesPerFrame = 1;
+        this.viewer.maxTilesPerFrame = 2; // Increased from 1 for smoother loading
         this.viewer.smoothTileEdgesMinZoom = Infinity; // Disable edge smoothing
+        this.viewer.preserveViewport = true; // Prevent viewport recalculations
 
         // Disable tile loading during zoom
         if (this.viewer.imageLoader) {
-            this.viewer.imageLoader.jobLimit = 1;
+            this.viewer.imageLoader.jobLimit = 0; // Stop all new tile loads
         }
 
         console.log('Cinematic zoom optimization started');
     }
+
 
     endCinematicZoom() {
         if (!this.state.isCinematicZoom) return;
