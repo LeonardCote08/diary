@@ -40,20 +40,12 @@ class NativeHotspotRenderer {
         // Cache for hotspot areas
         this.hotspotAreas = new Map();
 
-        // Touch gesture tracking for better pinch detection
-        this.touchStartTime = 0;
-        this.touchStartPoints = [];
+        // Pointer event tracking
+        this.activePointers = new Map(); // Track active pointers for multi-touch
+        this.primaryPointerId = null;
+        this.lastPointerDownTime = 0;
+        this.lastPointerDownPoint = null;
         this.isPinching = false;
-        this.pinchEndTime = 0;
-        this.touchHoldTimer = null;
-        this.touchedHotspot = null;
-        this.touchFeedbackElement = null;
-
-        // Touch gesture thresholds
-        this.pinchThreshold = 30; // pixels - minimum distance for pinch
-        this.pinchCooldown = 500; // ms - ignore taps after pinch
-        this.touchHoldDuration = 500; // ms - duration for activation
-        this.touchFeedbackDelay = 100; // ms - delay before showing feedback
 
         this.initStyles();
         this.init();
@@ -225,30 +217,14 @@ class NativeHotspotRenderer {
     setupDragDetection() {
         // Listen to OpenSeadragon's drag events
         this.viewer.addHandler('canvas-drag', () => {
+            console.log('canvas-drag detected, setting isDragging = true');
             this.isDragging = true;
         });
 
         this.viewer.addHandler('canvas-drag-end', () => {
-            // Small delay to ensure click events don't fire after drag
-            setTimeout(() => {
-                this.isDragging = false;
-            }, 100);
-        });
-
-        // Track mouse down for additional click validation
-        const container = this.viewer.container;
-
-        container.addEventListener('mousedown', (event) => {
-            this.dragStartTime = Date.now();
-            this.dragStartPoint = { x: event.clientX, y: event.clientY };
-        });
-
-        container.addEventListener('mouseup', () => {
-            // Reset after a short delay
-            setTimeout(() => {
-                this.dragStartTime = 0;
-                this.dragStartPoint = null;
-            }, 100);
+            console.log('canvas-drag-end detected, setting isDragging = false');
+            // Reset immediately, no delay
+            this.isDragging = false;
         });
     }
 
@@ -256,240 +232,15 @@ class NativeHotspotRenderer {
         // Ensure SVG can receive pointer events
         this.svg.style.pointerEvents = 'auto';
 
-        // Add click handler to the viewer's canvas container instead of SVG
+        // Use pointer events ONLY on container to avoid conflicts
         const container = this.viewer.container;
 
-        // Track if we're handling a touch to prevent double processing
-        let touchProcessed = false;
-        let touchTimeout = null;
+        container.addEventListener('pointerdown', this.handlePointerDown.bind(this));
+        container.addEventListener('pointermove', this.handlePointerMove.bind(this));
+        container.addEventListener('pointerup', this.handlePointerUp.bind(this));
+        container.addEventListener('pointercancel', this.handlePointerCancel.bind(this));
 
-        // Handle touch events for mobile - direct processing without click simulation
-        container.addEventListener('touchstart', (event) => {
-            // Reset touch processed flag
-            touchProcessed = false;
-
-            // Clear any existing timeout
-            if (touchTimeout) {
-                clearTimeout(touchTimeout);
-                touchTimeout = null;
-            }
-
-            // Clear any existing hold timer
-            if (this.touchHoldTimer) {
-                clearTimeout(this.touchHoldTimer);
-                this.touchHoldTimer = null;
-            }
-
-            // Track touch start for pinch detection
-            this.touchStartTime = Date.now();
-            this.touchStartPoints = Array.from(event.touches).map(touch => ({
-                x: touch.clientX,
-                y: touch.clientY,
-                id: touch.identifier
-            }));
-
-            // Detect pinch gesture start
-            if (event.touches.length >= 2) {
-                this.isPinching = true;
-                this.clearTouchFeedback(); // Clear any feedback when pinching
-                return;
-            }
-
-            // Single touch - prepare for hotspot interaction
-            if (event.touches.length === 1 && !this.isPinching) {
-                const touch = event.touches[0];
-                const rect = this.viewer.element.getBoundingClientRect();
-                const pixelPoint = new OpenSeadragon.Point(
-                    touch.clientX - rect.left,
-                    touch.clientY - rect.top
-                );
-
-                const viewportPoint = this.viewer.viewport.pointFromPixel(pixelPoint);
-                const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
-
-                // Find hotspot at touch point
-                const hotspot = this.findSmallestHotspotAtPoint(imagePoint);
-
-                if (hotspot) {
-                    this.touchedHotspot = hotspot;
-
-                    // Start feedback timer
-                    this.touchHoldTimer = setTimeout(() => {
-                        if (this.touchedHotspot === hotspot && !this.isPinching) {
-                            // Show initial touch feedback
-                            this.showTouchFeedback(hotspot, 'touching');
-
-                            // Start activation timer
-                            this.touchHoldTimer = setTimeout(() => {
-                                if (this.touchedHotspot === hotspot && !this.isPinching) {
-                                    // Activate hotspot after hold duration
-                                    this.activateHotspot(hotspot);
-                                    this.clearTouchFeedback();
-                                }
-                            }, this.touchHoldDuration - this.touchFeedbackDelay);
-                        }
-                    }, this.touchFeedbackDelay);
-                }
-            }
-        }, { passive: true });
-
-        container.addEventListener('touchmove', (event) => {
-            // Detect pinch gesture
-            if (event.touches.length >= 2 && this.touchStartPoints.length >= 2) {
-                const currentPoints = Array.from(event.touches).map(touch => ({
-                    x: touch.clientX,
-                    y: touch.clientY
-                }));
-
-                // Calculate distances
-                const startDistance = this.calculateDistance(
-                    this.touchStartPoints[0],
-                    this.touchStartPoints[1]
-                );
-                const currentDistance = this.calculateDistance(
-                    currentPoints[0],
-                    currentPoints[1]
-                );
-
-                // If distance changed significantly, it's a pinch
-                if (Math.abs(currentDistance - startDistance) > this.pinchThreshold) {
-                    this.isPinching = true;
-                    this.clearTouchFeedback();
-                    if (this.touchHoldTimer) {
-                        clearTimeout(this.touchHoldTimer);
-                        this.touchHoldTimer = null;
-                    }
-                }
-            }
-
-            // Clear touch feedback if moved too far
-            if (this.touchedHotspot && event.touches.length === 1) {
-                const touch = event.touches[0];
-                const startPoint = this.touchStartPoints[0];
-                if (startPoint) {
-                    const distance = this.calculateDistance(
-                        { x: touch.clientX, y: touch.clientY },
-                        startPoint
-                    );
-                    if (distance > this.clickDistThreshold) {
-                        this.clearTouchFeedback();
-                        this.touchedHotspot = null;
-                        if (this.touchHoldTimer) {
-                            clearTimeout(this.touchHoldTimer);
-                            this.touchHoldTimer = null;
-                        }
-                    }
-                }
-            }
-        }, { passive: true });
-
-        container.addEventListener('touchend', (event) => {
-            // Prevent default to avoid ghost clicks
-            event.preventDefault();
-
-            // Clear hold timer
-            if (this.touchHoldTimer) {
-                clearTimeout(this.touchHoldTimer);
-                this.touchHoldTimer = null;
-            }
-
-            // Handle pinch end
-            if (this.isPinching) {
-                this.isPinching = false;
-                this.pinchEndTime = Date.now();
-                this.clearTouchFeedback();
-                this.touchedHotspot = null;
-                return;
-            }
-
-            // Skip if this was part of a recent pinch
-            if (Date.now() - this.pinchEndTime < this.pinchCooldown) {
-                this.clearTouchFeedback();
-                this.touchedHotspot = null;
-                return;
-            }
-
-            // Skip if already processed or multi-touch
-            if (touchProcessed || event.changedTouches.length !== 1) {
-                this.clearTouchFeedback();
-                return;
-            }
-
-            // Check if this was a quick tap
-            const touchDuration = Date.now() - this.touchStartTime;
-
-            if (touchDuration < this.touchHoldDuration && this.touchedHotspot) {
-                // Quick tap - activate the hotspot immediately
-                touchProcessed = true;
-                this.activateHotspot(this.touchedHotspot);
-
-                // Set timeout to reset the flag
-                touchTimeout = setTimeout(() => {
-                    touchProcessed = false;
-                    touchTimeout = null;
-                }, 300);
-            } else {
-                // Long press was handled in touchstart, just clear feedback
-                this.clearTouchFeedback();
-            }
-
-            this.touchedHotspot = null;
-
-        }, { passive: false });
-
-        // Keep existing click handler for desktop...
-        container.addEventListener('click', (event) => {
-            // Skip if this was from a touch event
-            if (touchProcessed) {
-                return;
-            }
-
-            // Don't process clicks if we were dragging
-            if (this.isDragging) {
-                return;
-            }
-
-            // Additional validation - check time and distance
-            if (this.dragStartTime && this.dragStartPoint) {
-                const timeDiff = Date.now() - this.dragStartTime;
-                const distance = Math.sqrt(
-                    Math.pow(event.clientX - this.dragStartPoint.x, 2) +
-                    Math.pow(event.clientY - this.dragStartPoint.y, 2)
-                );
-
-                // If it took too long or moved too far, it's not a click
-                if (timeDiff > this.clickTimeThreshold || distance > this.clickDistThreshold) {
-                    return;
-                }
-            }
-
-            // Prevent if clicking on controls
-            if (event.target.closest('.openseadragon-controls')) {
-                return;
-            }
-
-            // Get click position relative to the viewer
-            const rect = this.viewer.element.getBoundingClientRect();
-            const pixelPoint = new OpenSeadragon.Point(
-                event.clientX - rect.left,
-                event.clientY - rect.top
-            );
-
-            // Convert to viewport then image coordinates
-            const viewportPoint = this.viewer.viewport.pointFromPixel(pixelPoint);
-            const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
-
-            // Find the smallest hotspot at this point
-            const clickedHotspot = this.findSmallestHotspotAtPoint(imagePoint);
-
-            if (clickedHotspot) {
-                event.stopPropagation();
-                event.preventDefault();
-                this.activateHotspot(clickedHotspot);
-            }
-        });
-
-        // Keep existing mousemove handler for desktop...
+        // Keep mousemove for hover effects on desktop - on SVG
         this.svg.addEventListener('mousemove', (event) => {
             const rect = this.viewer.element.getBoundingClientRect();
             const pixelPoint = new OpenSeadragon.Point(
@@ -529,41 +280,145 @@ class NativeHotspotRenderer {
         });
     }
 
-    /**
-     * Calculate distance between two points
-     */
-    calculateDistance(p1, p2) {
-        return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-    }
+    handlePointerDown(event) {
 
-    /**
-     * Show touch feedback for a hotspot
-     */
-    showTouchFeedback(hotspot, state) {
-        const overlay = this.overlays.get(hotspot.id);
-        if (!overlay) return;
+        // Failsafe: ensure updates are not paused when user interacts
+        if (this.updatesPaused) {
+            console.warn('Updates were paused during interaction - forcing resume');
+            this.resumeUpdates();
+        }
 
-        if (state === 'touching') {
-            // Light feedback for initial touch
-            overlay.element.style.opacity = '0.5';
-            this.applyStyle(overlay.element, hotspot.type, 'hover');
-        } else if (state === 'glow') {
-            // Full glow for tap
-            overlay.element.style.opacity = '1';
-            this.applyStyle(overlay.element, hotspot.type, 'hover');
+        console.log('handlePointerDown', {
+            pointerId: event.pointerId,
+            activePointersBefore: this.activePointers.size
+        });
+        // Track all pointers
+        this.activePointers.set(event.pointerId, {
+            x: event.clientX,
+            y: event.clientY,
+            startX: event.clientX,
+            startY: event.clientY,
+            startTime: Date.now()
+        });
+
+        // Prevent default to avoid ghost clicks on touch devices
+        if (this.isMobile) {
+            event.preventDefault();
+        }
+
+        // First pointer becomes primary
+        if (this.activePointers.size === 1) {
+            this.primaryPointerId = event.pointerId;
+            this.lastPointerDownTime = Date.now();
+            this.lastPointerDownPoint = { x: event.clientX, y: event.clientY };
         }
     }
 
-    /**
-     * Clear all touch feedback
-     */
-    clearTouchFeedback() {
-        if (this.touchedHotspot) {
-            const overlay = this.overlays.get(this.touchedHotspot.id);
-            if (overlay) {
-                const state = this.touchedHotspot === this.selectedHotspot ? 'selected' : 'normal';
-                this.applyStyle(overlay.element, this.touchedHotspot.type, state);
+    handlePointerMove(event) {
+        if (this.activePointers.has(event.pointerId)) {
+            const pointer = this.activePointers.get(event.pointerId);
+            pointer.x = event.clientX;
+            pointer.y = event.clientY;
+
+            // Detect pinch gesture with 2+ pointers
+            if (this.activePointers.size >= 2) {
+                this.isPinching = true;
             }
+        }
+    }
+
+    handlePointerUp(event) {
+        console.log('handlePointerUp start', {
+            pointerId: event.pointerId,
+            hasPointer: this.activePointers.has(event.pointerId),
+            activePointers: this.activePointers.size
+        });
+
+        if (!this.activePointers.has(event.pointerId)) return;
+
+        const pointer = this.activePointers.get(event.pointerId);
+        const duration = Date.now() - pointer.startTime;
+        const distance = Math.sqrt(
+            Math.pow(event.clientX - pointer.startX, 2) +
+            Math.pow(event.clientY - pointer.startY, 2)
+        );
+
+        console.log('handlePointerUp checks', {
+            isPrimary: event.pointerId === this.primaryPointerId,
+            primaryPointerId: this.primaryPointerId,
+            activePointers: this.activePointers.size,
+            isPinching: this.isPinching,
+            isDragging: this.isDragging,
+            duration: duration,
+            clickTimeThreshold: this.clickTimeThreshold,
+            distance: distance,
+            clickDistThreshold: this.clickDistThreshold
+        });
+
+        // Only process click if it's the primary pointer and not pinching
+        if (event.pointerId === this.primaryPointerId &&
+            this.activePointers.size === 1 &&
+            !this.isPinching &&
+            !this.isDragging &&
+            duration < this.clickTimeThreshold &&
+            distance < this.clickDistThreshold) {
+
+            console.log('Conditions passed, calling handleClick');
+            // Process as click
+            this.handleClick(event);
+        } else {
+            console.log('Click conditions NOT met');
+        }
+
+        // Remove pointer
+        this.activePointers.delete(event.pointerId);
+
+        // Reset states when all pointers are released
+        if (this.activePointers.size === 0) {
+            this.primaryPointerId = null;
+            this.isPinching = false;
+        }
+    }
+    
+    handlePointerCancel(event) {
+        // Clean up on cancel
+        this.activePointers.delete(event.pointerId);
+        if (this.activePointers.size === 0) {
+            this.primaryPointerId = null;
+            this.isPinching = false;
+        }
+    }
+
+    handleClick(event) {
+        console.log('handleClick called', {
+            isDragging: this.isDragging,
+            isPinching: this.isPinching,
+            activePointers: this.activePointers.size,
+            timestamp: Date.now()
+        });
+        // Prevent if clicking on controls
+        if (event.target.closest('.openseadragon-controls')) {
+            return;
+        }
+
+        // Get click position relative to the viewer
+        const rect = this.viewer.element.getBoundingClientRect();
+        const pixelPoint = new OpenSeadragon.Point(
+            event.clientX - rect.left,
+            event.clientY - rect.top
+        );
+
+        // Convert to viewport then image coordinates
+        const viewportPoint = this.viewer.viewport.pointFromPixel(pixelPoint);
+        const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
+
+        // Find the smallest hotspot at this point
+        const clickedHotspot = this.findSmallestHotspotAtPoint(imagePoint);
+
+        if (clickedHotspot) {
+            event.stopPropagation();
+            event.preventDefault();
+            this.activateHotspot(clickedHotspot);
         }
     }
 
@@ -571,6 +426,7 @@ class NativeHotspotRenderer {
      * Activate a hotspot (common method for touch and click)
      */
     activateHotspot(hotspot) {
+        console.log('Activating hotspot:', hotspot.id, Date.now());
         this.selectedHotspot = hotspot;
         this.onHotspotClick(hotspot);
 
@@ -814,7 +670,11 @@ class NativeHotspotRenderer {
     }
 
     updateVisibility() {
-        if (this.updatesPaused) return;
+        if (this.updatesPaused) {
+            console.log('updateVisibility SKIPPED - updates are paused');
+            return;
+        }
+        console.log('updateVisibility running');
 
         const viewport = this.viewer.viewport;
         const currentZoom = viewport.getZoom();
@@ -974,21 +834,17 @@ class NativeHotspotRenderer {
     }
 
     pauseUpdates() {
+        console.log('pauseUpdates called - hotspots will stop updating');
         this.updatesPaused = true;
     }
 
     resumeUpdates() {
+        console.log('resumeUpdates called - hotspots will update again');
         this.updatesPaused = false;
         this.updateVisibility();
     }
 
     destroy() {
-
-        // Clear any pending timers
-        if (this.touchHoldTimer) {
-            clearTimeout(this.touchHoldTimer);
-            this.touchHoldTimer = null;
-        }
 
         if (this.mouseTracker) {
             this.mouseTracker.destroy();
@@ -1002,6 +858,12 @@ class NativeHotspotRenderer {
         this.viewer.removeHandler('zoom');
 
         if (this.svg) {
+            // Remove pointer event listeners
+            this.svg.removeEventListener('pointerdown', this.handlePointerDown);
+            this.svg.removeEventListener('pointermove', this.handlePointerMove);
+            this.svg.removeEventListener('pointerup', this.handlePointerUp);
+            this.svg.removeEventListener('pointercancel', this.handlePointerCancel);
+
             this.viewer.removeOverlay(this.svg);
         }
 

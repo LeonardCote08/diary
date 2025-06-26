@@ -46,6 +46,7 @@ function ArtworkViewer(props) {
     const [viewerReady, setViewerReady] = createSignal(false);
     const [previewLoaded, setPreviewLoaded] = createSignal(false);
     const [showExpandButton, setShowExpandButton] = createSignal(false);
+    const [isFullscreen, setIsFullscreen] = createSignal(false);
     const [isZoomingToHotspot, setIsZoomingToHotspot] = createSignal(false);
     const [currentPlayingHotspot, setCurrentPlayingHotspot] = createSignal(null);
     const [showMediaButton, setShowMediaButton] = createSignal(false);
@@ -188,6 +189,11 @@ function ArtworkViewer(props) {
         setupAdaptiveSprings();
         setupKeyboardHandler();
         setupResizeObserver();
+
+        // Fullscreen change detection
+        document.addEventListener('fullscreenchange', () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        });
 
         onCleanup(cleanup);
     });
@@ -420,6 +426,17 @@ function ArtworkViewer(props) {
         }
 
         viewer.addHandler('open', () => {
+
+            // Limit minimum zoom to prevent performance issues
+            viewer.viewport.minZoomLevel = 0.8; // Allow more zoom out while maintaining performance
+            viewer.viewport.minZoomImageRatio = 0.5;
+
+            // Mobile-specific zoom limits - allow full view but with reasonable limit
+            if (isMobile()) {
+                viewer.viewport.minZoomLevel = 0.5; // Allow to see full image
+                viewer.viewport.minZoomImageRatio = 0.3; // Allow smaller image view
+            }
+
             // Call the new progressive quality function
             implementProgressiveZoomQuality();
             optimizeZoomPerformance();
@@ -499,10 +516,12 @@ function ArtworkViewer(props) {
 
         viewer.addHandler('animation-finish', () => {
             if (isZoomingToHotspot()) {
+                console.log('animation-finish: Setting isZoomingToHotspot to false');
                 setIsZoomingToHotspot(false);
 
                 // Re-enable hotspot updates after cinematic zoom
                 if (components().renderer) {
+                    console.log('animation-finish: Calling resumeUpdates');
                     components().renderer.resumeUpdates();
                     components().renderer.updateVisibility();
                 }
@@ -696,7 +715,17 @@ function ArtworkViewer(props) {
  * Smooth zoom to hotspot with quality limits
  */
     const zoomToHotspot = async (hotspot) => {
+        console.log('zoomToHotspot called', {
+            hotspotId: hotspot.id,
+            isZoomingToHotspot: isZoomingToHotspot(),
+            viewer: !!viewer
+        });
+
         if (!viewer || isZoomingToHotspot()) {
+            console.log('zoomToHotspot BLOCKED', {
+                noViewer: !viewer,
+                isZoomingToHotspot: isZoomingToHotspot()
+            });
             return;
         }
 
@@ -708,7 +737,20 @@ function ArtworkViewer(props) {
         // Check if hotspot is already well-framed
         const alreadyFramed = isHotspotWellFramed(hotspot, bounds);
 
+        let safetyTimeout;
+
         setIsZoomingToHotspot(true);
+
+        // Safety timeout in case animation-finish doesn't fire
+        safetyTimeout = setTimeout(() => {
+            console.log('Safety timeout: forcing isZoomingToHotspot to false');
+            setIsZoomingToHotspot(false);
+
+            // AJOUTER : Ensure hotspots are resumed
+            if (components().renderer) {
+                components().renderer.resumeUpdates();
+            }
+        }, 2000);
 
         // Calculate viewport aspect ratio
         const viewportAspect = viewer.viewport.getAspectRatio();
@@ -837,19 +879,7 @@ function ArtworkViewer(props) {
         }
         
 
-        // Mobile centering adjustment - using different approach
-        if (isMobile()) {
-            // Get container size in pixels
-            const containerSize = viewer.viewport.getContainerSize();
-
-            // Calculate offset in viewport coordinates
-            // Offset by 10% of viewport height upward for better mobile centering
-            const offsetPixels = containerSize.y * 0.1;
-            const offsetViewport = viewer.viewport.deltaPointsFromPixels(new OpenSeadragon.Point(0, -offsetPixels));
-
-            // Apply offset to bounds
-            adjustedBounds.y += offsetViewport.y;
-        }
+        
 
         // Debug log to understand what's happening
         console.log('Zoom attempt:', {
@@ -881,6 +911,10 @@ function ArtworkViewer(props) {
 
         // Restore original settings after animation
         setTimeout(() => {
+            clearTimeout(safetyTimeout); // Clear the safety timeout
+            console.log('Setting isZoomingToHotspot to false');
+            setIsZoomingToHotspot(false);
+
             viewer.animationTime = originalSettings.animationTime;
             viewer.springStiffness = originalSettings.springStiffness;
 
@@ -903,6 +937,8 @@ function ArtworkViewer(props) {
         // Update hotspot overlays after animation
         setTimeout(() => {
             if (components().renderer) {
+                console.log('Calling resumeUpdates from second setTimeout');
+                components().renderer.resumeUpdates();  
                 components().renderer.updateVisibility();
                 viewer.forceRedraw();
             }
@@ -918,7 +954,17 @@ function ArtworkViewer(props) {
      * Handle hotspot click with zoom behavior
      */
     const handleHotspotClick = async (hotspot) => {
-        console.log('Hotspot clicked:', hotspot.id, 'isMobile:', isMobile());
+        console.log('handleHotspotClick called in ArtworkViewer', {
+            hotspotId: hotspot.id,
+            isZoomingToHotspot: isZoomingToHotspot(),
+            timestamp: Date.now()
+        });
+
+        // Force reset if stuck from previous interaction
+        if (isZoomingToHotspot()) {
+            console.log('WARNING: isZoomingToHotspot was still true, forcing reset');
+            setIsZoomingToHotspot(false);
+        }
 
         // Hide previous media button
         setShowMediaButton(false);
@@ -969,19 +1015,43 @@ function ArtworkViewer(props) {
      * Expand to full view (mobile only)
      */
     const expandToFullView = () => {
-        if (!viewer || !homeViewport) return;
+        if (!viewer) return;
 
         setShowExpandButton(false);
 
-        // Smooth animation to home
+        // Smooth animation
         const originalAnimationTime = viewer.animationTime;
         viewer.animationTime = 0.8;
 
-        viewer.viewport.fitBounds(homeViewport, false);
+        // Get the actual image bounds (not home bounds)
+        const tiledImage = viewer.world.getItemAt(0);
+        if (tiledImage) {
+            const imageBounds = tiledImage.getBounds();
+
+            // Fit the image to the viewport properly
+            viewer.viewport.fitBounds(imageBounds, false);
+
+            // Apply constraints to ensure proper fit
+            viewer.viewport.applyConstraints(true);
+        } else {
+            // Fallback if no tiled image
+            viewer.viewport.goHome(false);
+        }
 
         setTimeout(() => {
             viewer.animationTime = originalAnimationTime;
         }, 100);
+    };
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            // Enter fullscreen
+            document.documentElement.requestFullscreen().catch(err => {
+                console.log(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        } else {
+            // Exit fullscreen
+            document.exitFullscreen();
+        }
     };
 
     return (
@@ -1019,6 +1089,25 @@ function ArtworkViewer(props) {
                     <div class="expand-button-container">
                         <button class="expand-button" onClick={expandToFullView}>
                             <span style="font-size: 16px; line-height: 1;">⤢</span> Full View
+                        </button>
+                    </div>
+                </Show>
+
+                {/* Fullscreen button for mobile */}
+                <Show when={viewerReady() && isMobile()}>
+                    <div class="fullscreen-button-container">
+                        <button class="fullscreen-button" onClick={toggleFullscreen} title={isFullscreen() ? 'Exit fullscreen' : 'Enter fullscreen'}>
+                            {isFullscreen() ? (
+                                // Exit fullscreen icon
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
+                                </svg>
+                            ) : (
+                                // Enter fullscreen icon
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                                </svg>
+                            )}
                         </button>
                     </div>
                 </Show>
