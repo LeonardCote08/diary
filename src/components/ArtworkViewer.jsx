@@ -1150,9 +1150,20 @@ function ArtworkViewer(props) {
             zoomTime: viewer.viewport.zoomSpring.animationTime
         });
 
-        // Now fit the image to viewport
-        viewer.viewport.fitBounds(imageBounds, false);
-        viewer.viewport.applyConstraints(true);
+        // Force animation by slightly modifying bounds (same technique as zoomToHotspot)
+        const expandFactor = 1.01; // Slightly expand to force animation
+        const centerX = imageBounds.x + imageBounds.width / 2;
+        const centerY = imageBounds.y + imageBounds.height / 2;
+
+        const animatedBounds = new OpenSeadragon.Rect(
+            centerX - (imageBounds.width * expandFactor) / 2,
+            centerY - (imageBounds.height * expandFactor) / 2,
+            imageBounds.width * expandFactor,
+            imageBounds.height * expandFactor
+        );
+
+        viewer.viewport.fitBounds(animatedBounds, false);
+        // Remove applyConstraints(true) as it forces immediate application
 
         // Log actual values after fitBounds
         console.log('expandToFullView animation started', {
