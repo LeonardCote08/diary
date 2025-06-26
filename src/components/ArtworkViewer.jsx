@@ -48,6 +48,7 @@ function ArtworkViewer(props) {
     const [showExpandButton, setShowExpandButton] = createSignal(false);
     const [isFullscreen, setIsFullscreen] = createSignal(false);
     const [isZoomingToHotspot, setIsZoomingToHotspot] = createSignal(false);
+    const [isExpandingToFullView, setIsExpandingToFullView] = createSignal(false);
     const [currentPlayingHotspot, setCurrentPlayingHotspot] = createSignal(null);
     const [showMediaButton, setShowMediaButton] = createSignal(false);
     const [mediaButtonPosition, setMediaButtonPosition] = createSignal({ x: 0, y: 0 });
@@ -515,6 +516,10 @@ function ArtworkViewer(props) {
         });
 
         viewer.addHandler('animation-finish', () => {
+            console.log('animation-finish fired', {
+                isZoomingToHotspot: isZoomingToHotspot(),
+                isExpandingToFullView: isExpandingToFullView()
+            });
             if (isZoomingToHotspot()) {
                 console.log('animation-finish: Setting isZoomingToHotspot to false');
                 setIsZoomingToHotspot(false);
@@ -721,10 +726,11 @@ function ArtworkViewer(props) {
             viewer: !!viewer
         });
 
-        if (!viewer || isZoomingToHotspot()) {
+        if (!viewer || isZoomingToHotspot() || isExpandingToFullView()) {
             console.log('zoomToHotspot BLOCKED', {
                 noViewer: !viewer,
-                isZoomingToHotspot: isZoomingToHotspot()
+                isZoomingToHotspot: isZoomingToHotspot(),
+                isExpandingToFullView: isExpandingToFullView()
             });
             return;
         }
@@ -809,12 +815,12 @@ function ArtworkViewer(props) {
             animationTime: viewer.animationTime,
             springStiffness: viewer.springStiffness
         };
+        // Force minimum distance to ensure cinematic effect
+        const effectiveDistance = Math.max(0.5, distance);
 
-        // Cinematic zoom: 1.2s to 1.5s for better scale perception
-        const animTime = Math.min(1.5, Math.max(1.2, distance * 0.4 + 1.0));
-
-        // Softer springs for cinematic feel: 6.0 to 10.0
-        const stiffness = Math.max(6.0, 10.0 - distance * 1.5);
+        // Cinematic animation settings (same as hotspot zoom)
+        const animTime = Math.min(1.5, Math.max(1.2, effectiveDistance * 0.4 + 1.0));
+        const stiffness = Math.max(6.0, 10.0 - effectiveDistance * 1.5);
 
         // NOW we can use animTime - Pause tile cleanup during cinematic zoom for better performance
         if (components().tileCleanupManager) {
@@ -848,6 +854,10 @@ function ArtworkViewer(props) {
         viewer.viewport.centerSpringX.springStiffness = stiffness;
         viewer.viewport.centerSpringY.springStiffness = stiffness;
         viewer.viewport.zoomSpring.springStiffness = stiffness * 0.85; // Slightly softer zoom
+
+        // Force update to ensure settings are applied
+        viewer.viewport.applyConstraints();
+        console.log('Springs configured with animTime:', animTime);
 
         // Calculate final bounds with padding
         const paddingFactor = isMobile() ? 0.7 : 0.85;
@@ -960,10 +970,23 @@ function ArtworkViewer(props) {
             timestamp: Date.now()
         });
 
+        // DEBUG: Check component states
+        console.log('Component states:', {
+            hasRenderer: !!components().renderer,
+            isUpdatesPaused: components().renderer?.updatesPaused,
+            isDragging: components().renderer?.isDragging
+        });
+
         // Force reset if stuck from previous interaction
         if (isZoomingToHotspot()) {
             console.log('WARNING: isZoomingToHotspot was still true, forcing reset');
             setIsZoomingToHotspot(false);
+        }
+
+        // Also check and reset isExpandingToFullView
+        if (isExpandingToFullView()) {
+            console.log('WARNING: isExpandingToFullView was still true, forcing reset');
+            setIsExpandingToFullView(false);
         }
 
         // Hide previous media button
@@ -1015,33 +1038,168 @@ function ArtworkViewer(props) {
      * Expand to full view (mobile only)
      */
     const expandToFullView = () => {
-        if (!viewer) return;
+        console.log('expandToFullView START', {
+            isExpandingToFullView: isExpandingToFullView(),
+            isZoomingToHotspot: isZoomingToHotspot()
+        });
+        if (!viewer || isExpandingToFullView()) return;
 
-        setShowExpandButton(false);
+        // Force reset zoom state if stuck
+        if (isZoomingToHotspot()) {
+            console.log('Force resetting isZoomingToHotspot in expandToFullView');
+            setIsZoomingToHotspot(false);
 
-        // Smooth animation
-        const originalAnimationTime = viewer.animationTime;
-        viewer.animationTime = 0.8;
-
-        // Get the actual image bounds (not home bounds)
-        const tiledImage = viewer.world.getItemAt(0);
-        if (tiledImage) {
-            const imageBounds = tiledImage.getBounds();
-
-            // Fit the image to the viewport properly
-            viewer.viewport.fitBounds(imageBounds, false);
-
-            // Apply constraints to ensure proper fit
-            viewer.viewport.applyConstraints(true);
-        } else {
-            // Fallback if no tiled image
-            viewer.viewport.goHome(false);
+            // Also cleanup any ongoing optimizations
+            if (components().renderOptimizer) {
+                components().renderOptimizer.endCinematicZoom();
+            }
+            if (components().renderer) {
+                components().renderer.resumeUpdates();
+            }
         }
 
+        setShowExpandButton(false);
+        setIsExpandingToFullView(true);
+
+        // Safety timeout in case animation doesn't complete properly
+        const expandSafetyTimeout = setTimeout(() => {
+            console.log('Safety timeout: forcing isExpandingToFullView to false (was:', isExpandingToFullView(), ')');
+            setIsExpandingToFullView(false);
+        }, 2000);
+
+        // Get the actual image bounds
+        const tiledImage = viewer.world.getItemAt(0);
+        if (!tiledImage) {
+            setIsExpandingToFullView(false);
+            return;
+        }
+
+        const imageBounds = tiledImage.getBounds();
+
+        // Calculate distance for cinematic timing
+        const currentBounds = viewer.viewport.getBounds();
+        const currentCenter = currentBounds.getCenter();
+        const targetCenter = imageBounds.getCenter();
+
+        const distance = Math.sqrt(
+            Math.pow(targetCenter.x - currentCenter.x, 2) +
+            Math.pow(targetCenter.y - currentCenter.y, 2)
+        );
+
+        // Store original settings
+        const originalSettings = {
+            animationTime: viewer.animationTime,
+            springStiffness: viewer.springStiffness
+        };
+
+        // Cinematic animation settings (same as hotspot zoom)
+        const animTime = Math.min(1.5, Math.max(1.2, distance * 0.4 + 1.0));
+        const stiffness = Math.max(6.0, 10.0 - distance * 1.5);
+        // DEBUG: Log animation parameters
+        console.log('expandToFullView animation params:', {
+            distance,
+            animTime,
+            stiffness,
+            currentAnimationTime: viewer.animationTime,
+            currentStiffness: viewer.springStiffness
+        });
+
+
+        // Pause tile cleanup during animation
+        if (components().tileCleanupManager) {
+            components().tileCleanupManager.pauseCleanup(animTime * 1000 + 500);
+        }
+
+        // Clear tile queue
+        if (viewer.imageLoader) {
+            viewer.imageLoader.clear();
+        }
+
+        // Notify RenderOptimizer
+        if (components().renderOptimizer) {
+            components().renderOptimizer.startCinematicZoom();
+        }
+
+        // Pause hotspot updates
+        if (components().renderer) {
+            components().renderer.pauseUpdates();
+        }
+
+        // Apply cinematic settings
+        viewer.animationTime = animTime;
+        viewer.springStiffness = stiffness;
+
+        // Apply to individual springs with force update
+        viewer.viewport.centerSpringX.animationTime = animTime;
+        viewer.viewport.centerSpringY.animationTime = animTime;
+        viewer.viewport.zoomSpring.animationTime = animTime;
+
+        viewer.viewport.centerSpringX.springStiffness = stiffness;
+        viewer.viewport.centerSpringY.springStiffness = stiffness;
+        viewer.viewport.zoomSpring.springStiffness = stiffness * 0.85;
+
+        // IMPORTANT: Reset springs to ensure new values are applied
+        viewer.viewport.centerSpringX.resetTo(viewer.viewport.centerSpringX.current.value);
+        viewer.viewport.centerSpringY.resetTo(viewer.viewport.centerSpringY.current.value);
+        viewer.viewport.zoomSpring.resetTo(viewer.viewport.zoomSpring.current.value);
+
+        // Add debug to verify
+        console.log('expandToFullView executing fitBounds');
+        console.log('Springs after reset:', {
+            centerXTime: viewer.viewport.centerSpringX.animationTime,
+            zoomTime: viewer.viewport.zoomSpring.animationTime
+        });
+
+        // Now fit the image to viewport
+        viewer.viewport.fitBounds(imageBounds, false);
+        viewer.viewport.applyConstraints(true);
+
+        // Log actual values after fitBounds
+        console.log('expandToFullView animation started', {
+            actualAnimTime: viewer.viewport.zoomSpring.animationTime,
+            actualStiffness: viewer.viewport.zoomSpring.springStiffness,
+            timestamp: Date.now()
+        });
+
+        console.log('expandToFullView animation started', {
+            actualAnimTime: viewer.animationTime,
+            actualStiffness: viewer.springStiffness,
+            timestamp: Date.now()
+        });
+
+        // Restore settings after animation
         setTimeout(() => {
-            viewer.animationTime = originalAnimationTime;
-        }, 100);
+            clearTimeout(expandSafetyTimeout); // Clear the safety timeout
+            setIsExpandingToFullView(false);
+
+            // Restore original settings
+            viewer.animationTime = originalSettings.animationTime;
+            viewer.springStiffness = originalSettings.springStiffness;
+
+            viewer.viewport.centerSpringX.animationTime = originalSettings.animationTime;
+            viewer.viewport.centerSpringY.animationTime = originalSettings.animationTime;
+            viewer.viewport.zoomSpring.animationTime = originalSettings.animationTime;
+
+            viewer.viewport.centerSpringX.springStiffness = originalSettings.springStiffness;
+            viewer.viewport.centerSpringY.springStiffness = originalSettings.springStiffness;
+            viewer.viewport.zoomSpring.springStiffness = originalSettings.springStiffness;
+
+            // End cinematic optimizations
+            if (components().renderOptimizer) {
+                components().renderOptimizer.endCinematicZoom();
+            }
+        }, animTime * 1000 + 200);
+
+        // Resume hotspot updates after animation
+        setTimeout(() => {
+            if (components().renderer) {
+                components().renderer.resumeUpdates();
+                components().renderer.updateVisibility();
+                viewer.forceRedraw();
+            }
+        }, animTime * 1000 + 100);
     };
+
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
             // Enter fullscreen
