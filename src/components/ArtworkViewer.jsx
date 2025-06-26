@@ -160,29 +160,29 @@ function ArtworkViewer(props) {
         setComponents(componentsObj);
 
         // Simplified audio engine setup
-        window.audioEngine = componentsObj.audioEngine; 
-        componentsObj.audioEngine.onPlaybackEnd = (hotspotId) => {  
+        window.audioEngine = componentsObj.audioEngine;
+        componentsObj.audioEngine.onPlaybackEnd = (hotspotId) => {
             console.log(`Finished playing audio for hotspot ${hotspotId}`);
             // TODO: Auto-advance to next hotspot if enabled
         };
 
-        componentsObj.spatialIndex.loadHotspots(hotspotData); 
-        componentsObj.imageOverlayManager.loadHotspots(hotspotData); 
+        componentsObj.spatialIndex.loadHotspots(hotspotData);
+        componentsObj.imageOverlayManager.loadHotspots(hotspotData);
 
         // Global access for debugging
         window.viewer = viewer;
-        window.performanceMonitor = componentsObj.performanceMonitor;  
-        window.tileOptimizer = componentsObj.tileOptimizer;  
-        window.tileCleanupManager = componentsObj.tileCleanupManager; 
+        window.performanceMonitor = componentsObj.performanceMonitor;
+        window.tileOptimizer = componentsObj.tileOptimizer;
+        window.tileCleanupManager = componentsObj.tileCleanupManager;
 
         // Start all performance systems
-        componentsObj.performanceMonitor.start();  
-        componentsObj.memoryManager.start();  
-        componentsObj.tileOptimizer.start();  
-        componentsObj.tileCleanupManager.start();  
+        componentsObj.performanceMonitor.start();
+        componentsObj.memoryManager.start();
+        componentsObj.tileOptimizer.start();
+        componentsObj.tileCleanupManager.start();
 
         if (debugLevel() >= 1) {
-            componentsObj.performanceMonitor.enableDebugOverlay(); 
+            componentsObj.performanceMonitor.enableDebugOverlay();
         }
 
         // Setup event handlers
@@ -456,9 +456,22 @@ function ArtworkViewer(props) {
             const tiledImage = viewer.world.getItemAt(0);
             const bounds = tiledImage.getBounds();
 
-            
+
             viewer.viewport.fitBounds(bounds, true);
             viewer.viewport.applyConstraints(true);
+
+            // Force proper initial view on mobile
+            if (isMobile()) {
+                // Wait a frame to ensure constraints are applied
+                setTimeout(() => {
+                    const tiledImage = viewer.world.getItemAt(0);
+                    if (tiledImage) {
+                        const imageBounds = tiledImage.getBounds();
+                        // Fit to width for mobile
+                        viewer.viewport.fitBoundsWithConstraints(imageBounds, false);
+                    }
+                }, 100);
+            }
 
             // Store home viewport for "Expand to Full View"
             homeViewport = viewer.viewport.getHomeBounds();
@@ -887,9 +900,9 @@ function ArtworkViewer(props) {
             adjustedBounds.x = centerX - adjustedBounds.width / 2;
             adjustedBounds.y = centerY - adjustedBounds.height / 2;
         }
-        
 
-        
+
+
 
         // Debug log to understand what's happening
         console.log('Zoom attempt:', {
@@ -948,7 +961,7 @@ function ArtworkViewer(props) {
         setTimeout(() => {
             if (components().renderer) {
                 console.log('Calling resumeUpdates from second setTimeout');
-                components().renderer.resumeUpdates();  
+                components().renderer.resumeUpdates();
                 components().renderer.updateVisibility();
                 viewer.forceRedraw();
             }
@@ -1292,7 +1305,7 @@ function ArtworkViewer(props) {
                     />
                 </Show>
 
-               
+
 
                 {/* Image Overlay */}
                 <Show when={viewerReady() && components().imageOverlayManager}>
