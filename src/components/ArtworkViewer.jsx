@@ -1257,7 +1257,8 @@ function ArtworkViewer(props) {
                 <Show when={viewerReady() && showExpandButton() && isMobile()}>
                     <div class="expand-button-container">
                         <button class="expand-button" onClick={expandToFullView}>
-                            <span style="font-size: 16px; line-height: 1;">⤢</span> Full View
+                            <span class="expand-icon">⤢</span>
+                            <span>Full View</span>
                         </button>
                     </div>
                 </Show>
