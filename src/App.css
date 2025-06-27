@@ -787,3 +787,109 @@
         width: 18px;
         height: 18px;
     }
+
+.developer-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(20, 20, 20, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0;
+    max-width: 90vw;
+    max-height: 80vh;
+    width: 600px;
+    z-index: 10000;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(20px);
+    overflow: hidden;
+    animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -45%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.message-header {
+    background: rgba(30, 30, 30, 0.8);
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+    .message-header h3 {
+        margin: 0;
+        font-size: 18px;
+        color: rgba(255, 255, 255, 0.95);
+        font-weight: 600;
+    }
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 28px;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+    .close-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+.message-content {
+    padding: 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+    line-height: 1.6;
+}
+
+    .message-content p {
+        margin: 0 0 16px 0;
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 15px;
+    }
+
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+    .message-content a {
+        color: #4a9eff;
+        text-decoration: none;
+    }
+
+        .message-content a:hover {
+            text-decoration: underline;
+        }
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    .developer-message {
+        width: calc(100vw - 32px);
+        margin: 16px;
+    }
+
+    .message-content {
+        font-size: 14px;
+    }
+}
