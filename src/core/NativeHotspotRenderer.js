@@ -27,6 +27,10 @@ class NativeHotspotRenderer {
         this.hoveredHotspot = null;
         this.selectedHotspot = null;
 
+        // Zoom tracking for deselection
+        this.zoomOnSelection = null;
+        this.selectionTimestamp = null;
+
         // Track drag state
         this.isDragging = false;
         this.dragStartTime = 0;
@@ -144,6 +148,9 @@ class NativeHotspotRenderer {
 
         // Update styles on zoom change
         this.viewer.addHandler('zoom', () => {
+            // Check if we should deselect based on zoom
+            this.checkZoomDeselection();
+
             // Update all visible hotspots with new glow intensity
             if (this.hoveredHotspot) {
                 const overlay = this.overlays.get(this.hoveredHotspot.id);
@@ -499,6 +506,11 @@ class NativeHotspotRenderer {
     activateHotspot(hotspot) {
         console.log('Activating hotspot:', hotspot.id, Date.now());
         this.selectedHotspot = hotspot;
+
+        // Track zoom level when selecting
+        this.zoomOnSelection = this.viewer.viewport.getZoom();
+        this.selectionTimestamp = Date.now();
+
         this.onHotspotClick(hotspot);
 
         // Update visual state
@@ -518,6 +530,9 @@ class NativeHotspotRenderer {
     deselectHotspot() {
         console.log('Deselecting hotspot');
         this.selectedHotspot = null;
+        // Reset zoom tracking
+        this.zoomOnSelection = null;
+        this.selectionTimestamp = null;
 
         // Update visual state for all hotspots
         this.overlays.forEach((overlay, id) => {
@@ -529,9 +544,70 @@ class NativeHotspotRenderer {
         this.updateDarkeningOverlay();
     }
 
+
     /**
- * Update darkening overlay for focus mode
+ * Check if hotspot should be deselected based on zoom changes
  */
+    checkZoomDeselection() {
+        if (!this.selectedHotspot || !this.zoomOnSelection) return;
+
+        // Skip if selection just happened (avoid deselecting during initial zoom animation)
+        const timeSinceSelection = Date.now() - this.selectionTimestamp;
+        if (timeSinceSelection < 2000) return; // 2 second grace period
+
+        const currentZoom = this.viewer.viewport.getZoom();
+
+        // Check absolute zoom threshold
+        const absoluteThreshold = this.isMobile ? 2.0 : 2.5; // Lower threshold on mobile
+        if (currentZoom < absoluteThreshold) {
+            console.log('Deselecting due to low zoom level:', currentZoom);
+            this.deselectHotspot();
+            if (this.onHotspotClick) {
+                this.onHotspotClick(null);
+            }
+            return;
+        }
+
+        // Check relative zoom change (40% reduction from selection zoom)
+        const zoomRatio = currentZoom / this.zoomOnSelection;
+        if (zoomRatio < 0.6) { // 40% reduction
+            console.log('Deselecting due to zoom reduction:', zoomRatio);
+            this.deselectHotspot();
+            if (this.onHotspotClick) {
+                this.onHotspotClick(null);
+            }
+            return;
+        }
+
+        // Check hotspot visibility in viewport
+        const overlay = this.overlays.get(this.selectedHotspot.id);
+        if (overlay) {
+            const viewport = this.viewer.viewport.getBounds();
+            const imageBounds = overlay.bounds;
+
+            // Convert to viewport coordinates
+            const tiledImage = this.viewer.world.getItemAt(0);
+            const imageSize = tiledImage.getContentSize();
+
+            const hotspotViewportWidth = (imageBounds.maxX - imageBounds.minX) / imageSize.x;
+            const hotspotViewportHeight = (imageBounds.maxY - imageBounds.minY) / imageSize.y;
+            const hotspotViewportArea = hotspotViewportWidth * hotspotViewportHeight;
+
+            const viewportArea = viewport.width * viewport.height;
+            const hotspotScreenPercentage = (hotspotViewportArea / viewportArea) * 100;
+
+            // Deselect if hotspot occupies less than 10% of viewport
+            if (hotspotScreenPercentage < 10) {
+                console.log('Deselecting due to small hotspot size on screen:', hotspotScreenPercentage.toFixed(1) + '%');
+                this.deselectHotspot();
+                if (this.onHotspotClick) {
+                    this.onHotspotClick(null);
+                }
+            }
+        }
+    }
+
+
     /**
  * Update darkening overlay for focus mode
  */
