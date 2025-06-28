@@ -17,7 +17,7 @@ function DeveloperMessage({ onClose }) {
 
                 <p>I totally relate to your potato mode confession 😅 We all have those moments where we just need to disconnect and recharge. Though honestly, your project is so motivating that it's been the perfect antidote to my own potato tendencies - I find myself constantly drawn back to it.</p>
 
-                <p>I'm back home today and excited to dedicate my full attention to the project again. Your feedback was incredibly valuable - I'll be implementing all the adjustments you mentioned progressively. Right now, I'm focusing hard on eliminating those FPS drops on mobile, as I understand that's a priority for the exhibition experience.</p>
+                <p>I'm back home today and excited to dedicate my full attention to the project again. Your feedback was incredibly valuable – I'll be implementing all the adjustments you mentioned progressively. Right now, I'm focusing hard on eliminating FPS drops on mobile as I now understand how critical the mobile experience is.</p>
 
                 <p><strong>P.S.</strong> I've temporarily been locked out of Upwork (they flagged some "unusual activity" on my account). They said it should be resolved by Monday, but if you need to reach me before then, I'm available on Telegram: <a href="https://t.me/LeonardCote" target="_blank">@LeonardCote</a></p>
 

@@ -181,7 +181,7 @@ class NativeHotspotRenderer {
         <g id="darkening-layer" style="pointer-events: none;">
             <rect x="0" y="0" width="${imageSize.x}" height="${imageSize.y}" 
                   fill="rgba(0, 0, 0, 0)" mask="url(#darkening-mask)"
-                  style="transition: fill 0.3s ease;"/>
+                  style="transition: fill 0.3s ease-out;"/>
         </g>
     </svg>`;
 
@@ -529,25 +529,27 @@ class NativeHotspotRenderer {
  */
     deselectHotspot() {
         console.log('Deselecting hotspot');
-        this.selectedHotspot = null;
 
-        // Reset zoom tracking
-        this.zoomOnSelection = null;
-        this.selectionTimestamp = null;
-
-        // Update visual state for all hotspots
-        this.overlays.forEach((overlay, id) => {
-            const state = id === this.hoveredHotspot?.id ? 'hover' : 'normal';
-            this.applyStyle(overlay.element, overlay.hotspot.type, state);
-        });
-
-        // Force remove darkening overlay
+        // Force remove darkening overlay BEFORE clearing selectedHotspot
         if (this.darkeningRect) {
             this.darkeningRect.setAttribute('fill', 'rgba(0, 0, 0, 0)');
         }
         if (this.maskElement) {
             this.maskElement.innerHTML = `<rect x="0" y="0" width="100%" height="100%" fill="white"/>`;
         }
+
+        // Update visual state for all hotspots BEFORE clearing selection
+        this.overlays.forEach((overlay, id) => {
+            const state = id === this.hoveredHotspot?.id ? 'hover' : 'normal';
+            this.applyStyle(overlay.element, overlay.hotspot.type, state);
+        });
+
+        // NOW clear the selection
+        this.selectedHotspot = null;
+
+        // Reset zoom tracking
+        this.zoomOnSelection = null;
+        this.selectionTimestamp = null;
     }
 
 
@@ -596,6 +598,7 @@ class NativeHotspotRenderer {
  * Update darkening overlay for focus mode
  */
     updateDarkeningOverlay(opacity = null) {
+        return;
         if (!this.darkeningRect || !this.maskElement) return;
 
         if (!this.selectedHotspot) {
@@ -636,15 +639,15 @@ class NativeHotspotRenderer {
     calculateDarkeningOpacity(currentZoom) {
         if (!this.selectedHotspot || !this.zoomOnSelection) return 0;
 
-        // Relative thresholds
-        const fadeStartOffset = 0.15;  // Start fade after 15% dezoom
-        const fadeRange = 0.4;         // Complete fade over 40% more dezoom
+        // Relative thresholds - REDUCED for quicker fade
+        const fadeStartOffset = 0.1;   // Start fade after just 10% dezoom
+        const fadeRange = 0.25;        // Complete fade over 25% more dezoom (total 35% dezoom)
 
         const relativeMax = this.zoomOnSelection * (1 - fadeStartOffset);
         const relativeMin = this.zoomOnSelection * (1 - fadeStartOffset - fadeRange);
 
         // Also enforce absolute minimums to ensure deselection
-        const absoluteMin = this.isMobile ? 1.0 : 1.5;
+        const absoluteMin = this.isMobile ? 2.0 : 2.5;  // Higher values = fade completes earlier
 
         const maxOpacityZoom = relativeMax;
         const minOpacityZoom = Math.max(relativeMin, absoluteMin); // Never go below absolute minimum
