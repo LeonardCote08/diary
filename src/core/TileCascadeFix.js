@@ -1,17 +1,20 @@
 /**
  * TileCascadeFix - Fixes OpenSeadragon 5.0.1 tile cascade performance bug
- * Uses _getLevelsInterval to control which pyramid levels are loaded
+ * OPTIMIZED VERSION with caching
  */
 
+let levelCache = new Map();
+let lastCacheZoom = null;
+let cacheTimeout = null;
+
 export function applyTileCascadeFix(OpenSeadragon) {
-    console.log('=== ATTEMPTING TO APPLY TILE CASCADE FIX ===');
+    console.log('=== APPLYING OPTIMIZED TILE CASCADE FIX ===');
 
     if (!OpenSeadragon) {
         console.error('OpenSeadragon not provided - cannot apply tile cascade fix');
         return;
     }
 
-    // Override BOTH methods for complete control
     const original_getLevelsInterval = OpenSeadragon.TiledImage.prototype._getLevelsInterval;
     const original_updateLevels = OpenSeadragon.TiledImage.prototype._updateLevels;
 
@@ -20,50 +23,72 @@ export function applyTileCascadeFix(OpenSeadragon) {
         return;
     }
 
-    // First override: Control which levels are calculated
+    // Optimized version with caching
     OpenSeadragon.TiledImage.prototype._getLevelsInterval = function () {
+        const zoom = this.viewer.viewport.getZoom();
+
+        // Check cache validity (zoom hasn't changed significantly)
+        if (lastCacheZoom !== null &&
+            Math.abs(zoom - lastCacheZoom) < 0.01 &&
+            levelCache.has(this)) {
+            return levelCache.get(this);
+        }
+
+        // Call original method
         const levels = original_getLevelsInterval.call(this);
 
         if (!levels || typeof levels.lowestLevel === 'undefined') {
             return levels;
         }
 
-        const zoom = this.viewer.viewport.getZoom();
-        console.log(`Zoom: ${zoom.toFixed(2)}, Original levels: ${levels.lowestLevel}-${levels.highestLevel}`);
-
-        // At low zoom, limit but don't break tile coverage
-        if (zoom < 3.0) {
-            // More generous level calculation to avoid dark areas
-            const optimalLevel = Math.floor(Math.log2(zoom * 1024 / 256)); // Adjusted for 1024px tiles
-            const centerLevel = Math.max(8, Math.min(12, optimalLevel + 11));
-
-            // Allow 3 levels instead of 2 to ensure coverage
-            levels.lowestLevel = Math.max(8, centerLevel - 1);
-            levels.highestLevel = Math.min(14, centerLevel + 1);
-
-            // But still limit total levels
-            if (levels.highestLevel - levels.lowestLevel > 2) {
-                levels.lowestLevel = levels.highestLevel - 2;
-            }
-
-            console.log(`OPTIMIZED to levels: ${levels.lowestLevel}-${levels.highestLevel} at zoom ${zoom.toFixed(2)}`);
+        // Only log significant changes
+        if (!lastCacheZoom || Math.abs(zoom - lastCacheZoom) > 0.1) {
+            console.log(`Zoom: ${zoom.toFixed(2)}, Original levels: ${levels.lowestLevel}-${levels.highestLevel}`);
         }
 
-        return levels;
+        // Apply optimizations
+        let result = levels;
+        if (zoom < 3.0) {
+            const optimalLevel = Math.floor(Math.log2(zoom * 1024 / 256));
+            const centerLevel = Math.max(8, Math.min(12, optimalLevel + 11));
+
+            result = {
+                lowestLevel: Math.max(8, centerLevel - 1),
+                highestLevel: Math.min(14, centerLevel + 1)
+            };
+
+            if (result.highestLevel - result.lowestLevel > 2) {
+                result.lowestLevel = result.highestLevel - 2;
+            }
+        }
+
+        // Update cache
+        levelCache.set(this, result);
+        lastCacheZoom = zoom;
+
+        // Clear cache after 100ms of no activity
+        if (cacheTimeout) clearTimeout(cacheTimeout);
+        cacheTimeout = setTimeout(() => {
+            levelCache.clear();
+            lastCacheZoom = null;
+        }, 100);
+
+        return result;
     };
 
-    // Second override: Prevent loading of excluded levels
+    // Optimized _updateLevels
     if (original_updateLevels) {
         OpenSeadragon.TiledImage.prototype._updateLevels = function () {
-            // Call original
+            // Skip if animating
+            if (this.viewer.isAnimating()) {
+                return;
+            }
+
             const result = original_updateLevels.call(this);
 
-            // Remove tiles from levels we don't want
             const zoom = this.viewer.viewport.getZoom();
             if (zoom < 3.0 && this._tilesToDraw) {
                 const allowedLevels = this._getLevelsInterval();
-
-                // Filter out tiles from disallowed levels
                 this._tilesToDraw = this._tilesToDraw.filter(tile =>
                     tile.level >= allowedLevels.lowestLevel &&
                     tile.level <= allowedLevels.highestLevel
@@ -74,10 +99,16 @@ export function applyTileCascadeFix(OpenSeadragon) {
         };
     }
 
-    console.log('=== TILE CASCADE FIX APPLIED SUCCESSFULLY ===');
+    console.log('=== OPTIMIZED TILE CASCADE FIX APPLIED ===');
 }
+
 export function removeTileCascadeFix(OpenSeadragon) {
-    // Restore original method if needed
+    // Clear cache
+    levelCache.clear();
+    lastCacheZoom = null;
+    if (cacheTimeout) clearTimeout(cacheTimeout);
+
+    // Restore original methods if needed
     if (OpenSeadragon && OpenSeadragon.TiledImage.prototype._original_getLevelsInterval) {
         OpenSeadragon.TiledImage.prototype._getLevelsInterval =
             OpenSeadragon.TiledImage.prototype._original_getLevelsInterval;

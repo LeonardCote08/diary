@@ -17,7 +17,10 @@ class NativeHotspotRenderer {
             debugMode: options.debugMode || false
         });
 
-
+        // Optimization: track last viewport to detect significant changes
+        this.lastViewportBounds = null;
+        this.lastViewportZoom = null;
+        this.significantChangeThreshold = 0.1; // 10% change threshold
 
         this.overlays = new Map();
         this.visibleOverlays = new Set();
@@ -672,20 +675,21 @@ class NativeHotspotRenderer {
         const scheduleUpdate = () => {
             if (updateTimer) clearTimeout(updateTimer);
 
-            // Block all updates during animation on mobile
-            if (this.isAnimationInProgress || (this.isMobile && this.viewer.isAnimating())) {
+            // Skip all updates during animations
+            if (this.isAnimationInProgress || this.viewer.isAnimating()) {
                 this.pendingVisibilityUpdate = true;
                 return;
             }
 
-            // Throttle updates
+            // Throttle updates more aggressively on desktop during zoom
             const now = Date.now();
             const timeSinceLastUpdate = now - lastUpdateTime;
+            const minInterval = this.viewer.viewport.getZoom() < 5 ? 100 : 50;
 
-            if (timeSinceLastUpdate < minUpdateInterval) {
+            if (timeSinceLastUpdate < minInterval) {
                 updateTimer = setTimeout(() => {
                     scheduleUpdate();
-                }, minUpdateInterval - timeSinceLastUpdate);
+                }, minInterval - timeSinceLastUpdate);
                 return;
             }
 
@@ -737,33 +741,49 @@ class NativeHotspotRenderer {
             return;
         }
 
+        // Check if viewport changed significantly
+        const bounds = this.viewer.viewport.getBounds();
+        if (this.lastViewportBounds && this.lastViewportZoom) {
+            const boundsChanged =
+                Math.abs(bounds.x - this.lastViewportBounds.x) > this.significantChangeThreshold ||
+                Math.abs(bounds.y - this.lastViewportBounds.y) > this.significantChangeThreshold ||
+                Math.abs(bounds.width - this.lastViewportBounds.width) > this.significantChangeThreshold ||
+                Math.abs(bounds.height - this.lastViewportBounds.height) > this.significantChangeThreshold;
+
+            const zoomChanged = Math.abs(currentZoom - this.lastViewportZoom) > 0.1;
+
+            if (!boundsChanged && !zoomChanged) {
+                console.log('updateVisibility SKIPPED - no significant change');
+                return;
+            }
+        }
+
         console.log('updateVisibility running');
+
+        // Update last viewport state
+        this.lastViewportBounds = bounds;
+        this.lastViewportZoom = currentZoom;
 
         const viewport = this.viewer.viewport;
         const currentZoomLevel = viewport.getZoom();
 
-        // Special handling for low zoom
+        // Special handling for low zoom - simplified
         if (currentZoomLevel < 1.5) {
-            // Keep hotspots interactive but invisible at very low zoom
-            this.overlays.forEach((overlay) => {
-                const isHovered = this.hoveredHotspot?.id === overlay.hotspot.id;
-                const isSelected = this.selectedHotspot?.id === overlay.hotspot.id;
+            const selectedId = this.selectedHotspot?.id;
+            const hoveredId = this.hoveredHotspot?.id;
 
-                if (isHovered || isSelected) {
-                    overlay.element.style.opacity = '1';
-                    overlay.element.style.display = 'block';
-                } else {
-                    overlay.element.style.opacity = '0';
-                    overlay.element.style.display = 'block';
-                }
-                overlay.element.style.pointerEvents = 'auto';
-                overlay.isVisible = true;
+            // Use requestAnimationFrame to batch DOM updates
+            requestAnimationFrame(() => {
+                this.overlays.forEach((overlay) => {
+                    const isSpecial = overlay.hotspot.id === selectedId || overlay.hotspot.id === hoveredId;
+                    overlay.element.style.opacity = isSpecial ? '1' : '0';
+                    overlay.isVisible = true;
+                });
             });
-
-            // Don't return early - continue with normal processing
+            return;
         }
 
-        const bounds = viewport.getBounds();
+        // Calculate view bounds once
         const topLeft = viewport.viewportToImageCoordinates(bounds.getTopLeft());
         const bottomRight = viewport.viewportToImageCoordinates(bounds.getBottomRight());
 
@@ -775,40 +795,59 @@ class NativeHotspotRenderer {
         };
 
         const padding = (viewBounds.maxX - viewBounds.minX) * 0.2;
-        Object.keys(viewBounds).forEach(key => {
-            viewBounds[key] += key.startsWith('min') ? -padding : padding;
-        });
+        viewBounds.minX -= padding;
+        viewBounds.minY -= padding;
+        viewBounds.maxX += padding;
+        viewBounds.maxY += padding;
 
+        // Batch DOM updates
+        const updates = [];
         let visibleCount = 0;
 
         this.overlays.forEach((overlay, id) => {
-            const isVisible = this.boundsIntersect(overlay.bounds, viewBounds);
+            // Quick bounds check with early exit
+            if (overlay.bounds.maxX < viewBounds.minX ||
+                overlay.bounds.minX > viewBounds.maxX ||
+                overlay.bounds.maxY < viewBounds.minY ||
+                overlay.bounds.minY > viewBounds.maxY) {
 
-            if (isVisible !== overlay.isVisible) {
-                overlay.element.style.opacity = isVisible ? '1' : '0';
-                overlay.isVisible = isVisible;
-
-                if (isVisible) {
-                    this.visibleOverlays.add(id);
-                    visibleCount++;
-                } else {
+                if (overlay.isVisible) {
+                    updates.push({ element: overlay.element, opacity: '0' });
+                    overlay.isVisible = false;
                     this.visibleOverlays.delete(id);
                 }
-            } else if (isVisible) {
+            } else {
                 visibleCount++;
+                if (!overlay.isVisible) {
+                    updates.push({ element: overlay.element, opacity: '1' });
+                    overlay.isVisible = true;
+                    this.visibleOverlays.add(id);
+                }
             }
         });
 
-        // Force update overlay positions after zoom
-        if (this.viewer.world.getItemCount() > 0) {
-            this.viewer.updateOverlay(this.svg);
+        // Apply all DOM updates in one batch
+        if (updates.length > 0) {
+            requestAnimationFrame(() => {
+                updates.forEach(update => {
+                    update.element.style.opacity = update.opacity;
+                });
+            });
+        }
+
+        // Only update overlay position if needed
+        if (Math.abs(currentZoom - this.lastViewportZoom) > 0.5) {
+            requestAnimationFrame(() => {
+                if (this.viewer.world.getItemCount() > 0) {
+                    this.viewer.updateOverlay(this.svg);
+                }
+            });
         }
 
         if (visibleCount > 100) {
             console.log(`Performance note: ${visibleCount} hotspots visible`);
         }
     }
-
 
     updateVisibilityLazy() {
         // Lazy visibility update for mobile - spreads work across multiple frames

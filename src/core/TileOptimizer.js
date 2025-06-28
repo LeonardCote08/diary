@@ -70,10 +70,13 @@ class TileOptimizer {
 
         this.state.isActive = true;
 
-        this.viewer.addHandler('viewport-change', this.handleViewportChange);
+        // Delay viewport change handler to avoid initial burst
+        setTimeout(() => {
+            this.viewer.addHandler('viewport-change', this.handleViewportChange);
+        }, 100);
 
         this.intervals.cleanup = setInterval(() => this.performCleanup(), this.config.cleanupInterval);
-        this.intervals.queue = setInterval(() => this.processQueue(), 50); // Faster processing
+        this.intervals.queue = setInterval(() => this.processQueue(), 50);
         this.intervals.worker = setInterval(() => this.processWorkerBatch(), 100);
 
         console.log('TileOptimizer started with Web Worker support:', this.state.workerReady);
@@ -100,12 +103,46 @@ class TileOptimizer {
     }
 
     handleViewportChange() {
+        // Skip predictive load during animations
+        if (this.viewer.isAnimating() ||
+            (window.renderOptimizer && window.renderOptimizer.state.isCinematicZoom)) {
+            console.log('TileOptimizer: Skipping viewport change during animation');
+            return;
+        }
+
         this.predictiveLoad();
 
-        // Update worker priorities if ready
+        // Defer worker priority updates during animations
         if (this.state.workerReady && this.state.tileQueue.length > 0) {
-            this.updateWorkerPriorities();
+            // Use requestIdleCallback for non-critical updates
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(() => {
+                    if (!this.viewer.isAnimating()) {
+                        this.updateWorkerPriorities();
+                    }
+                }, { timeout: 100 });
+            } else {
+                // Fallback with setTimeout
+                setTimeout(() => {
+                    if (!this.viewer.isAnimating()) {
+                        this.updateWorkerPriorities();
+                    }
+                }, 50);
+            }
         }
+    }
+
+    shouldSkipPredictiveLoad() {
+        // Skip if animating
+        if (this.viewer.isAnimating()) return true;
+
+        // Skip if cinematic zoom is active
+        if (window.renderOptimizer && window.renderOptimizer.state.isCinematicZoom) return true;
+
+        // Skip if we have enough tiles queued
+        if (this.state.tileQueue.length > 100) return true;
+
+        return false;
     }
 
     async updateWorkerPriorities() {
@@ -308,6 +345,11 @@ class TileOptimizer {
     }
 
     predictiveLoad() {
+
+        if (this.shouldSkipPredictiveLoad()) {
+            console.log('TileOptimizer: Skipping predictive load');
+            return;
+        }
         const tiledImage = this.viewer.world?.getItemAt(0);
         if (!tiledImage || !this.viewer.source) return;
 

@@ -140,7 +140,8 @@ function ArtworkViewer(props) {
 
         viewer = OpenSeadragon({
             element: viewerRef,
-            ...viewerConfigOptions
+            ...viewerConfigOptions,
+            updatePixelDensityRatio: false  // Disable pixel density updates during zoom
         });
 
         // Initialize components
@@ -155,6 +156,12 @@ function ArtworkViewer(props) {
             tileCleanupManager: new TileCleanupManager(viewer),
             imageOverlayManager: new ImageOverlayManager()
         };
+
+        // Disable tile optimization during initial load
+        componentsObj.tileOptimizer.state.isActive = false;
+        setTimeout(() => {
+            componentsObj.tileOptimizer.state.isActive = true;
+        }, 1000);
 
         // Set the signal
         setComponents(componentsObj);
@@ -849,11 +856,6 @@ function ArtworkViewer(props) {
             // Hide entire SVG overlay on mobile during zoom
             if (isMobile()) {
                 components().renderer.hideOverlay();
-
-                // Also pause viewport manager updates
-                if (components().viewportManager) {
-                    components().viewportManager.setCacheEnabled(false);
-                }
             }
         }
 
@@ -874,8 +876,20 @@ function ArtworkViewer(props) {
         viewer.viewport.applyConstraints();
         console.log('Springs configured with animTime:', animTime);
 
-        // Use the bounds directly from calculateHotspotBounds
+        // Disable viewport manager cache during animation
+        if (components().viewportManager) {
+            components().viewportManager.setCacheEnabled(false);
+        }
+
+        // PERFORM THE ZOOM
         viewer.viewport.fitBounds(bounds, false);
+
+        // Re-enable viewport manager cache after animation
+        setTimeout(() => {
+            if (components().viewportManager) {
+                components().viewportManager.setCacheEnabled(true);
+            }
+        }, animTime * 1000);
 
         // Show expand button on mobile
         if (isMobile()) {

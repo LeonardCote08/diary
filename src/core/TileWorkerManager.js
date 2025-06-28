@@ -153,13 +153,42 @@ class TileWorkerManager {
             await this.initialize();
         }
 
+        // Skip if too many tiles
+        if (tiles.length > 100) {
+            console.log('TileWorkerManager: Too many tiles, using simple priority');
+            // Use simple distance-based priority without worker
+            const simplePriorities = tiles.map(tile => {
+                const centerX = (tile.bounds.minX + tile.bounds.maxX) / 2;
+                const centerY = (tile.bounds.minY + tile.bounds.maxY) / 2;
+                const viewportCenterX = (viewport.bounds.minX + viewport.bounds.maxX) / 2;
+                const viewportCenterY = (viewport.bounds.minY + viewport.bounds.maxY) / 2;
+
+                const distance = Math.sqrt(
+                    Math.pow(centerX - viewportCenterX, 2) +
+                    Math.pow(centerY - viewportCenterY, 2)
+                );
+
+                return distance < 0.5 ? 0 : distance < 1 ? 1 : 2;
+            });
+
+            return {
+                tiles: tiles,
+                priorities: simplePriorities
+            };
+        }
+
+        // Original implementation for smaller batches
         const requestId = this.generateRequestId();
 
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 this.state.pendingRequests.delete(requestId);
-                reject(new Error('Prioritization timeout'));
-            }, 2000);
+                // Return simple priorities on timeout
+                resolve({
+                    tiles: tiles,
+                    priorities: tiles.map(() => 1)
+                });
+            }, 50); // Reduced timeout to 50ms
 
             this.state.pendingRequests.set(requestId, {
                 resolve,
