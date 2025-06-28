@@ -622,7 +622,7 @@ function ArtworkViewer(props) {
             '=': () => viewer.viewport.zoomBy(performanceConfig.viewer.zoomPerScroll),
             '-': () => viewer.viewport.zoomBy(1 / performanceConfig.viewer.zoomPerScroll),
             '_': () => viewer.viewport.zoomBy(1 / performanceConfig.viewer.zoomPerScroll),
-            '0': () => viewer.viewport.goHome(),
+            '0': () => expandToFullView(),
             'f': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
             'F': () => viewer.viewport.fitBounds(viewer.world.getHomeBounds()),
             'c': () => {
@@ -790,11 +790,7 @@ function ArtworkViewer(props) {
             return;
         }
 
-        // Check if hotspot is already well-framed
-        const alreadyFramed = isHotspotWellFramed(hotspot, bounds);
-
         let safetyTimeout;
-
         setIsZoomingToHotspot(true);
 
         // Safety timeout in case animation-finish doesn't fire
@@ -802,77 +798,23 @@ function ArtworkViewer(props) {
             console.log('Safety timeout: forcing isZoomingToHotspot to false');
             setIsZoomingToHotspot(false);
 
-            // AJOUTER : Ensure hotspots are resumed
+            // Ensure hotspots are resumed
             if (components().renderer) {
                 components().renderer.resumeUpdates();
             }
         }, 2000);
-
-        // Calculate viewport aspect ratio
-        const viewportAspect = viewer.viewport.getAspectRatio();
-
-        // Calculate current viewport for distance calculation
-        const currentBounds = viewer.viewport.getBounds();
-        const currentCenter = currentBounds.getCenter();
-
-        // Calculate hotspot center
-        let hotspotCenterImage;
-        const overlay = components().renderer?.overlays?.get?.(hotspot.id);
-
-        if (overlay && overlay.bounds) {
-            hotspotCenterImage = new OpenSeadragon.Point(
-                (overlay.bounds.minX + overlay.bounds.maxX) / 2,
-                (overlay.bounds.minY + overlay.bounds.maxY) / 2
-            );
-        } else if (hotspot.coordinates) {
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            const processCoords = (coords) => {
-                if (Array.isArray(coords[0]) && typeof coords[0][0] === 'number') {
-                    coords.forEach(([x, y]) => {
-                        minX = Math.min(minX, x);
-                        minY = Math.min(minY, y);
-                        maxX = Math.max(maxX, x);
-                        maxY = Math.max(maxY, y);
-                    });
-                } else {
-                    coords.forEach(polygon => {
-                        polygon.forEach(([x, y]) => {
-                            minX = Math.min(minX, x);
-                            minY = Math.min(minY, y);
-                            maxX = Math.max(maxX, x);
-                            maxY = Math.max(maxY, y);
-                        });
-                    });
-                }
-            };
-            processCoords(hotspot.coordinates);
-            hotspotCenterImage = new OpenSeadragon.Point(
-                (minX + maxX) / 2,
-                (minY + maxY) / 2
-            );
-        }
-
-        const centerViewport = viewer.viewport.imageToViewportCoordinates(hotspotCenterImage);
-
-        // Calculate distance for dynamic timing
-        const distance = Math.sqrt(
-            Math.pow(centerViewport.x - currentCenter.x, 2) +
-            Math.pow(centerViewport.y - currentCenter.y, 2)
-        );
 
         // Store original settings
         const originalSettings = {
             animationTime: viewer.animationTime,
             springStiffness: viewer.springStiffness
         };
-        // Force minimum distance to ensure cinematic effect
-        const effectiveDistance = Math.max(0.5, distance);
 
-        // Cinematic animation settings (same as hotspot zoom)
-        const animTime = Math.min(1.5, Math.max(1.2, effectiveDistance * 0.4 + 1.0));
-        const stiffness = Math.max(6.0, 10.0 - effectiveDistance * 1.5);
+        // FIXED: Use consistent cinematic timing (1.2-1.5s)
+        const animTime = 1.3; // Fixed 1.3s for all zooms (middle of 1.2-1.5s range)
+        const stiffness = 7.0; // Adjusted for smooth 1.3s animation
 
-        // NOW we can use animTime - Pause tile cleanup during cinematic zoom for better performance
+        // Pause tile cleanup during cinematic zoom for better performance
         if (components().tileCleanupManager) {
             components().tileCleanupManager.pauseCleanup(animTime * 1000 + 500);
         }
@@ -896,7 +838,7 @@ function ArtworkViewer(props) {
         if (components().renderer) {
             components().renderer.pauseUpdates();
 
-            // RADICAL: Hide entire SVG overlay on mobile during zoom
+            // Hide entire SVG overlay on mobile during zoom
             if (isMobile()) {
                 components().renderer.hideOverlay();
             }
@@ -906,22 +848,6 @@ function ArtworkViewer(props) {
         viewer.animationTime = animTime;
         viewer.springStiffness = stiffness;
 
-        // MOBILE OPTIMIZATION: Use linear animation instead of spring physics
-        if (isMobile()) {
-            viewer.animationTime = 0.8; // Shorter, fixed duration
-            viewer.springStiffness = 20.0; // Much higher = less spring effect
-
-            // Disable smooth animations
-            viewer.viewport.centerSpringX.animationTime = 0.8;
-            viewer.viewport.centerSpringY.animationTime = 0.8;
-            viewer.viewport.zoomSpring.animationTime = 0.8;
-
-            // Very high stiffness = almost linear
-            viewer.viewport.centerSpringX.springStiffness = 20.0;
-            viewer.viewport.centerSpringY.springStiffness = 20.0;
-            viewer.viewport.zoomSpring.springStiffness = 20.0;
-        }
-
         // Apply to individual springs
         viewer.viewport.centerSpringX.animationTime = animTime;
         viewer.viewport.centerSpringY.animationTime = animTime;
@@ -929,94 +855,25 @@ function ArtworkViewer(props) {
 
         viewer.viewport.centerSpringX.springStiffness = stiffness;
         viewer.viewport.centerSpringY.springStiffness = stiffness;
-        viewer.viewport.zoomSpring.springStiffness = stiffness * 0.85; // Slightly softer zoom
+        viewer.viewport.zoomSpring.springStiffness = stiffness;
 
         // Force update to ensure settings are applied
         viewer.viewport.applyConstraints();
         console.log('Springs configured with animTime:', animTime);
 
-        // On mobile, use simpler bounds calculation
-        if (isMobile()) {
-            // Skip complex calculations, use pre-calculated bounds if available
-            const simpleBounds = new OpenSeadragon.Rect(
-                bounds.x - bounds.width * 0.2,
-                bounds.y - bounds.height * 0.2,
-                bounds.width * 1.4,
-                bounds.height * 1.4
-            );
-            viewer.viewport.fitBounds(simpleBounds, false);
+        // Use the bounds directly from calculateHotspotBounds
+        viewer.viewport.fitBounds(bounds, false);
 
-            // IMPORTANT: Defer showing the expand button to avoid style recalculation
+        // Show expand button on mobile
+        if (isMobile()) {
             setTimeout(() => {
                 setShowExpandButton(true);
             }, 100);
-
-            return; // Skip the rest of the complex calculations
         }
-
-        // Calculate final bounds with padding
-        const paddingFactor = isMobile() ? 0.7 : 0.85;
-
-        // Calculate center point for better mobile centering
-        const centerX = bounds.x + bounds.width / 2;
-        const centerY = bounds.y + bounds.height / 2;
-
-        // Create bounds centered on the hotspot
-        let adjustedBounds = new OpenSeadragon.Rect(
-            centerX - (bounds.width * paddingFactor) / 2,
-            centerY - (bounds.height * paddingFactor) / 2,
-            bounds.width * paddingFactor,
-            bounds.height * paddingFactor
-        );
-
-        // FORCE ANIMATION: Slightly modify the bounds size to trigger animation
-        // This keeps perfect centering while ensuring animation
-        if (alreadyFramed || true) { // Always force for now
-            // Make bounds 1% smaller - this will zoom in slightly more
-            const shrinkFactor = 0.99;
-            const centerX = adjustedBounds.x + adjustedBounds.width / 2;
-            const centerY = adjustedBounds.y + adjustedBounds.height / 2;
-
-            adjustedBounds.width *= shrinkFactor;
-            adjustedBounds.height *= shrinkFactor;
-            adjustedBounds.x = centerX - adjustedBounds.width / 2;
-            adjustedBounds.y = centerY - adjustedBounds.height / 2;
-        }
-
-
-
-
-        // Debug log to understand what's happening
-        console.log('Zoom attempt:', {
-            currentZoom: viewer.viewport.getZoom(),
-            currentCenter: viewer.viewport.getCenter(),
-            targetBounds: adjustedBounds,
-            alreadyFramed: alreadyFramed
-        });
-
-        // Debug: Check if bounds are reasonable
-        console.log('Adjusted bounds:', {
-            x: adjustedBounds.x,
-            y: adjustedBounds.y,
-            width: adjustedBounds.width,
-            height: adjustedBounds.height,
-            viewportBounds: viewer.viewport.getBounds()
-        });
-
-        // Safety check: ensure bounds are within reasonable range
-        if (adjustedBounds.width > 1 || adjustedBounds.height > 1) {
-            console.error('Bounds too large - using fallback');
-            // Fallback to safe zoom
-            viewer.viewport.zoomTo(3, centerViewport, false);
-            return;
-        }
-
-        // Use fitBounds for both desktop and mobile
-        viewer.viewport.fitBounds(adjustedBounds, false);
 
         // Restore original settings after animation
         setTimeout(() => {
-            clearTimeout(safetyTimeout); // Clear the safety timeout
+            clearTimeout(safetyTimeout);
             console.log('Setting isZoomingToHotspot to false');
             setIsZoomingToHotspot(false);
 
@@ -1049,7 +906,7 @@ function ArtworkViewer(props) {
             if (components().renderer) {
                 console.log('Calling resumeUpdates from second setTimeout');
 
-                // RADICAL: Show SVG overlay after animation
+                // Show SVG overlay after animation
                 if (isMobile()) {
                     components().renderer.showOverlay();
                 }
@@ -1062,13 +919,7 @@ function ArtworkViewer(props) {
                 }, 200);
             }
         }, animTime * 1000 + 100);
-
-        // Show expand button on mobile
-        if (isMobile()) {
-            setShowExpandButton(true);
-        }
     };
-
     /**
      * Handle hotspot click with zoom behavior
      */

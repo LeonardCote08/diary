@@ -9,6 +9,7 @@ export const QUALITY_CONFIG = {
 // ZOOM_CONFIG - Configuration for zoom behavior
 // Note: Auto-zoom on hotspot click is now always enabled for both desktop and mobile
 export const ZOOM_CONFIG = {
-    enableDesktopZoom: true,  // Enable for testing
-    minZoomForDetail: 3.0
+    enableDesktopZoom: true,  // Always zoom on desktop
+    minZoomForDetail: 3.0,
+    cinematicDuration: 1.3    // Fixed duration for all zoom animations
 };
