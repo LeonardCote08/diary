@@ -293,6 +293,14 @@ function ArtworkViewer(props) {
         });
     };
 
+    const cleanupExpandAnimation = () => {
+        // Clear any pending timeouts from expandToFullView
+        if (window.expandToFullViewTimeouts) {
+            window.expandToFullViewTimeouts.forEach(timeout => clearTimeout(timeout));
+            window.expandToFullViewTimeouts = [];
+        }
+    };
+
     const implementProgressiveZoomQuality = () => {
         let qualityLevel = 1.0; // 0.0 to 1.0
         let qualityTimeout = null;
@@ -841,6 +849,11 @@ function ArtworkViewer(props) {
             // Hide entire SVG overlay on mobile during zoom
             if (isMobile()) {
                 components().renderer.hideOverlay();
+
+                // Also pause viewport manager updates
+                if (components().viewportManager) {
+                    components().viewportManager.setCacheEnabled(false);
+                }
             }
         }
 
@@ -901,24 +914,40 @@ function ArtworkViewer(props) {
 
         }, animTime * 1000 + 200);
 
-        // Update hotspot overlays after animation
+        // Update hotspot overlays after animation - OPTIMIZED FOR MOBILE
         setTimeout(() => {
             if (components().renderer) {
-                console.log('Calling resumeUpdates from second setTimeout');
+                console.log('Animation complete - restoring hotspots');
 
-                // Show SVG overlay after animation
                 if (isMobile()) {
+                    // On mobile, show overlay first but delay heavy processing more
                     components().renderer.showOverlay();
-                }
 
-                // Longer delay to ensure animation is completely finished
-                setTimeout(() => {
+                    // Add extra delay and use requestIdleCallback
+                    setTimeout(() => {
+                        if ('requestIdleCallback' in window) {
+                            requestIdleCallback(() => {
+                                components().renderer.resumeUpdates();
+                                components().renderer.updateVisibilityLazy();
+                            }, { timeout: 1000 });
+                        } else {
+                            // Fallback with even longer delay
+                            setTimeout(() => {
+                                components().renderer.resumeUpdates();
+                                components().renderer.updateVisibilityLazy();
+                            }, 300);
+                        }
+                    }, 200); // Extra 200ms delay before starting
+                } else {
+                    // Desktop can handle immediate updates
                     components().renderer.resumeUpdates();
-                    components().renderer.updateVisibility();
-                    viewer.forceRedraw();
-                }, 200);
+                    setTimeout(() => {
+                        components().renderer.updateVisibility();
+                        viewer.forceRedraw();
+                    }, 100);
+                }
             }
-        }, animTime * 1000 + 100);
+        }, animTime * 1000 + 300); // Increased from 200ms to 300ms
     };
     /**
      * Handle hotspot click with zoom behavior
@@ -927,26 +956,42 @@ function ArtworkViewer(props) {
         console.log('handleHotspotClick called in ArtworkViewer', {
             hotspotId: hotspot.id,
             isZoomingToHotspot: isZoomingToHotspot(),
+            isExpandingToFullView: isExpandingToFullView(),
             timestamp: Date.now()
         });
 
-        // DEBUG: Check component states
-        console.log('Component states:', {
-            hasRenderer: !!components().renderer,
-            isUpdatesPaused: components().renderer?.updatesPaused,
-            isDragging: components().renderer?.isDragging
-        });
+        // Allow interrupting Full View animation
+        if (isExpandingToFullView()) {
+            console.log('Interrupting Full View animation for hotspot click');
+
+            // Cancel any ongoing animations
+            viewer.viewport.stopAnimation();
+
+            // Clean up any pending timeouts
+            cleanupExpandAnimation();
+
+            // Reset state
+            setIsExpandingToFullView(false);
+
+            // Clean up any ongoing optimizations
+            if (components().renderOptimizer) {
+                components().renderOptimizer.endCinematicZoom();
+            }
+            if (components().renderer) {
+                components().renderer.resumeUpdates();
+                if (isMobile()) {
+                    components().renderer.showOverlay();
+                }
+            }
+
+            // Small delay to ensure animation is fully stopped
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
 
         // Force reset if stuck from previous interaction
         if (isZoomingToHotspot()) {
             console.log('WARNING: isZoomingToHotspot was still true, forcing reset');
             setIsZoomingToHotspot(false);
-        }
-
-        // Also check and reset isExpandingToFullView
-        if (isExpandingToFullView()) {
-            console.log('WARNING: isExpandingToFullView was still true, forcing reset');
-            setIsExpandingToFullView(false);
         }
 
         // Hide previous media button
@@ -969,7 +1014,7 @@ function ArtworkViewer(props) {
             }
         }
 
-        // Always zoom to hotspot on both desktop and mobile, regardless of current zoom level
+        // Always zoom to hotspot
         console.log('Zooming to hotspot:', hotspot.id);
         await zoomToHotspot(hotspot);
 
@@ -1002,6 +1047,12 @@ function ArtworkViewer(props) {
             isExpandingToFullView: isExpandingToFullView(),
             isZoomingToHotspot: isZoomingToHotspot()
         });
+
+        // Initialize timeout storage
+        if (!window.expandToFullViewTimeouts) {
+            window.expandToFullViewTimeouts = [];
+        }
+
         if (!viewer || isExpandingToFullView()) return;
 
         // Force reset zoom state if stuck
@@ -1034,6 +1085,7 @@ function ArtworkViewer(props) {
             console.log('Safety timeout: forcing isExpandingToFullView to false (was:', isExpandingToFullView(), ')');
             setIsExpandingToFullView(false);
         }, 2000);
+        window.expandToFullViewTimeouts.push(expandSafetyTimeout);
 
         // Get the actual image bounds
         const tiledImage = viewer.world.getItemAt(0);
@@ -1158,7 +1210,7 @@ function ArtworkViewer(props) {
         });
 
         // Restore settings after animation
-        setTimeout(() => {
+        const timeout1 = setTimeout(() => {
             clearTimeout(expandSafetyTimeout); // Clear the safety timeout
             setIsExpandingToFullView(false);
 
@@ -1179,9 +1231,10 @@ function ArtworkViewer(props) {
                 components().renderOptimizer.endCinematicZoom();
             }
         }, animTime * 1000 + 200);
+        window.expandToFullViewTimeouts.push(timeout1);
 
         // Resume hotspot updates after animation
-        setTimeout(() => {
+        const timeout2 = setTimeout(() => {
             if (components().renderer) {
                 // Show overlay first on mobile
                 if (isMobile()) {
@@ -1196,6 +1249,7 @@ function ArtworkViewer(props) {
                 }, 200);
             }
         }, animTime * 1000 + 100);
+        window.expandToFullViewTimeouts.push(timeout2);
     };
 
     const toggleFullscreen = () => {

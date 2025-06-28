@@ -51,6 +51,10 @@ class NativeHotspotRenderer {
         this.isViewerZooming = false;
         this.lastZoomValue = null;
 
+        // Animation blocking flag
+        this.isAnimationInProgress = false;
+        this.pendingVisibilityUpdate = false;
+
         this.initStyles();
         this.init();
     }
@@ -383,7 +387,7 @@ class NativeHotspotRenderer {
             this.isPinching = false;
         }
     }
-    
+
     handlePointerCancel(event) {
         // Clean up on cancel
         this.activePointers.delete(event.pointerId);
@@ -659,33 +663,59 @@ class NativeHotspotRenderer {
         return 0.3 + (eased * 0.7);
     }
 
+
     startVisibilityTracking() {
         let updateTimer = null;
+        let lastUpdateTime = 0;
+        const minUpdateInterval = this.isMobile ? 100 : 50; // Slower updates on mobile
 
         const scheduleUpdate = () => {
             if (updateTimer) clearTimeout(updateTimer);
+
+            // Block all updates during animation on mobile
+            if (this.isAnimationInProgress || (this.isMobile && this.viewer.isAnimating())) {
+                this.pendingVisibilityUpdate = true;
+                return;
+            }
+
+            // Throttle updates
+            const now = Date.now();
+            const timeSinceLastUpdate = now - lastUpdateTime;
+
+            if (timeSinceLastUpdate < minUpdateInterval) {
+                updateTimer = setTimeout(() => {
+                    scheduleUpdate();
+                }, minUpdateInterval - timeSinceLastUpdate);
+                return;
+            }
+
             updateTimer = setTimeout(() => {
+                lastUpdateTime = Date.now();
                 this.updateVisibility();
             }, this.renderDebounceTime);
         };
 
         this.viewer.addHandler('animation', scheduleUpdate);
         this.viewer.addHandler('animation-finish', () => {
-            this.updateVisibility();
+            // Only update after animation if not paused
+            if (!this.updatesPaused && !this.isAnimationInProgress) {
+                this.updateVisibility();
+            }
         });
 
-        // Also update on viewport change to ensure overlays stay in sync
-        this.viewer.addHandler('viewport-change', () => {
-            scheduleUpdate();
-        });
+        // Remove viewport-change handler on mobile to prevent updates during zoom
+        if (!this.isMobile) {
+            this.viewer.addHandler('viewport-change', scheduleUpdate);
+        }
 
         // Initial update
         this.updateVisibility();
     }
 
     updateVisibility() {
-        if (this.updatesPaused) {
-            console.log('updateVisibility SKIPPED - updates are paused');
+        if (this.updatesPaused || this.isAnimationInProgress) {
+            console.log('updateVisibility BLOCKED - animation in progress');
+            this.pendingVisibilityUpdate = true;
             return;
         }
 
@@ -696,12 +726,14 @@ class NativeHotspotRenderer {
 
         if (isZooming) {
             console.log('updateVisibility SKIPPED - viewer is zooming');
+            this.pendingVisibilityUpdate = true;
             return;
         }
 
-        // Skip updates during any animation
+        // Skip during any animation
         if (this.viewer.isAnimating()) {
             console.log('updateVisibility SKIPPED - viewer is animating');
+            this.pendingVisibilityUpdate = true;
             return;
         }
 
@@ -774,6 +806,104 @@ class NativeHotspotRenderer {
 
         if (visibleCount > 100) {
             console.log(`Performance note: ${visibleCount} hotspots visible`);
+        }
+    }
+
+
+    updateVisibilityLazy() {
+        // Lazy visibility update for mobile - spreads work across multiple frames
+        if (this.updatesPaused) {
+            console.log('updateVisibilityLazy SKIPPED - updates are paused');
+            return;
+        }
+
+        console.log('updateVisibilityLazy starting - mobile optimized');
+
+        const viewport = this.viewer.viewport;
+        const currentZoomLevel = viewport.getZoom();
+
+        // Skip if still animating
+        if (this.viewer.isAnimating()) {
+            console.log('updateVisibilityLazy deferred - still animating');
+            setTimeout(() => this.updateVisibilityLazy(), 100);
+            return;
+        }
+
+        const bounds = viewport.getBounds();
+        const topLeft = viewport.viewportToImageCoordinates(bounds.getTopLeft());
+        const bottomRight = viewport.viewportToImageCoordinates(bounds.getBottomRight());
+
+        const viewBounds = {
+            minX: topLeft.x,
+            minY: topLeft.y,
+            maxX: bottomRight.x,
+            maxY: bottomRight.y
+        };
+
+        // Add padding
+        const padding = (viewBounds.maxX - viewBounds.minX) * 0.2;
+        Object.keys(viewBounds).forEach(key => {
+            viewBounds[key] += key.startsWith('min') ? -padding : padding;
+        });
+
+        // Process hotspots in smaller chunks for mobile
+        const hotspots = Array.from(this.overlays.entries());
+        const chunkSize = 20; // Reduced from 50 to 20 for mobile
+        let index = 0;
+        let processedInFrame = 0;
+        const maxPerFrame = 30; // Maximum hotspots to process per frame
+
+        const processChunk = () => {
+            const startTime = performance.now();
+            processedInFrame = 0;
+
+            // Process until we hit time limit or chunk size
+            while (index < hotspots.length &&
+                processedInFrame < maxPerFrame &&
+                (performance.now() - startTime) < 8) { // 8ms budget per frame
+
+                const [id, overlay] = hotspots[index];
+                const isVisible = this.boundsIntersect(overlay.bounds, viewBounds);
+
+                if (isVisible !== overlay.isVisible) {
+                    overlay.element.style.opacity = isVisible ? '1' : '0';
+                    overlay.isVisible = isVisible;
+
+                    if (isVisible) {
+                        this.visibleOverlays.add(id);
+                    } else {
+                        this.visibleOverlays.delete(id);
+                    }
+                }
+
+                index++;
+                processedInFrame++;
+            }
+
+            // Continue processing if more hotspots remain
+            if (index < hotspots.length) {
+                // Use requestIdleCallback if available, otherwise requestAnimationFrame
+                if ('requestIdleCallback' in window) {
+                    requestIdleCallback(() => processChunk(), { timeout: 50 });
+                } else {
+                    requestAnimationFrame(processChunk);
+                }
+            } else {
+                // All chunks processed - update overlay position once
+                if (this.viewer.world.getItemCount() > 0) {
+                    requestAnimationFrame(() => {
+                        this.viewer.updateOverlay(this.svg);
+                        console.log('updateVisibilityLazy complete');
+                    });
+                }
+            }
+        };
+
+        // Start processing with idle callback
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => processChunk(), { timeout: 100 });
+        } else {
+            setTimeout(() => requestAnimationFrame(processChunk), 50);
         }
     }
 
@@ -866,9 +996,11 @@ class NativeHotspotRenderer {
     }
 
     pauseUpdates() {
-        console.log('pauseUpdates called - hotspots will stop updating');
+        console.log('pauseUpdates called - blocking all visibility updates');
         this.updatesPaused = true;
+        this.isAnimationInProgress = true;
 
+        // Hide non-selected hotspots during animation
         if (this.selectedHotspot) {
             this.overlays.forEach((overlay, id) => {
                 if (id !== this.selectedHotspot.id && id !== this.hoveredHotspot?.id) {
@@ -879,18 +1011,24 @@ class NativeHotspotRenderer {
     }
 
     resumeUpdates() {
-        console.log('resumeUpdates called - hotspots will update again');
+        console.log('resumeUpdates called - unblocking updates');
         this.updatesPaused = false;
+        this.isAnimationInProgress = false;
 
-        // NEW: Restore visibility
+        // Restore visibility of all overlays
         this.overlays.forEach((overlay) => {
             overlay.element.style.visibility = 'visible';
         });
 
-        // Delay the update to ensure animation is truly finished
-        setTimeout(() => {
-            this.updateVisibility();
-        }, 100);
+        // Process any pending update
+        if (this.pendingVisibilityUpdate) {
+            this.pendingVisibilityUpdate = false;
+            if (this.isMobile) {
+                this.updateVisibilityLazy();
+            } else {
+                this.updateVisibility();
+            }
+        }
     }
 
     hideOverlay() {
