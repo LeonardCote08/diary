@@ -530,6 +530,7 @@ class NativeHotspotRenderer {
     deselectHotspot() {
         console.log('Deselecting hotspot');
         this.selectedHotspot = null;
+
         // Reset zoom tracking
         this.zoomOnSelection = null;
         this.selectionTimestamp = null;
@@ -540,8 +541,13 @@ class NativeHotspotRenderer {
             this.applyStyle(overlay.element, overlay.hotspot.type, state);
         });
 
-        // Remove darkening overlay
-        this.updateDarkeningOverlay();
+        // Force remove darkening overlay
+        if (this.darkeningRect) {
+            this.darkeningRect.setAttribute('fill', 'rgba(0, 0, 0, 0)');
+        }
+        if (this.maskElement) {
+            this.maskElement.innerHTML = `<rect x="0" y="0" width="100%" height="100%" fill="white"/>`;
+        }
     }
 
 
@@ -553,14 +559,20 @@ class NativeHotspotRenderer {
 
         // Skip if selection just happened (avoid deselecting during initial zoom animation)
         const timeSinceSelection = Date.now() - this.selectionTimestamp;
-        if (timeSinceSelection < 2000) return; // 2 second grace period
+        const gracePeriod = this.isMobile ? 1000 : 1500; // 1s mobile, 1.5s desktop
+        if (timeSinceSelection < gracePeriod) return;
 
         const currentZoom = this.viewer.viewport.getZoom();
 
-        // Check absolute zoom threshold
-        const absoluteThreshold = this.isMobile ? 2.0 : 2.5; // Lower threshold on mobile
-        if (currentZoom < absoluteThreshold) {
-            console.log('Deselecting due to low zoom level:', currentZoom);
+        // Calculate opacity based on zoom
+        const opacity = this.calculateDarkeningOpacity(currentZoom);
+
+        // Update darkening with calculated opacity
+        this.updateDarkeningOverlay(opacity);
+
+        // Only deselect when opacity reaches 0
+        if (opacity === 0) {
+            console.log('Deselecting hotspot - zoom transition complete');
             this.deselectHotspot();
             if (this.onHotspotClick) {
                 this.onHotspotClick(null);
@@ -568,41 +580,13 @@ class NativeHotspotRenderer {
             return;
         }
 
-        // Check relative zoom change (40% reduction from selection zoom)
+        // Also check relative zoom change for quick deselection
         const zoomRatio = currentZoom / this.zoomOnSelection;
-        if (zoomRatio < 0.6) { // 40% reduction
-            console.log('Deselecting due to zoom reduction:', zoomRatio);
+        if (zoomRatio < 0.4) { // 60% reduction - more aggressive
+            console.log('Deselecting due to significant zoom reduction:', zoomRatio);
             this.deselectHotspot();
             if (this.onHotspotClick) {
                 this.onHotspotClick(null);
-            }
-            return;
-        }
-
-        // Check hotspot visibility in viewport
-        const overlay = this.overlays.get(this.selectedHotspot.id);
-        if (overlay) {
-            const viewport = this.viewer.viewport.getBounds();
-            const imageBounds = overlay.bounds;
-
-            // Convert to viewport coordinates
-            const tiledImage = this.viewer.world.getItemAt(0);
-            const imageSize = tiledImage.getContentSize();
-
-            const hotspotViewportWidth = (imageBounds.maxX - imageBounds.minX) / imageSize.x;
-            const hotspotViewportHeight = (imageBounds.maxY - imageBounds.minY) / imageSize.y;
-            const hotspotViewportArea = hotspotViewportWidth * hotspotViewportHeight;
-
-            const viewportArea = viewport.width * viewport.height;
-            const hotspotScreenPercentage = (hotspotViewportArea / viewportArea) * 100;
-
-            // Deselect if hotspot occupies less than 10% of viewport
-            if (hotspotScreenPercentage < 10) {
-                console.log('Deselecting due to small hotspot size on screen:', hotspotScreenPercentage.toFixed(1) + '%');
-                this.deselectHotspot();
-                if (this.onHotspotClick) {
-                    this.onHotspotClick(null);
-                }
             }
         }
     }
@@ -611,7 +595,7 @@ class NativeHotspotRenderer {
     /**
  * Update darkening overlay for focus mode
  */
-    updateDarkeningOverlay() {
+    updateDarkeningOverlay(opacity = null) {
         if (!this.darkeningRect || !this.maskElement) return;
 
         if (!this.selectedHotspot) {
@@ -625,8 +609,10 @@ class NativeHotspotRenderer {
             return;
         }
 
-        // Apply darkening
-        this.darkeningRect.setAttribute('fill', 'rgba(0, 0, 0, 0.4)');
+        // Apply darkening with custom opacity if provided
+        const baseOpacity = 0.4;
+        const finalOpacity = opacity !== null ? opacity : baseOpacity;
+        this.darkeningRect.setAttribute('fill', `rgba(0, 0, 0, ${finalOpacity})`);
 
         // Create mask with hole for selected hotspot
         const overlay = this.overlays.get(this.selectedHotspot.id);
@@ -643,6 +629,41 @@ class NativeHotspotRenderer {
 
         this.maskElement.innerHTML = maskContent;
     }
+
+    /**
+ * Calculate darkening opacity based on zoom level
+ */
+    calculateDarkeningOpacity(currentZoom) {
+        if (!this.selectedHotspot || !this.zoomOnSelection) return 0;
+
+        // Relative thresholds
+        const fadeStartOffset = 0.15;  // Start fade after 15% dezoom
+        const fadeRange = 0.4;         // Complete fade over 40% more dezoom
+
+        const relativeMax = this.zoomOnSelection * (1 - fadeStartOffset);
+        const relativeMin = this.zoomOnSelection * (1 - fadeStartOffset - fadeRange);
+
+        // Also enforce absolute minimums to ensure deselection
+        const absoluteMin = this.isMobile ? 1.0 : 1.5;
+
+        const maxOpacityZoom = relativeMax;
+        const minOpacityZoom = Math.max(relativeMin, absoluteMin); // Never go below absolute minimum
+
+        // Calculate opacity based on zoom
+        if (currentZoom >= maxOpacityZoom) {
+            return 0.4; // Full darkening
+        } else if (currentZoom <= minOpacityZoom) {
+            return 0; // No darkening
+        } else {
+            // Linear interpolation between min and max
+            const zoomRange = maxOpacityZoom - minOpacityZoom;
+            const zoomProgress = (currentZoom - minOpacityZoom) / zoomRange;
+            // Ease-out curve for smoother transition
+            const eased = 1 - Math.pow(1 - zoomProgress, 2);
+            return 0.4 * eased;
+        }
+    }
+
     /**
      * Find the smallest hotspot at a given point
      * This ensures smaller hotspots take priority over larger ones
