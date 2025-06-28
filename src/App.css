@@ -150,7 +150,13 @@
     .hotspot-svg-overlay g {
         cursor: pointer;
         pointer-events: auto;
+        transform-origin: center;
+        transition: transform 0.2s ease-out;
     }
+
+        .hotspot-svg-overlay g:hover {
+            transform: scale(1.02);
+        }
 
 /* Éliminer le tap highlight sur les hotspots */
 .openseadragon-viewer svg * {
@@ -628,17 +634,39 @@
 /* Hotspot pulse animation for production mode */
 @keyframes hotspotPulse {
     0% {
-        filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+        filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.4));
     }
 
     50% {
-        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 1));
+        filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
     }
 
     100% {
-        filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
+        filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.4));
     }
 }
+
+/* Subtle hover animation */
+@keyframes hotspotHoverGlow {
+    0% {
+        filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.4));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.6));
+    }
+
+    100% {
+        filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.4));
+    }
+}
+
+/* Apply hover animation to paths inside hovered groups */
+.hotspot-svg-overlay g:hover path {
+    animation: hotspotHoverGlow 1s ease-in-out infinite;
+}
+
+
 
 /* Touch feedback animation */
 @keyframes touchPulse {

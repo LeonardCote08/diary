@@ -627,6 +627,11 @@ function ArtworkViewer(props) {
                 setTimeout(updateVisibleContent, 100);
             }
         });
+
+        
+
+
+
     };
 
 
@@ -968,11 +973,20 @@ function ArtworkViewer(props) {
      */
     const handleHotspotClick = async (hotspot) => {
         console.log('handleHotspotClick called in ArtworkViewer', {
-            hotspotId: hotspot.id,
+            hotspotId: hotspot ? hotspot.id : 'null (deselecting)',
             isZoomingToHotspot: isZoomingToHotspot(),
             isExpandingToFullView: isExpandingToFullView(),
             timestamp: Date.now()
         });
+
+        // Handle deselection
+        if (!hotspot) {
+            setSelectedHotspot(null);
+            setShowMediaButton(false);
+            setCurrentPlayingHotspot(null);
+            setCurrentMediaHotspot(null);
+            return;
+        }
 
         // Allow interrupting Full View animation
         if (isExpandingToFullView()) {

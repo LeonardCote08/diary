@@ -43,6 +43,11 @@ class NativeHotspotRenderer {
         // Cache for hotspot areas
         this.hotspotAreas = new Map();
 
+        // Darkening overlay elements
+        this.darkeningGroup = null;
+        this.darkeningRect = null;
+        this.maskElement = null;
+
         // Pointer event tracking
         this.activePointers = new Map(); // Track active pointers for multi-touch
         this.primaryPointerId = null;
@@ -53,6 +58,8 @@ class NativeHotspotRenderer {
         // Track zoom state to prevent updates during animation
         this.isViewerZooming = false;
         this.lastZoomValue = null;
+
+
 
         // Animation blocking flag
         this.isAnimationInProgress = false;
@@ -82,13 +89,19 @@ class NativeHotspotRenderer {
 
         // Debug mode: colored fills
         if (this.debugMode) {
-            Object.entries(colors).forEach(([type, color]) => {
+            // Production mode: subtle/invisible fills
+            Object.entries(colors).forEach(([type]) => {
                 this.styles[type] = {
                     ...baseStyle,
-                    stroke: color.stroke,
-                    fill: `rgba(${color.fill.join(',')}, 0.3)`,
-                    hoverFill: `rgba(${color.fill.join(',')}, 0.5)`,
-                    selectedFill: `rgba(${color.fill.join(',')}, 0.7)`
+                    stroke: 'rgba(255, 255, 255, 0)',  // Invisible by default
+                    fill: 'rgba(0, 0, 0, 0)',     // Completely transparent for normal state
+                    hoverFill: 'rgba(0, 0, 0, 0)', // Keep transparent on hover
+                    hoverStroke: 'rgba(255, 255, 255, 0.8)', // Slightly dimmed white border on hover
+                    selectedFill: 'rgba(0, 0, 0, 0)', // Keep selected area transparent
+                    selectedStroke: 'rgba(255, 255, 255, 1)',
+                    // Add darkening overlay properties
+                    normalDarkening: 'rgba(0, 0, 0, 0.4)', // Dark overlay for non-selected
+                    selectedDarkening: 'rgba(0, 0, 0, 0)' // No darkening for selected
                 };
             });
         } else {
@@ -150,11 +163,29 @@ class NativeHotspotRenderer {
 
     createSVG(imageSize) {
         const svgString = `<svg xmlns="http://www.w3.org/2000/svg" 
-                           width="${imageSize.x}" height="${imageSize.y}" 
-                           viewBox="0 0 ${imageSize.x} ${imageSize.y}"
-                           style="position: absolute; width: 100%; height: 100%; pointer-events: auto;"></svg>`;
+                       width="${imageSize.x}" height="${imageSize.y}" 
+                       viewBox="0 0 ${imageSize.x} ${imageSize.y}"
+                       style="position: absolute; width: 100%; height: 100%; pointer-events: auto;">
+        <defs>
+            <mask id="darkening-mask">
+                <rect x="0" y="0" width="${imageSize.x}" height="${imageSize.y}" fill="white"/>
+            </mask>
+        </defs>
+        <g id="darkening-layer" style="pointer-events: none;">
+            <rect x="0" y="0" width="${imageSize.x}" height="${imageSize.y}" 
+                  fill="rgba(0, 0, 0, 0)" mask="url(#darkening-mask)"
+                  style="transition: fill 0.3s ease;"/>
+        </g>
+    </svg>`;
 
-        return new DOMParser().parseFromString(svgString, 'image/svg+xml').documentElement;
+        const svg = new DOMParser().parseFromString(svgString, 'image/svg+xml').documentElement;
+
+        // Store references
+        this.darkeningGroup = svg.getElementById('darkening-layer');
+        this.darkeningRect = this.darkeningGroup.querySelector('rect');
+        this.maskElement = svg.getElementById('darkening-mask');
+
+        return svg;
     }
 
     async loadHotspotsInBatches() {
@@ -184,6 +215,7 @@ class NativeHotspotRenderer {
 
         this.applyStyle(g, hotspot.type, 'normal');
 
+        // Make sure hotspots are added after the darkening layer
         this.svg.appendChild(g);
 
         const bounds = this.calculateBounds(hotspot.coordinates);
@@ -230,6 +262,14 @@ class NativeHotspotRenderer {
         this.viewer.addHandler('canvas-drag', () => {
             console.log('canvas-drag detected, setting isDragging = true');
             this.isDragging = true;
+
+            // Deselect on drag if there's a selected hotspot
+            if (this.selectedHotspot) {
+                this.deselectHotspot();
+                if (this.onHotspotClick) {
+                    this.onHotspotClick(null);
+                }
+            }
         });
 
         this.viewer.addHandler('canvas-drag-end', () => {
@@ -440,8 +480,18 @@ class NativeHotspotRenderer {
             event.stopPropagation();
             event.preventDefault();
             this.activateHotspot(clickedHotspot);
+        } else {
+            // Clicked on empty space - deselect
+            if (this.selectedHotspot) {
+                this.deselectHotspot();
+                // Notify parent component
+                if (this.onHotspotClick) {
+                    this.onHotspotClick(null);
+                }
+            }
         }
     }
+
 
     /**
      * Activate a hotspot (common method for touch and click)
@@ -457,8 +507,66 @@ class NativeHotspotRenderer {
                 (id === this.hoveredHotspot?.id ? 'hover' : 'normal');
             this.applyStyle(overlay.element, overlay.hotspot.type, state);
         });
+
+        // Add darkening overlay effect
+        this.updateDarkeningOverlay();
     }
 
+    /**
+ * Deselect current hotspot
+ */
+    deselectHotspot() {
+        console.log('Deselecting hotspot');
+        this.selectedHotspot = null;
+
+        // Update visual state for all hotspots
+        this.overlays.forEach((overlay, id) => {
+            const state = id === this.hoveredHotspot?.id ? 'hover' : 'normal';
+            this.applyStyle(overlay.element, overlay.hotspot.type, state);
+        });
+
+        // Remove darkening overlay
+        this.updateDarkeningOverlay();
+    }
+
+    /**
+ * Update darkening overlay for focus mode
+ */
+    /**
+ * Update darkening overlay for focus mode
+ */
+    updateDarkeningOverlay() {
+        if (!this.darkeningRect || !this.maskElement) return;
+
+        if (!this.selectedHotspot) {
+            // Remove darkening when nothing is selected
+            this.darkeningRect.setAttribute('fill', 'rgba(0, 0, 0, 0)');
+
+            // Clear mask to show everything
+            this.maskElement.innerHTML = `
+            <rect x="0" y="0" width="100%" height="100%" fill="white"/>
+        `;
+            return;
+        }
+
+        // Apply darkening
+        this.darkeningRect.setAttribute('fill', 'rgba(0, 0, 0, 0.4)');
+
+        // Create mask with hole for selected hotspot
+        const overlay = this.overlays.get(this.selectedHotspot.id);
+        if (!overlay) return;
+
+        const paths = overlay.element.getElementsByTagName('path');
+        let maskContent = `<rect x="0" y="0" width="100%" height="100%" fill="white"/>`;
+
+        // Add black shapes for the selected hotspot (creates holes in the mask)
+        for (let path of paths) {
+            const d = path.getAttribute('d');
+            maskContent += `<path d="${d}" fill="black"/>`;
+        }
+
+        this.maskElement.innerHTML = maskContent;
+    }
     /**
      * Find the smallest hotspot at a given point
      * This ensures smaller hotspots take priority over larger ones
@@ -569,15 +677,15 @@ class NativeHotspotRenderer {
                 const isHover = state === 'hover';
                 const isSelected = state === 'selected';
 
-                // Calculate stroke width based on zoom (minimum 2px for visibility)
+                // Calculate stroke width based on zoom (thinner, more elegant)
                 let strokeWidth = 0;
                 if (isHover || isSelected) {
                     if (glowIntensity > 0.7) {
-                        strokeWidth = 4;  // Thick border at low zoom
+                        strokeWidth = 2;  // Reduced from 4
                     } else if (glowIntensity > 0.5) {
-                        strokeWidth = 3;  // Medium border at medium zoom
+                        strokeWidth = 1.5;  // Reduced from 3
                     } else {
-                        strokeWidth = 2;  // Still visible at high zoom
+                        strokeWidth = 1;  // Reduced from 2
                     }
                 }
 
@@ -592,10 +700,11 @@ class NativeHotspotRenderer {
                     opacity: isHover || isSelected ? '1' : '0'
                 });
 
-                // Add outer glow at low-medium zoom levels
-                if ((isHover || isSelected) && glowIntensity > 0.5) {
-                    const glowSize = Math.max(4, 12 * glowIntensity); // Minimum 4px glow
-                    path.style.filter = `drop-shadow(0 0 ${glowSize}px rgba(255, 255, 255, ${glowIntensity * 0.6}))`;
+                // Add subtle outer glow at low-medium zoom levels
+                if ((isHover || isSelected) && glowIntensity > 0.3) {
+                    const glowSize = Math.max(2, 6 * glowIntensity); // Reduced from max 12px to max 6px
+                    const glowOpacity = glowIntensity * 0.4; // Reduced from 0.6
+                    path.style.filter = `drop-shadow(0 0 ${glowSize}px rgba(255, 255, 255, ${glowOpacity}))`;
                 }
             }
         }
