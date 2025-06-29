@@ -17,7 +17,24 @@ class CanvasOverlayManager {
             targetOpacity: 0,
             isAnimating: false,
             lastRenderTime: 0,
-            renderMode: 'static' // static or animated
+            renderMode: 'static', // static or animated
+            darkeningPaused: false
+        };
+
+        // Interpolation state for smooth transitions
+        this.interpolation = {
+            current: null,  // Current bounds being rendered
+            target: null,   // Target bounds to interpolate to
+            velocity: { x: 0, y: 0, width: 0, height: 0, centerX: 0, centerY: 0 },
+            spring: 0.06,  // Much lower for smoother movement (was 0.12)
+            damping: 0.92,   // Higher damping for less bounce (was 0.85)
+            disabled: false
+        };
+
+        // Animation loop control
+        this.animationLoop = {
+            isRunning: false,
+            frameId: null
         };
 
         // Configuration
@@ -26,12 +43,17 @@ class CanvasOverlayManager {
             fadeSpeed: 0.05, // Opacity change per frame
             edgeSoftness: 20, // Pixels for soft edge
             updateThrottle: 16, // ~60 FPS
-            enableSoftEdges: true
+            enableSoftEdges: false
         };
 
         // Animation
         this.animationFrame = null;
         this.lastUpdateTime = 0;
+
+        // Timers
+        this.animationFrame = null;
+        this.lastUpdateTime = 0;
+        this.softEdgeTimeout = null;
 
         // Bind methods
         this.render = this.render.bind(this);
@@ -47,12 +69,15 @@ class CanvasOverlayManager {
         this.canvas.style.top = '0';
         this.canvas.style.left = '0';
         this.canvas.style.pointerEvents = 'none';
-        this.canvas.style.zIndex = '5'; // Above tiles, below hotspots
+        this.canvas.style.zIndex = '8'; // Above tiles but below hotspots (which are at z-index 10)
         this.canvas.style.willChange = 'transform';
+        this.canvas.style.width = '100%';
+        this.canvas.style.height = '100%';
 
-        // Get container
-        const container = this.viewer.canvas.parentElement;
-        container.appendChild(this.canvas);
+        // Get the OpenSeadragon container directly
+        const container = this.viewer.container;
+        // Insert canvas as first child to ensure proper layering
+        container.insertBefore(this.canvas, container.firstChild);
 
         // Get context
         this.ctx = this.canvas.getContext('2d', {
@@ -63,7 +88,7 @@ class CanvasOverlayManager {
         // Set up size
         this.updateCanvasSize();
 
-        // Listen to viewport changes
+        // No need for individual handlers - the animation loop handles everything
         this.viewer.addHandler('viewport-change', this.handleViewportChange);
         this.viewer.addHandler('resize', () => this.updateCanvasSize());
 
@@ -75,13 +100,17 @@ class CanvasOverlayManager {
         const container = this.viewer.container;
         const rect = container.getBoundingClientRect();
 
-        // Set canvas size to match viewer
+        // Set canvas size to match container exactly
         this.canvas.width = rect.width * window.devicePixelRatio;
         this.canvas.height = rect.height * window.devicePixelRatio;
 
         // Scale canvas back down using CSS
         this.canvas.style.width = rect.width + 'px';
         this.canvas.style.height = rect.height + 'px';
+
+        // Remove any positioning - canvas should fill its parent
+        this.canvas.style.left = '0';
+        this.canvas.style.top = '0';
 
         // Scale context for retina displays
         this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
@@ -96,9 +125,19 @@ class CanvasOverlayManager {
         this.state.selectedHotspot = hotspot;
         this.state.targetOpacity = hotspot ? this.config.maxOpacity : 0;
 
-        // Start animation if needed
-        if (Math.abs(this.state.targetOpacity - this.state.opacity) > 0.01) {
-            this.startAnimation();
+        // Reset interpolation when selecting new hotspot
+        if (!hotspot || (this.interpolation.current &&
+            (!this.state.selectedHotspot || this.state.selectedHotspot.id !== hotspot.id))) {
+            this.interpolation.current = null;
+            this.interpolation.velocity = { x: 0, y: 0, width: 0, height: 0, centerX: 0, centerY: 0 };
+        }
+
+        // Always start opacity animation when there's a change
+        this.startAnimation();
+
+        // Also start render loop if selecting a hotspot
+        if (hotspot) {
+            this.startAnimationLoop();
         }
     }
 
@@ -123,12 +162,19 @@ class CanvasOverlayManager {
             this.state.opacity = this.state.targetOpacity;
             this.state.isAnimating = false;
             this.state.renderMode = 'static';
+
+            // Stop animation loop if no selection
+            if (!this.state.selectedHotspot) {
+                this.stopAnimationLoop();
+            }
+
             this.render();
             return;
         }
 
-        // Smooth animation
-        this.state.opacity += diff * 0.15; // Adjust speed here
+        // Smooth animation - faster speed for post-zoom fade-in
+        const speed = this.state.darkeningPaused === false && diff > 0 ? 0.3 : 0.15;
+        this.state.opacity += diff * speed;
 
         // Render frame
         this.render();
@@ -138,18 +184,19 @@ class CanvasOverlayManager {
     }
 
     render() {
-        const now = performance.now();
 
-        // Throttle renders in static mode
-        if (this.state.renderMode === 'static' &&
-            now - this.state.lastRenderTime < this.config.updateThrottle) {
+        // Calculate dimensions once
+        const width = this.canvas.width / window.devicePixelRatio;
+        const height = this.canvas.height / window.devicePixelRatio;
+
+        // Skip rendering if darkening is paused
+        if (this.state.darkeningPaused) {
+            this.ctx.clearRect(0, 0, width, height);
             return;
         }
 
-        this.state.lastRenderTime = now;
-
         // Clear canvas
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.clearRect(0, 0, width, height);
 
         // Skip if no selection or opacity is 0
         if (!this.state.selectedHotspot || this.state.opacity < 0.01) {
@@ -157,8 +204,11 @@ class CanvasOverlayManager {
         }
 
         // Get hotspot bounds in screen coordinates
-        const bounds = this.getHotspotScreenBounds(this.state.selectedHotspot);
-        if (!bounds) return;
+        const targetBounds = this.getHotspotScreenBounds(this.state.selectedHotspot);
+        if (!targetBounds) return;
+
+        // Use interpolated bounds for smooth transitions
+        const bounds = this.interpolateBounds(targetBounds);
 
         // Save context state
         this.ctx.save();
@@ -167,34 +217,122 @@ class CanvasOverlayManager {
         this.ctx.globalCompositeOperation = 'source-over';
         this.ctx.fillStyle = `rgba(0, 0, 0, ${this.state.opacity})`;
 
-        // Fill entire canvas
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        // Fill entire canvas with dark overlay
+        this.ctx.fillRect(0, 0, width, height);
 
-        // Cut out hotspot area
+        // Cut out the hotspot area - this makes it visible
         this.ctx.globalCompositeOperation = 'destination-out';
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 1)';
 
-        if (this.config.enableSoftEdges) {
-            // Create gradient for soft edges
-            const gradient = this.ctx.createRadialGradient(
-                bounds.centerX, bounds.centerY,
-                Math.min(bounds.width, bounds.height) * 0.3,
-                bounds.centerX, bounds.centerY,
-                Math.max(bounds.width, bounds.height) * 0.6
-            );
-            gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
-            gradient.addColorStop(0.8, 'rgba(0, 0, 0, 0.8)');
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-            this.ctx.fillStyle = gradient;
-        } else {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-        }
-
-        // Draw hotspot shape
+        // Draw hotspot shape (this cuts it out from the dark overlay)
         this.drawHotspotShape(bounds, this.state.selectedHotspot);
 
         // Restore context
         this.ctx.restore();
+    }
+
+    interpolateBounds(target) {
+        // Skip interpolation if disabled - also reset current to match target
+        if (this.interpolation.disabled) {
+            console.log('Interpolation DISABLED - returning target directly');
+            this.interpolation.current = { ...target };
+            this.interpolation.target = { ...target };
+            // Reset all velocities to zero
+            Object.keys(this.interpolation.velocity).forEach(key => {
+                this.interpolation.velocity[key] = 0;
+            });
+            return target;
+        }
+
+        console.log('Interpolation ENABLED - smoothing active');
+
+        if (!this.interpolation.current) {
+            // First time - initialize current to target
+            this.interpolation.current = { ...target };
+            this.interpolation.target = { ...target };
+            return this.interpolation.current;
+        }
+
+        // Update target
+        this.interpolation.target = { ...target };
+
+        // Interpolate each property with spring physics
+        const props = ['x', 'y', 'width', 'height', 'centerX', 'centerY'];
+        let hasChanged = false;
+
+        props.forEach(prop => {
+            const current = this.interpolation.current[prop];
+            const target = this.interpolation.target[prop];
+            const diff = target - current;
+
+            // Skip if already very close
+            if (Math.abs(diff) < 0.1) {
+                if (current !== target) {
+                    this.interpolation.current[prop] = target;
+                    this.interpolation.velocity[prop] = 0;
+                }
+                return;
+            }
+
+            // Apply spring force
+            this.interpolation.velocity[prop] += diff * this.interpolation.spring;
+
+            // Apply damping
+            this.interpolation.velocity[prop] *= this.interpolation.damping;
+
+            // Update position
+            this.interpolation.current[prop] += this.interpolation.velocity[prop];
+            hasChanged = true;
+        });
+
+        return this.interpolation.current;
+    }
+
+    pauseDarkening() {
+        this.state.darkeningPaused = true;
+        // Clear the canvas immediately
+        const width = this.canvas.width / window.devicePixelRatio;
+        const height = this.canvas.height / window.devicePixelRatio;
+        this.ctx.clearRect(0, 0, width, height);
+    }
+
+    resumeDarkening() {
+        this.state.darkeningPaused = false;
+
+        // Start with opacity at 0 for smooth fade-in
+        const targetOpacity = this.state.opacity;
+        this.state.opacity = 0;
+        this.state.targetOpacity = targetOpacity;
+
+        // Start fade-in animation immediately
+        this.startAnimation();
+    }
+
+    startAnimationLoop() {
+        if (this.animationLoop.isRunning) return;
+
+        this.animationLoop.isRunning = true;
+
+        const animate = () => {
+            if (!this.animationLoop.isRunning) return;
+
+            // Always render if we have a selected hotspot
+            if (this.state.selectedHotspot) {
+                this.render();
+            }
+
+            this.animationLoop.frameId = requestAnimationFrame(animate);
+        };
+
+        animate();
+    }
+
+    stopAnimationLoop() {
+        this.animationLoop.isRunning = false;
+        if (this.animationLoop.frameId) {
+            cancelAnimationFrame(this.animationLoop.frameId);
+            this.animationLoop.frameId = null;
+        }
     }
 
     drawHotspotShape(bounds, hotspot) {
@@ -268,14 +406,33 @@ class CanvasOverlayManager {
         return coordinates.map(([x, y]) => this.imageToScreen(x, y));
     }
 
+    disableInterpolation() {
+        console.log('>>> DISABLING interpolation');
+        this.interpolation.disabled = true;
+    }
+
+    enableInterpolation() {
+        console.log('>>> ENABLING interpolation');
+        this.interpolation.disabled = false;
+    }
+
     handleViewportChange() {
-        // Only render if we have a selection
-        if (this.state.selectedHotspot && !this.state.isAnimating) {
-            // Throttle updates
-            const now = performance.now();
-            if (now - this.lastUpdateTime > this.config.updateThrottle) {
-                this.lastUpdateTime = now;
-                this.render();
+        // Always render immediately if we have a selection
+        if (this.state.selectedHotspot) {
+            // Disable soft edges during viewport changes for cleaner animation
+            const wasEnabled = this.config.enableSoftEdges;
+            this.config.enableSoftEdges = false;
+
+            // Force immediate render during zoom/pan
+            this.render();
+
+            // Re-enable soft edges after a delay
+            if (wasEnabled) {
+                clearTimeout(this.softEdgeTimeout);
+                this.softEdgeTimeout = setTimeout(() => {
+                    this.config.enableSoftEdges = true;
+                    this.render();
+                }, 150);
             }
         }
     }
@@ -298,6 +455,15 @@ class CanvasOverlayManager {
     }
 
     destroy() {
+        // Stop animation loop
+        this.stopAnimationLoop();
+
+        // Clear any pending timeouts
+        if (this.softEdgeTimeout) {
+            clearTimeout(this.softEdgeTimeout);
+            this.softEdgeTimeout = null;
+        }
+
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
         }
@@ -309,6 +475,7 @@ class CanvasOverlayManager {
         if (this.viewer) {
             this.viewer.removeHandler('viewport-change', this.handleViewportChange);
             this.viewer.removeHandler('resize', this.updateCanvasSize);
+            // Note: animation, zoom, pan handlers removed since we're using animation loop instead
         }
 
         this.canvas = null;

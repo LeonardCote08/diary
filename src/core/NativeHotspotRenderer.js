@@ -61,9 +61,9 @@ class NativeHotspotRenderer {
 
     initStyles() {
         const baseStyle = {
-            strokeWidth: 1,
-            hoverStrokeWidth: 2,
-            selectedStrokeWidth: 3
+            strokeWidth: 0.5,           // Reduced from 1
+            hoverStrokeWidth: 1,        // Reduced from 2
+            selectedStrokeWidth: 1.5    // Reduced from 3
         };
 
         const colors = {
@@ -96,10 +96,10 @@ class NativeHotspotRenderer {
                 this.styles[type] = {
                     ...baseStyle,
                     stroke: 'rgba(255, 255, 255, 0)',  // Invisible by default
-                    fill: 'rgba(255, 255, 255, 0)',     // Completely transparent
-                    hoverFill: 'rgba(255, 255, 255, 0.25)', // More visible on hover
-                    hoverStroke: 'rgba(255, 255, 255, 1)', // Bright white border on hover
-                    selectedFill: 'rgba(255, 255, 255, 0.35)',
+                    fill: 'rgba(0, 0, 0, 0)',     // Completely transparent for normal state
+                    hoverFill: 'rgba(0, 0, 0, 0)', // Keep transparent on hover
+                    hoverStroke: 'rgba(255, 255, 255, 0.8)', // Slightly dimmed white border on hover
+                    selectedFill: 'rgba(0, 0, 0, 0)', // Keep selected area transparent
                     selectedStroke: 'rgba(255, 255, 255, 1)'
                 };
             });
@@ -618,11 +618,11 @@ class NativeHotspotRenderer {
                 let strokeWidth = 0;
                 if (isHover || isSelected) {
                     if (glowIntensity > 0.7) {
-                        strokeWidth = 2;  // Reduced from 4
+                        strokeWidth = 1.5;  // Reduced from 2
                     } else if (glowIntensity > 0.5) {
-                        strokeWidth = 1.5;  // Reduced from 3
+                        strokeWidth = 1;    // Reduced from 1.5
                     } else {
-                        strokeWidth = 1;  // Reduced from 2
+                        strokeWidth = 0.5;  // Reduced from 1
                     }
                 }
 
@@ -639,8 +639,8 @@ class NativeHotspotRenderer {
 
                 // Add subtle outer glow at low-medium zoom levels
                 if ((isHover || isSelected) && glowIntensity > 0.3) {
-                    const glowSize = Math.max(2, 6 * glowIntensity); // Reduced from max 12px to max 6px
-                    const glowOpacity = glowIntensity * 0.4; // Reduced from 0.6
+                    const glowSize = Math.max(1, 3 * glowIntensity); // Reduced from max 6px to max 3px
+                    const glowOpacity = glowIntensity * 0.3; // Reduced from 0.4
                     path.style.filter = `drop-shadow(0 0 ${glowSize}px rgba(255, 255, 255, ${glowOpacity}))`;
                 }
             }

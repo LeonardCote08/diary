@@ -843,6 +843,17 @@ function ArtworkViewer(props) {
         let safetyTimeout;
         setIsZoomingToHotspot(true);
 
+        // Starting cinematic zoom
+        console.log('Starting cinematic zoom to hotspot:', hotspot.id);
+
+        // Notify CanvasOverlayManager about cinematic zoom
+        if (components().canvasOverlayManager) {
+            console.log('Pausing darkening for cinematic zoom');
+            components().canvasOverlayManager.pauseDarkening();
+        } else {
+            console.log('WARNING: canvasOverlayManager not found!');
+        }
+
         // Safety timeout in case animation-finish doesn't fire
         safetyTimeout = setTimeout(() => {
             console.log('Safety timeout: forcing isZoomingToHotspot to false');
@@ -961,7 +972,21 @@ function ArtworkViewer(props) {
                 components().performanceMonitor.resumeMonitoring();
             }
 
-        }, animTime * 1000 + 200);
+            // Resume darkening after zoom
+            if (components().canvasOverlayManager) {
+                console.log('Resuming darkening after zoom');
+                components().canvasOverlayManager.resumeDarkening();
+            }
+
+        }, animTime * 1000 + 1000); 
+
+        // Resume darkening earlier for smoother transition
+        setTimeout(() => {
+            if (components().canvasOverlayManager) {
+                console.log('Resuming darkening after zoom');
+                components().canvasOverlayManager.resumeDarkening();
+            }
+        }, animTime * 1000 - 200); // Start fade-in 200ms before zoom ends
 
         // Update hotspot overlays after animation - OPTIMIZED FOR MOBILE
         setTimeout(() => {
@@ -1059,6 +1084,11 @@ function ArtworkViewer(props) {
         // Hide previous media button
         setShowMediaButton(false);
         setSelectedHotspot(hotspot);
+        // Update canvas overlay immediately after setting selected hotspot
+        if (components().canvasOverlayManager) {
+            components().canvasOverlayManager.selectHotspot(hotspot);
+        }
+
         setCurrentPlayingHotspot(hotspot);
 
         // Update canvas overlay
