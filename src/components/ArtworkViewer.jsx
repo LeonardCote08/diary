@@ -846,13 +846,6 @@ function ArtworkViewer(props) {
         // Starting cinematic zoom
         console.log('Starting cinematic zoom to hotspot:', hotspot.id);
 
-        // Notify CanvasOverlayManager about cinematic zoom
-        if (components().canvasOverlayManager) {
-            console.log('Pausing darkening for cinematic zoom');
-            components().canvasOverlayManager.pauseDarkening();
-        } else {
-            console.log('WARNING: canvasOverlayManager not found!');
-        }
 
         // Safety timeout in case animation-finish doesn't fire
         safetyTimeout = setTimeout(() => {
@@ -874,6 +867,13 @@ function ArtworkViewer(props) {
         // FIXED: Use consistent cinematic timing (1.2-1.5s)
         const animTime = 1.3; // Fixed 1.3s for all zooms (middle of 1.2-1.5s range)
         const stiffness = 7.0; // Adjusted for smooth 1.3s animation
+
+        // Start spotlight transition synchronized with zoom
+        if (components().canvasOverlayManager) {
+            // Calculate transition duration to finish slightly before zoom ends
+            const transitionDuration = animTime * 1000 * 0.8; // 80% of zoom duration
+            components().canvasOverlayManager.transitionToHotspot(hotspot, transitionDuration);
+        }
 
         // Pause tile cleanup during cinematic zoom for better performance
         if (components().tileCleanupManager) {
@@ -917,6 +917,13 @@ function ArtworkViewer(props) {
         viewer.viewport.centerSpringX.springStiffness = stiffness;
         viewer.viewport.centerSpringY.springStiffness = stiffness;
         viewer.viewport.zoomSpring.springStiffness = stiffness;
+
+        // Sync canvas interpolation with viewer springs
+        if (components().canvasOverlayManager) {
+            // Match interpolation to viewer animation
+            components().canvasOverlayManager.interpolation.spring = 1 / animTime;
+            components().canvasOverlayManager.interpolation.damping = 0.7 + (stiffness * 0.02);
+        }
 
         // Force update to ensure settings are applied
         viewer.viewport.applyConstraints();
@@ -972,21 +979,10 @@ function ArtworkViewer(props) {
                 components().performanceMonitor.resumeMonitoring();
             }
 
-            // Resume darkening after zoom
-            if (components().canvasOverlayManager) {
-                console.log('Resuming darkening after zoom');
-                components().canvasOverlayManager.resumeDarkening();
-            }
+            
 
         }, animTime * 1000 + 1000); 
 
-        // Resume darkening earlier for smoother transition
-        setTimeout(() => {
-            if (components().canvasOverlayManager) {
-                console.log('Resuming darkening after zoom');
-                components().canvasOverlayManager.resumeDarkening();
-            }
-        }, animTime * 1000 - 200); // Start fade-in 200ms before zoom ends
 
         // Update hotspot overlays after animation - OPTIMIZED FOR MOBILE
         setTimeout(() => {
@@ -1084,9 +1080,13 @@ function ArtworkViewer(props) {
         // Hide previous media button
         setShowMediaButton(false);
         setSelectedHotspot(hotspot);
-        // Update canvas overlay immediately after setting selected hotspot
-        if (components().canvasOverlayManager) {
-            components().canvasOverlayManager.selectHotspot(hotspot);
+        // Don't update canvas immediately - will be done during zoom
+        // Store the target hotspot for later
+        if (!hotspot) {
+            // Only clear immediately if deselecting
+            if (components().canvasOverlayManager) {
+                components().canvasOverlayManager.selectHotspot(null);
+            }
         }
 
         setCurrentPlayingHotspot(hotspot);
