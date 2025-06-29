@@ -628,7 +628,17 @@ function ArtworkViewer(props) {
             }
         });
 
-        
+        // Add click handler to viewer for deselecting hotspots
+        viewer.addHandler('canvas-click', (event) => {
+            // Only deselect if clicking on empty space
+            if (!event.preventDefaultAction && components().renderer && event.quick) {
+                if (components().renderer.selectedHotspot) {
+                    components().renderer.selectedHotspot = null;
+                    components().renderer.updateDarkeningOverlay();
+                    setSelectedHotspot(null);
+                }
+            }
+        });
 
 
 
