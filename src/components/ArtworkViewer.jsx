@@ -873,6 +873,13 @@ function ArtworkViewer(props) {
             // Calculate transition duration to finish slightly before zoom ends
             const transitionDuration = animTime * 1000 * 0.8; // 80% of zoom duration
             components().canvasOverlayManager.transitionToHotspot(hotspot, transitionDuration);
+
+            // Track focus reference AFTER zoom completes
+            setTimeout(() => {
+                if (components().canvasOverlayManager && components().canvasOverlayManager.state.selectedHotspot) {
+                    components().canvasOverlayManager.trackFocusReference();
+                }
+            }, animTime * 1000 + 100); // After animation is done
         }
 
         // Pause tile cleanup during cinematic zoom for better performance
@@ -1023,6 +1030,10 @@ function ArtworkViewer(props) {
      * Handle hotspot click with zoom behavior
      */
     const handleHotspotClick = async (hotspot) => {
+
+        // Make handleHotspotClick globally accessible for auto-deselect
+        window.handleHotspotClick = handleHotspotClick;
+
         console.log('handleHotspotClick called in ArtworkViewer', {
             hotspotId: hotspot ? hotspot.id : 'null (deselecting)',
             isZoomingToHotspot: isZoomingToHotspot(),

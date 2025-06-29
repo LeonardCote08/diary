@@ -45,18 +45,18 @@ class CanvasOverlayManager {
         // Focus score weights and thresholds
         this.focusConfig = {
             weights: {
-                distance: 0.4,
-                zoom: 0.35,
-                visibility: 0.25
+                distance: 0.3,      // Reduced from 0.4
+                zoom: 0.5,          // Increased from 0.35
+                visibility: 0.2     // Reduced from 0.25
             },
             thresholds: {
                 zoom: {
-                    fadeStart: 0.8,
-                    fadeEnd: 0.5,
-                    reactivate: 0.85
+                    fadeStart: 0.6,      // Start fading at 60% of original zoom
+                    fadeEnd: 0.3,        // Completely gone at 30%
+                    reactivate: 0.65
                 },
                 distance: {
-                    maxFromCenter: 0.6 // 60% of viewport width/height
+                    maxFromCenter: 0.3   // Reduced for more aggressive fade
                 },
                 visibility: {
                     maintain: 0.25,
@@ -185,6 +185,8 @@ class CanvasOverlayManager {
             this.interpolation.velocity = { x: 0, y: 0, width: 0, height: 0, centerX: 0, centerY: 0 };
         }
 
+        
+
         // Sync interpolation with current viewer state
         if (hotspot && this.viewer) {
             const viewerSpring = this.viewer.viewport.zoomSpring.springStiffness;
@@ -213,6 +215,13 @@ class CanvasOverlayManager {
         this.focusTracking.selectionTime = Date.now();
         this.focusTracking.currentScore = 1;
         this.focusTracking.targetScore = 1;
+
+        // DEBUG - Verify this is called AFTER zoom
+        console.log('Track focus reference AFTER ZOOM:', {
+            zoom: this.focusTracking.referenceZoom,
+            center: this.focusTracking.referenceCenter,
+            hotspot: this.state.selectedHotspot.id
+        });
     }
 
     calculateFocusScore() {
@@ -222,7 +231,10 @@ class CanvasOverlayManager {
             return this.focusTracking.currentScore;
         }
 
-        if (!this.state.selectedHotspot || !this.focusTracking.referenceZoom) return 1;
+        if (!this.state.selectedHotspot || !this.focusTracking.referenceZoom) {
+            console.log('No hotspot or reference zoom');
+            return 1;
+        }
 
         const now = Date.now();
 
@@ -252,60 +264,79 @@ class CanvasOverlayManager {
             scores.visibility * weights.visibility
         );
 
-        // Apply hysteresis to prevent flickering
-        const hysteresis = this.focusConfig.hysteresis;
-        if (hysteresis.active) {
-            const threshold = hysteresis.lastDirection === 'out' ? 0.3 : 0.25;
-            if ((hysteresis.lastDirection === 'out' && weightedScore > threshold) ||
-                (hysteresis.lastDirection === 'in' && weightedScore < threshold)) {
-                hysteresis.active = false;
-            } else {
-                return this.focusTracking.currentScore;
-            }
-        }
+        
 
         // Update target score
         this.focusTracking.targetScore = weightedScore;
 
-        // Track direction for hysteresis
-        if (weightedScore < 0.5 && this.focusTracking.currentScore >= 0.5) {
-            hysteresis.lastDirection = 'out';
-            hysteresis.active = true;
-        } else if (weightedScore > 0.5 && this.focusTracking.currentScore <= 0.5) {
-            hysteresis.lastDirection = 'in';
-            hysteresis.active = true;
-        }
-
         return weightedScore;
+    }
+
+    checkAutoDeselect() {
+        // Only check if we have a selected hotspot
+        if (!this.state.selectedHotspot || !this.focusTracking.referenceZoom) return;
+
+        // Calculate current focus score
+        const focusScore = this.calculateFocusScore();
+
+        // Debug log
+        console.log('Auto-deselect check:', {
+            focusScore,
+            threshold: 0.3,
+            willDeselect: focusScore < 0.3
+        });
+
+        // Auto-deselect if score drops below threshold
+        if (focusScore < 0.3) { // 30% threshold
+            console.log('AUTO-DESELECTING hotspot due to low focus score:', focusScore);
+
+            // Clear selection
+            this.clearSelection();
+
+            // Notify parent component to update UI
+            if (window.artworkViewerHandleHotspotClick) {
+                window.artworkViewerHandleHotspotClick(null);
+            }
+        }
     }
 
     calculateZoomScore(currentZoom) {
         const ratio = currentZoom / this.focusTracking.referenceZoom;
         const thresholds = this.focusConfig.thresholds.zoom;
 
-        if (ratio >= thresholds.reactivate) return 1;
-        if (ratio <= thresholds.fadeEnd) return 0;
+        // DEBUG
+        console.log('Zoom calculation:', {
+            currentZoom,
+            referenceZoom: this.focusTracking.referenceZoom,
+            ratio,
+            thresholds
+        });
 
-        // Smoothstep interpolation
-        const t = (ratio - thresholds.fadeEnd) / (thresholds.fadeStart - thresholds.fadeEnd);
-        return this.smoothstep(t);
+        // More aggressive thresholds
+        if (ratio >= 0.8) return 1;      // Full opacity above 80%
+        if (ratio <= 0.4) return 0;      // No opacity below 40%
+
+        // Linear interpolation
+        const t = (ratio - 0.4) / (0.8 - 0.4);
+        return t;
     }
 
     calculateDistanceScore(currentCenter) {
         const refCenter = this.focusTracking.referenceCenter;
         if (!refCenter) return 1;
 
-        // Calculate normalized distance
-        const bounds = this.viewer.viewport.getBounds();
-        const dx = (currentCenter.x - refCenter.x) / bounds.width;
-        const dy = (currentCenter.y - refCenter.y) / bounds.height;
-        const distanceSquared = dx * dx + dy * dy;
+        // Calculate distance in viewport units
+        const dx = Math.abs(currentCenter.x - refCenter.x);
+        const dy = Math.abs(currentCenter.y - refCenter.y);
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
-        // Inverse square falloff
-        const maxDist = this.focusConfig.thresholds.distance.maxFromCenter;
-        const score = 1 / (1 + (distanceSquared / (maxDist * maxDist)) * 10);
+        // Very aggressive falloff - disappear at 0.2 distance
+        if (distance > 0.2) return 0;
+        if (distance < 0.05) return 1;
 
-        return Math.max(0, Math.min(1, score));
+        // Linear interpolation
+        const t = 1 - ((distance - 0.05) / 0.15);
+        return t;
     }
 
     calculateVisibilityScore() {
@@ -369,19 +400,27 @@ class CanvasOverlayManager {
         // Maintain darkening during transition
         this.state.targetOpacity = this.config.maxOpacity;
 
-        // Track focus reference for new selection
-        if (hotspot) {
-            this.trackFocusReference();
-        }
+        
 
         // Keep rendering during transition
         this.startAnimationLoop();
     }
 
     clearSelection() {
-    this.selectHotspot(null);
-    this.resetFocusTracking();
-}
+        console.log('Clearing selection - auto deselect');
+
+        // Clear the selected hotspot
+        this.state.selectedHotspot = null;
+
+        // Set target opacity to 0 to fade out
+        this.state.targetOpacity = 0;
+
+        // Reset focus tracking
+        this.resetFocusTracking();
+
+        // Start animation to fade out
+        this.startAnimation();
+    }
 
     startAnimation() {
         if (this.state.isAnimating) return;
@@ -392,6 +431,7 @@ class CanvasOverlayManager {
     }
 
     animate() {
+        // Don't stop animation loop - let it run continuously
 
         // During transition, maintain opacity but continue rendering
         if (this.transition.active) {
@@ -401,41 +441,43 @@ class CanvasOverlayManager {
             return;
         }
 
-        // Animate focus score changes
-        if (Math.abs(this.focusTracking.targetScore - this.focusTracking.currentScore) > 0.01) {
-            // Spring animation for smooth transitions
+        // Animate focus score changes - simple linear interpolation
+        if (Math.abs(this.focusTracking.targetScore - this.focusTracking.currentScore) > 0.001) {
             const diff = this.focusTracking.targetScore - this.focusTracking.currentScore;
-            this.focusTracking.scoreVelocity += diff * 0.1; // Spring force
-            this.focusTracking.scoreVelocity *= 0.85; // Damping
-            this.focusTracking.currentScore += this.focusTracking.scoreVelocity;
+            this.focusTracking.currentScore += diff * 0.2; // Faster transition
 
-            // Clamp to valid range
+            // Force to 0 if very low
+            if (this.focusTracking.currentScore < 0.05) {
+                this.focusTracking.currentScore = 0;
+            }
+
             this.focusTracking.currentScore = Math.max(0, Math.min(1, this.focusTracking.currentScore));
         }
+
+        // CHECK FOR AUTO-DESELECT
+        this.checkAutoDeselect();
 
         // Update opacity
         const diff = this.state.targetOpacity - this.state.opacity;
 
         if (Math.abs(diff) < 0.01) {
-            // Animation complete
             this.state.opacity = this.state.targetOpacity;
-            this.state.isAnimating = false;
-            this.state.renderMode = 'static';
 
-            // Stop animation loop if no selection
-            if (!this.state.selectedHotspot) {
-                this.stopAnimationLoop();
+            // If opacity reached 0 and no selection, stop rendering
+            if (this.state.opacity === 0 && !this.state.selectedHotspot) {
+                this.state.isAnimating = false;
+                // Clear the canvas one last time
+                const width = this.canvas.width / window.devicePixelRatio;
+                const height = this.canvas.height / window.devicePixelRatio;
+                this.ctx.clearRect(0, 0, width, height);
+                return; // Stop animation loop
             }
-
-            this.render();
-            return;
+        } else {
+            const speed = 0.15;
+            this.state.opacity += diff * speed;
         }
 
-        // Smooth animation - faster speed for post-zoom fade-in
-        const speed = this.state.darkeningPaused === false && diff > 0 ? 0.3 : 0.15;
-        this.state.opacity += diff * speed;
-
-        // Render frame
+        // Always render
         this.render();
 
         // Continue animation
@@ -443,22 +485,33 @@ class CanvasOverlayManager {
     }
 
     render() {
-
         // Calculate dimensions once
         const width = this.canvas.width / window.devicePixelRatio;
         const height = this.canvas.height / window.devicePixelRatio;
 
-        // Skip only if paused AND no selection
-        if (this.state.darkeningPaused && !this.state.selectedHotspot) {
-            this.ctx.clearRect(0, 0, width, height);
+        // Always clear canvas
+        this.ctx.clearRect(0, 0, width, height);
+
+        // Skip if no selection
+        if (!this.state.selectedHotspot) {
             return;
         }
 
-        // Clear canvas
-        this.ctx.clearRect(0, 0, width, height);
+        // Calculate focus score
+        const focusScore = this.calculateFocusScore();
 
-        // Skip if no selection or opacity is 0
-        if (!this.state.selectedHotspot || this.state.opacity < 0.01) {
+        // Apply focus score directly to opacity
+        let effectiveOpacity = this.state.opacity * focusScore;
+
+        // Force complete transparency below threshold
+        if (focusScore < 0.1) {
+            effectiveOpacity = 0;
+        }
+
+        // Skip render if invisible
+        if (effectiveOpacity < 0.001) {
+            // Clear canvas to ensure no residual darkening
+            this.ctx.clearRect(0, 0, width, height);
             return;
         }
 
@@ -476,18 +529,15 @@ class CanvasOverlayManager {
                 this.transition.active = false;
                 this.state.selectedHotspot = this.transition.toHotspot;
                 this.state.targetOpacity = this.transition.toHotspot ? this.config.maxOpacity : 0;
-                // Force opacity to match target immediately
                 this.state.opacity = this.state.targetOpacity;
                 targetBounds = this.getHotspotScreenBounds(this.state.selectedHotspot);
             } else if (eased < 0.5) {
                 // First half - maintain visibility on source
                 targetBounds = this.getHotspotScreenBounds(this.transition.fromHotspot);
-                // Keep full opacity during first half
                 this.state.opacity = this.config.maxOpacity;
             } else {
                 // Second half - switch to target
                 targetBounds = this.getHotspotScreenBounds(this.transition.toHotspot);
-                // Maintain full opacity
                 this.state.opacity = this.config.maxOpacity;
             }
         } else {
@@ -505,9 +555,6 @@ class CanvasOverlayManager {
 
         // Set composite operation for darkening
         this.ctx.globalCompositeOperation = 'source-over';
-        // Apply focus score to opacity
-        const focusScore = this.calculateFocusScore();
-        const effectiveOpacity = this.state.opacity * focusScore;
         this.ctx.fillStyle = `rgba(0, 0, 0, ${effectiveOpacity})`;
 
         // Fill entire canvas with dark overlay
@@ -515,11 +562,10 @@ class CanvasOverlayManager {
 
         // Cut out the hotspot area - this makes it visible
         this.ctx.globalCompositeOperation = 'destination-out';
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 1)';
 
-        // Draw hotspot shape (this cuts it out from the dark overlay)
+        // Use original shape drawing
         this.drawHotspotShape(bounds, this.state.selectedHotspot);
-
 
         // Restore context
         this.ctx.restore();
@@ -738,6 +784,15 @@ class CanvasOverlayManager {
         if (this.state.selectedHotspot) {
             // Don't disable soft edges - maintain quality
             this.render();
+
+            // Force focus score recalculation on significant zoom changes
+            if (this.focusTracking.referenceZoom) {
+                const zoomRatio = currentZoom / this.focusTracking.referenceZoom;
+                if (Math.abs(zoomRatio - 1) > 0.1) {
+                    // Significant zoom change - ensure we're calculating scores
+                    this.calculateFocusScore();
+                }
+            }
         }
     }
 

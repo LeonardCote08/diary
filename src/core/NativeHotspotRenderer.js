@@ -235,13 +235,7 @@ class NativeHotspotRenderer {
             console.log('canvas-drag detected, setting isDragging = true');
             this.isDragging = true;
 
-            // Deselect on drag if there's a selected hotspot
-            if (this.selectedHotspot) {
-                this.deselectHotspot();
-                if (this.onHotspotClick) {
-                    this.onHotspotClick(null);
-                }
-            }
+            
         });
 
         this.viewer.addHandler('canvas-drag-end', () => {
