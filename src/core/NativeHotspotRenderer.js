@@ -63,11 +63,15 @@ class NativeHotspotRenderer {
         this.isViewerZooming = false;
         this.lastZoomValue = null;
 
-
+        this.needsCaptureZoom = false;
 
         // Animation blocking flag
         this.isAnimationInProgress = false;
         this.pendingVisibilityUpdate = false;
+
+        this.lastZoomTime = 0;
+        this.lastZoomValue = null;
+        this.zoomVelocity = 0;
 
         this.initStyles();
         this.init();
@@ -165,32 +169,79 @@ class NativeHotspotRenderer {
                 }
             }
         });
+
+        // Add animation-update handler for smooth darkening transitions
+        let lastDarkeningUpdate = 0;
+        const darkeningThrottle = 16; // ~60fps
+
+        this.viewer.addHandler('animation-update', () => {
+            const now = performance.now();
+
+            // Capture zoom if needed (do this first)
+            if (this.needsCaptureZoom && this.selectedHotspot) {
+                const currentZoom = this.viewer.viewport.getZoom();
+                // Only capture if zoom has increased significantly from base
+                if (currentZoom > 2.0) {
+                    this.zoomOnSelection = currentZoom;
+                    this.needsCaptureZoom = false;
+                    console.log('Captured zoom during animation:', this.zoomOnSelection);
+                }
+            }
+
+            // Calculate zoom velocity for mobile adaptations
+            if (this.isMobile && this.selectedHotspot) {
+                const currentZoom = this.viewer.viewport.getZoom();
+                this.calculateZoomVelocity(currentZoom);
+            }
+
+            // Throttle updates for performance
+            if (now - lastDarkeningUpdate < darkeningThrottle) return;
+
+            if (this.selectedHotspot && this.zoomOnSelection) {
+                this.checkZoomDeselection();
+            }
+
+            lastDarkeningUpdate = now;
+        });
+
+        // Ensure final update when animation ends
+        this.viewer.addHandler('animation-finish', () => {
+            // Final capture attempt if still needed
+            if (this.needsCaptureZoom && this.selectedHotspot) {
+                this.zoomOnSelection = this.viewer.viewport.getZoom();
+                this.needsCaptureZoom = false;
+                console.log('Captured zoom at animation finish:', this.zoomOnSelection);
+            }
+
+            // Final deselection check
+            if (this.selectedHotspot && this.zoomOnSelection) {
+                this.checkZoomDeselection();
+            }
+        });
+
         this.startVisibilityTracking();
     }
 
     createSVG(imageSize) {
         const svgString = `<svg xmlns="http://www.w3.org/2000/svg" 
-                       width="${imageSize.x}" height="${imageSize.y}" 
-                       viewBox="0 0 ${imageSize.x} ${imageSize.y}"
-                       style="position: absolute; width: 100%; height: 100%; pointer-events: auto;">
-        <defs>
-            <mask id="darkening-mask">
-                <rect x="0" y="0" width="${imageSize.x}" height="${imageSize.y}" fill="white"/>
-            </mask>
-        </defs>
-        <g id="darkening-layer" style="pointer-events: none;">
-            <rect x="0" y="0" width="${imageSize.x}" height="${imageSize.y}" 
-                  fill="rgba(0, 0, 0, 0)" mask="url(#darkening-mask)"
-                  style="transition: fill 0.3s ease-out;"/>
-        </g>
+                   width="${imageSize.x}" height="${imageSize.y}" 
+                   viewBox="0 0 ${imageSize.x} ${imageSize.y}"
+                   style="position: absolute; width: 100%; height: 100%; pointer-events: auto;">
+    <rect id="darkening-rect" x="0" y="0" width="${imageSize.x}" height="${imageSize.y}" 
+          fill="rgba(0, 0, 0, 1)" 
+          style="opacity: 0; 
+                 display: none; 
+                 pointer-events: none; 
+                 transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                             transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                 transform-origin: center;
+                 will-change: opacity, transform;"/>
     </svg>`;
 
         const svg = new DOMParser().parseFromString(svgString, 'image/svg+xml').documentElement;
 
-        // Store references
-        this.darkeningGroup = svg.getElementById('darkening-layer');
-        this.darkeningRect = this.darkeningGroup.querySelector('rect');
-        this.maskElement = svg.getElementById('darkening-mask');
+        // Store reference
+        this.darkeningRect = svg.getElementById('darkening-rect');
 
         return svg;
     }
@@ -507,8 +558,9 @@ class NativeHotspotRenderer {
         console.log('Activating hotspot:', hotspot.id, Date.now());
         this.selectedHotspot = hotspot;
 
-        // Track zoom level when selecting
-        this.zoomOnSelection = this.viewer.viewport.getZoom();
+        // Mark that we need to capture zoom after animation
+        this.needsCaptureZoom = true;
+        this.zoomOnSelection = null;
         this.selectionTimestamp = Date.now();
 
         this.onHotspotClick(hotspot);
@@ -572,20 +624,9 @@ class NativeHotspotRenderer {
         // Update darkening with calculated opacity
         this.updateDarkeningOverlay(opacity);
 
-        // Only deselect when opacity reaches 0
+        // Deselect when opacity reaches 0
         if (opacity === 0) {
-            console.log('Deselecting hotspot - zoom transition complete');
-            this.deselectHotspot();
-            if (this.onHotspotClick) {
-                this.onHotspotClick(null);
-            }
-            return;
-        }
-
-        // Also check relative zoom change for quick deselection
-        const zoomRatio = currentZoom / this.zoomOnSelection;
-        if (zoomRatio < 0.4) { // 60% reduction - more aggressive
-            console.log('Deselecting due to significant zoom reduction:', zoomRatio);
+            console.log('Deselecting hotspot - fade complete');
             this.deselectHotspot();
             if (this.onHotspotClick) {
                 this.onHotspotClick(null);
@@ -598,39 +639,33 @@ class NativeHotspotRenderer {
  * Update darkening overlay for focus mode
  */
     updateDarkeningOverlay(opacity = null) {
-        return;
-        if (!this.darkeningRect || !this.maskElement) return;
+        if (!this.darkeningRect) return;
 
         if (!this.selectedHotspot) {
             // Remove darkening when nothing is selected
-            this.darkeningRect.setAttribute('fill', 'rgba(0, 0, 0, 0)');
-
-            // Clear mask to show everything
-            this.maskElement.innerHTML = `
-            <rect x="0" y="0" width="100%" height="100%" fill="white"/>
-        `;
+            this.darkeningRect.style.display = 'none';
+            this.darkeningRect.style.background = '';
             return;
         }
 
+        // Show darkening
+        this.darkeningRect.style.display = '';
+
         // Apply darkening with custom opacity if provided
-        const baseOpacity = 0.4;
+        const baseOpacity = 0.7; // Reduced from 0.4 for research recommendations
         const finalOpacity = opacity !== null ? opacity : baseOpacity;
-        this.darkeningRect.setAttribute('fill', `rgba(0, 0, 0, ${finalOpacity})`);
 
-        // Create mask with hole for selected hotspot
-        const overlay = this.overlays.get(this.selectedHotspot.id);
-        if (!overlay) return;
+        // Use style.opacity for smooth transitions
+        this.darkeningRect.style.opacity = finalOpacity;
 
-        const paths = overlay.element.getElementsByTagName('path');
-        let maskContent = `<rect x="0" y="0" width="100%" height="100%" fill="white"/>`;
+        // Apply vignette effect for enhanced depth perception
+        this.applyVignetteEffect(finalOpacity);
 
-        // Add black shapes for the selected hotspot (creates holes in the mask)
-        for (let path of paths) {
-            const d = path.getAttribute('d');
-            maskContent += `<path d="${d}" fill="black"/>`;
-        }
+        // Add subtle scale transform for "stepping back" effect
+        const scaleFactor = 1 + (0.05 * (1 - finalOpacity)); // Slight zoom out as opacity decreases
+        this.darkeningRect.style.transform = `scale(${scaleFactor})`;
 
-        this.maskElement.innerHTML = maskContent;
+        console.log('updateDarkeningOverlay - opacity:', finalOpacity);
     }
 
     /**
@@ -639,31 +674,60 @@ class NativeHotspotRenderer {
     calculateDarkeningOpacity(currentZoom) {
         if (!this.selectedHotspot || !this.zoomOnSelection) return 0;
 
-        // Relative thresholds - REDUCED for quicker fade
-        const fadeStartOffset = 0.1;   // Start fade after just 10% dezoom
-        const fadeRange = 0.25;        // Complete fade over 25% more dezoom (total 35% dezoom)
+        const relativeZoom = currentZoom / this.zoomOnSelection;
 
-        const relativeMax = this.zoomOnSelection * (1 - fadeStartOffset);
-        const relativeMin = this.zoomOnSelection * (1 - fadeStartOffset - fadeRange);
+        // Optimal thresholds from research
+        const fadeStartRatio = 0.95;  // Start fade at 5% dezoom
+        const fadeEndRatio = 0.75;    // Complete fade at 25% dezoom
 
-        // Also enforce absolute minimums to ensure deselection
-        const absoluteMin = this.isMobile ? 2.0 : 2.5;  // Higher values = fade completes earlier
-
-        const maxOpacityZoom = relativeMax;
-        const minOpacityZoom = Math.max(relativeMin, absoluteMin); // Never go below absolute minimum
-
-        // Calculate opacity based on zoom
-        if (currentZoom >= maxOpacityZoom) {
-            return 0.4; // Full darkening
-        } else if (currentZoom <= minOpacityZoom) {
-            return 0; // No darkening
+        // Calculate progress (0 to 1)
+        let progress = 0;
+        if (relativeZoom >= fadeStartRatio) {
+            return 0.7; // Max 70% opacity (not full black)
+        } else if (relativeZoom <= fadeEndRatio) {
+            return 0;
         } else {
-            // Linear interpolation between min and max
-            const zoomRange = maxOpacityZoom - minOpacityZoom;
-            const zoomProgress = (currentZoom - minOpacityZoom) / zoomRange;
-            // Ease-out curve for smoother transition
-            const eased = 1 - Math.pow(1 - zoomProgress, 2);
-            return 0.4 * eased;
+            // Calculate linear progress
+            progress = (relativeZoom - fadeEndRatio) / (fadeStartRatio - fadeEndRatio);
+        }
+
+        // Apply perceptual curve (power 0.4 for natural feel)
+        const perceptualProgress = Math.pow(progress, 0.4);
+
+        // Return opacity (max 0.7 for better visibility)
+        return 0.7 * perceptualProgress;
+    }
+
+    calculateZoomVelocity(currentZoom) {
+        const now = performance.now();
+
+        if (this.lastZoomValue !== null && this.lastZoomTime !== 0) {
+            const timeDelta = (now - this.lastZoomTime) / 1000; // Convert to seconds
+            const zoomDelta = Math.abs(currentZoom - this.lastZoomValue);
+            this.zoomVelocity = zoomDelta / timeDelta;
+        }
+
+        this.lastZoomValue = currentZoom;
+        this.lastZoomTime = now;
+
+        return this.zoomVelocity;
+    }
+
+    applyVignetteEffect(opacity) {
+        if (!this.darkeningRect) return;
+
+        // Only apply vignette when opacity > 0
+        if (opacity > 0) {
+            // Create radial gradient for vignette effect
+            const vignetteIntensity = opacity * 0.5; // Half the main opacity
+            const gradient = `radial-gradient(ellipse at center, 
+            rgba(0,0,0,0) 40%, 
+            rgba(0,0,0,${vignetteIntensity}) 100%)`;
+
+            // Apply as background image
+            this.darkeningRect.style.background = gradient;
+        } else {
+            this.darkeningRect.style.background = '';
         }
     }
 
@@ -1302,9 +1366,12 @@ class NativeHotspotRenderer {
         this.viewer.removeAllHandlers('animation');
         this.viewer.removeAllHandlers('animation-finish');
         this.viewer.removeAllHandlers('viewport-change');
+        this.viewer.removeAllHandlers('animation-update');
+        this.viewer.removeAllHandlers('animation-finish');
         this.viewer.removeHandler('canvas-drag');
         this.viewer.removeHandler('canvas-drag-end');
         this.viewer.removeHandler('zoom');
+
 
         if (this.svg) {
             // Remove pointer event listeners

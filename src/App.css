@@ -921,3 +921,23 @@
         font-size: 14px;
     }
 }
+
+
+/* Accessibility support for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    #darkening-rect {
+        transition: opacity 0.1s linear !important;
+        transform: none !important;
+    }
+
+    .hotspot-svg-overlay g {
+        transition: none !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    #darkening-rect {
+        opacity: 0.9 !important; /* Darker for better contrast */
+    }
+}
