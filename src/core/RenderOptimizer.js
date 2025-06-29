@@ -462,6 +462,11 @@ class RenderOptimizer {
             this.viewer.imageLoader.jobLimit = 0; // Stop all new tile loads
         }
 
+        // Optimize canvas overlay for zoom
+        if (window.canvasOverlayManager) {
+            window.canvasOverlayManager.prepareForZoom();
+        }
+
         console.log('Cinematic zoom optimization started');
     }
 
@@ -485,6 +490,11 @@ class RenderOptimizer {
 
         // Force a redraw to ensure quality is restored
         this.viewer.forceRedraw();
+
+        // Restore canvas overlay quality
+        if (window.canvasOverlayManager) {
+            window.canvasOverlayManager.endZoom();
+        }
 
         console.log('Cinematic zoom optimization ended');
     }

@@ -14,6 +14,7 @@ import TileCleanupManager from '../core/TileCleanupManager';
 import TileOptimizer from '../core/TileOptimizer';
 import { applyTileCascadeFix } from '../core/TileCascadeFix';
 import ViewportManager from '../core/ViewportManager';
+import CanvasOverlayManager from '../core/CanvasOverlayManager';
 
 // 3. Components
 import AudioPlayer from './AudioPlayer';
@@ -65,23 +66,25 @@ function ArtworkViewer(props) {
         if (intervals.handleKeyPress) {
             window.removeEventListener('keydown', intervals.handleKeyPress);
         }
-
         Object.values(intervals).forEach(interval => {
             if (typeof interval === 'number') clearInterval(interval);
         });
-
         if (components().resizeObserver && viewerRef) {
             components().resizeObserver.disconnect();
         }
 
+        // Explicitly destroy canvas overlay first (optional)
+        if (components().canvasOverlayManager) {
+            components().canvasOverlayManager.destroy();
+        }
+
+        // This will destroy ALL components including darkeningOverlay
         Object.values(components()).forEach(component => {
             if (component && typeof component.destroy === 'function') {
                 component.destroy();
             }
         });
-
         if (viewer) viewer.destroy();
-
         ['performanceMonitor', 'viewer', 'tileOptimizer'].forEach(prop => {
             if (window[prop] === components()[prop] || window[prop] === viewer) {
                 delete window[prop];
@@ -154,7 +157,8 @@ function ArtworkViewer(props) {
             tileOptimizer: new TileOptimizer(viewer),
             memoryManager: new MemoryManager(viewer),
             tileCleanupManager: new TileCleanupManager(viewer),
-            imageOverlayManager: new ImageOverlayManager()
+            imageOverlayManager: new ImageOverlayManager(),
+            canvasOverlayManager: new CanvasOverlayManager(viewer)
         };
 
         // Disable tile optimization during initial load
@@ -165,6 +169,12 @@ function ArtworkViewer(props) {
 
         // Set the signal
         setComponents(componentsObj);
+
+        // Initialize Canvas overlay manager
+        componentsObj.canvasOverlayManager.initialize();
+
+        // Make it globally accessible for RenderOptimizer
+        window.canvasOverlayManager = componentsObj.canvasOverlayManager;
 
         // Simplified audio engine setup
         window.audioEngine = componentsObj.audioEngine;
@@ -634,8 +644,12 @@ function ArtworkViewer(props) {
             if (!event.preventDefaultAction && components().renderer && event.quick) {
                 if (components().renderer.selectedHotspot) {
                     components().renderer.selectedHotspot = null;
-                    components().renderer.updateDarkeningOverlay();
                     setSelectedHotspot(null);
+
+                    // Update darkening overlay when deselecting
+                    if (components().darkeningOverlay) {
+                        components().darkeningOverlay.setSelectedHotspot(null);
+                    }
                 }
             }
         });
@@ -745,6 +759,12 @@ function ArtworkViewer(props) {
 
         setComponents(prev => ({ ...prev, renderer }));
         console.log('Using NativeHotspotRenderer for all platforms');
+
+        // Initialize Canvas darkening overlay
+        const darkeningOverlay = new CanvasDarkeningOverlay(viewer);
+        setComponents(prev => ({ ...prev, darkeningOverlay }));
+        console.log('Canvas darkening overlay initialized');
+
     };
 
 
@@ -995,6 +1015,10 @@ function ArtworkViewer(props) {
             setShowMediaButton(false);
             setCurrentPlayingHotspot(null);
             setCurrentMediaHotspot(null);
+            // Clear canvas overlay
+            if (components().canvasOverlayManager) {
+                components().canvasOverlayManager.clearSelection();
+            }
             return;
         }
 
@@ -1036,6 +1060,11 @@ function ArtworkViewer(props) {
         setShowMediaButton(false);
         setSelectedHotspot(hotspot);
         setCurrentPlayingHotspot(hotspot);
+
+        // Update canvas overlay
+        if (components().canvasOverlayManager) {
+            components().canvasOverlayManager.selectHotspot(hotspot);
+        }
 
         // Check if hotspot has image
         const hasImage = hotspot.image_url_1 || components().imageOverlayManager?.getOverlay(hotspot.id);
