@@ -224,24 +224,31 @@ class NativeHotspotRenderer {
 
     createSVG(imageSize) {
         const svgString = `<svg xmlns="http://www.w3.org/2000/svg" 
-                   width="${imageSize.x}" height="${imageSize.y}" 
-                   viewBox="0 0 ${imageSize.x} ${imageSize.y}"
-                   style="position: absolute; width: 100%; height: 100%; pointer-events: auto;">
-    <rect id="darkening-rect" x="0" y="0" width="${imageSize.x}" height="${imageSize.y}" 
-          fill="rgba(0, 0, 0, 1)" 
-          style="opacity: 0; 
-                 display: none; 
-                 pointer-events: none; 
-                 transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-                             transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                 transform-origin: center;
-                 will-change: opacity, transform;"/>
+               width="${imageSize.x}" height="${imageSize.y}" 
+               viewBox="0 0 ${imageSize.x} ${imageSize.y}"
+               style="position: absolute; width: 100%; height: 100%; pointer-events: auto;">
+        <defs>
+            <mask id="spotlight-mask">
+                <!-- White background = visible -->
+                <rect x="0" y="0" width="${imageSize.x}" height="${imageSize.y}" fill="white"/>
+                <!-- Black hole = transparent (will be added dynamically) -->
+            </mask>
+        </defs>
+        <rect id="darkening-rect" x="0" y="0" width="${imageSize.x}" height="${imageSize.y}" 
+              fill="black" 
+              mask="url(#spotlight-mask)"
+              style="opacity: 0; 
+                     display: none; 
+                     pointer-events: none; 
+                     transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                     will-change: opacity;"/>
     </svg>`;
 
         const svg = new DOMParser().parseFromString(svgString, 'image/svg+xml').documentElement;
 
-        // Store reference
+        // Store references
         this.darkeningRect = svg.getElementById('darkening-rect');
+        this.spotlightMask = svg.getElementById('spotlight-mask');
 
         return svg;
     }
@@ -582,26 +589,21 @@ class NativeHotspotRenderer {
     deselectHotspot() {
         console.log('Deselecting hotspot');
 
-        // Force remove darkening overlay BEFORE clearing selectedHotspot
-        if (this.darkeningRect) {
-            this.darkeningRect.setAttribute('fill', 'rgba(0, 0, 0, 0)');
-        }
-        if (this.maskElement) {
-            this.maskElement.innerHTML = `<rect x="0" y="0" width="100%" height="100%" fill="white"/>`;
-        }
-
-        // Update visual state for all hotspots BEFORE clearing selection
-        this.overlays.forEach((overlay, id) => {
-            const state = id === this.hoveredHotspot?.id ? 'hover' : 'normal';
-            this.applyStyle(overlay.element, overlay.hotspot.type, state);
-        });
-
-        // NOW clear the selection
+        // Clear the selection first
         this.selectedHotspot = null;
 
         // Reset zoom tracking
         this.zoomOnSelection = null;
         this.selectionTimestamp = null;
+
+        // Update darkening with full opacity initially
+        this.updateDarkeningOverlay(0.7);
+
+        // Update visual state for all hotspots
+        this.overlays.forEach((overlay, id) => {
+            const state = id === this.hoveredHotspot?.id ? 'hover' : 'normal';
+            this.applyStyle(overlay.element, overlay.hotspot.type, state);
+        });
     }
 
 
@@ -611,9 +613,9 @@ class NativeHotspotRenderer {
     checkZoomDeselection() {
         if (!this.selectedHotspot || !this.zoomOnSelection) return;
 
-        // Skip if selection just happened (avoid deselecting during initial zoom animation)
+        // Skip if selection just happened
         const timeSinceSelection = Date.now() - this.selectionTimestamp;
-        const gracePeriod = this.isMobile ? 1000 : 1500; // 1s mobile, 1.5s desktop
+        const gracePeriod = this.isMobile ? 1000 : 1500;
         if (timeSinceSelection < gracePeriod) return;
 
         const currentZoom = this.viewer.viewport.getZoom();
@@ -644,28 +646,55 @@ class NativeHotspotRenderer {
         if (!this.selectedHotspot) {
             // Remove darkening when nothing is selected
             this.darkeningRect.style.display = 'none';
-            this.darkeningRect.style.background = '';
+            this.darkeningRect.style.opacity = '0';
+
+            // Clear the mask
+            if (this.spotlightMask) {
+                const holes = this.spotlightMask.querySelectorAll('path');
+                holes.forEach(hole => hole.remove());
+            }
             return;
         }
+
+        // Update the spotlight mask for the selected hotspot
+        this.updateSpotlightMask();
 
         // Show darkening
         this.darkeningRect.style.display = '';
 
         // Apply darkening with custom opacity if provided
-        const baseOpacity = 0.7; // Reduced from 0.4 for research recommendations
+        const baseOpacity = 0.7;
         const finalOpacity = opacity !== null ? opacity : baseOpacity;
 
         // Use style.opacity for smooth transitions
         this.darkeningRect.style.opacity = finalOpacity;
 
-        // Apply vignette effect for enhanced depth perception
-        this.applyVignetteEffect(finalOpacity);
-
-        // Add subtle scale transform for "stepping back" effect
-        const scaleFactor = 1 + (0.05 * (1 - finalOpacity)); // Slight zoom out as opacity decreases
-        this.darkeningRect.style.transform = `scale(${scaleFactor})`;
-
         console.log('updateDarkeningOverlay - opacity:', finalOpacity);
+    }
+
+
+    updateSpotlightMask() {
+        if (!this.spotlightMask || !this.selectedHotspot) return;
+
+        // Clear existing holes
+        const existingHoles = this.spotlightMask.querySelectorAll('path');
+        existingHoles.forEach(hole => hole.remove());
+
+        // Get the selected hotspot overlay
+        const overlay = this.overlays.get(this.selectedHotspot.id);
+        if (!overlay) return;
+
+        // Clone the hotspot paths and make them black (holes in the mask)
+        const hotspotGroup = overlay.element;
+        const paths = hotspotGroup.getElementsByTagName('path');
+
+        for (let path of paths) {
+            const holePath = path.cloneNode(true);
+            holePath.setAttribute('fill', 'black');
+            holePath.setAttribute('stroke', 'none');
+            holePath.style.opacity = '1';
+            this.spotlightMask.appendChild(holePath);
+        }
     }
 
     /**
@@ -698,38 +727,7 @@ class NativeHotspotRenderer {
         return 0.7 * perceptualProgress;
     }
 
-    calculateZoomVelocity(currentZoom) {
-        const now = performance.now();
-
-        if (this.lastZoomValue !== null && this.lastZoomTime !== 0) {
-            const timeDelta = (now - this.lastZoomTime) / 1000; // Convert to seconds
-            const zoomDelta = Math.abs(currentZoom - this.lastZoomValue);
-            this.zoomVelocity = zoomDelta / timeDelta;
-        }
-
-        this.lastZoomValue = currentZoom;
-        this.lastZoomTime = now;
-
-        return this.zoomVelocity;
-    }
-
-    applyVignetteEffect(opacity) {
-        if (!this.darkeningRect) return;
-
-        // Only apply vignette when opacity > 0
-        if (opacity > 0) {
-            // Create radial gradient for vignette effect
-            const vignetteIntensity = opacity * 0.5; // Half the main opacity
-            const gradient = `radial-gradient(ellipse at center, 
-            rgba(0,0,0,0) 40%, 
-            rgba(0,0,0,${vignetteIntensity}) 100%)`;
-
-            // Apply as background image
-            this.darkeningRect.style.background = gradient;
-        } else {
-            this.darkeningRect.style.background = '';
-        }
-    }
+   
 
     /**
      * Find the smallest hotspot at a given point

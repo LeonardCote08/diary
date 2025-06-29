@@ -364,8 +364,8 @@
 /* Expand to Full View button container - floating bottom right */
 .expand-button-container {
     position: fixed;
-    bottom: 90px; 
-    right: 20px; 
+    bottom: 90px;
+    right: 20px;
     z-index: 40;
     animation: fadeIn 0.3s ease-out;
 }
@@ -416,7 +416,7 @@
     }
 
     .expand-button .expand-icon {
-        font-size: 20px; 
+        font-size: 20px;
         line-height: 1;
         opacity: 0.9;
         transition: transform 0.2s ease;
@@ -424,7 +424,7 @@
         vertical-align: middle;
         position: relative;
         top: -5px;
-        transform: scale(1.5); 
+        transform: scale(1.5);
     }
 
     .expand-button span {
