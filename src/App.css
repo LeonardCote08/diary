@@ -831,7 +831,8 @@
     z-index: 10000;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(20px);
-    overflow: hidden;
+    overflow-y: auto; 
+    overflow-x: hidden;
     animation: messageSlideIn 0.3s ease-out;
 }
 
@@ -886,8 +887,6 @@
 
 .message-content {
     padding: 24px;
-    max-height: 60vh;
-    overflow-y: auto;
     line-height: 1.6;
 }
 
@@ -915,11 +914,83 @@
     .developer-message {
         width: calc(100vw - 32px);
         margin: 16px;
+        max-height: 90vh; 
+        top: 50%; 
+        transform: translate(-50%, -50%); 
     }
 
     .message-content {
         font-size: 14px;
+        padding: 16px; 
     }
+}
+
+/* Update section inside developer message */
+.update-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 0 24px 24px 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+    .update-section h4 {
+        margin: 0 0 12px 0;
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.95);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .update-section p {
+        margin: 0 0 12px 0;
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 14px;
+        line-height: 1.5;
+        text-align: left;
+    }
+
+    .update-section ul {
+        margin: 0;
+        padding: 0 0 0 20px;
+        list-style: none;
+    }
+
+    .update-section li {
+        margin: 6px 0;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+        line-height: 1.4;
+        text-align: left;
+        position: relative;
+        padding-left: 8px;
+    }
+
+        .update-section li::before {
+            content: '';
+            position: absolute;
+            left: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+/* Mobile adjustments for update section */
+@media (max-width: 768px) {
+    .update-section {
+        margin: 0 16px 16px 16px;
+        padding: 16px;
+    }
+
+        .update-section h4 {
+            font-size: 15px;
+        }
+
+        .update-section p,
+        .update-section li {
+            font-size: 13px;
+        }
 }
 
 

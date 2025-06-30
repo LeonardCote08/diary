@@ -765,8 +765,6 @@ function ArtworkViewer(props) {
         setComponents(prev => ({ ...prev, darkeningOverlay }));
         console.log('Canvas darkening overlay initialized');
 
-        
-
     };
 
 
@@ -988,9 +986,9 @@ function ArtworkViewer(props) {
                 components().performanceMonitor.resumeMonitoring();
             }
 
-            
 
-        }, animTime * 1000 + 1000); 
+
+        }, animTime * 1000 + 1000);
 
 
         // Update hotspot overlays after animation - OPTIMIZED FOR MOBILE

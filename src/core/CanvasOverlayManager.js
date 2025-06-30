@@ -88,21 +88,11 @@ class CanvasOverlayManager {
             zoomVelocity: 0
         };
 
-        this.interpolationTimeout = null;
-        this.renderRequest = null;
-
         // Animation loop control
         this.animationLoop = {
             isRunning: false,
             frameId: null
         };
-
-        // Animation tracking
-        this.state.isViewerAnimating = false;
-        this.predictiveRenderLoop = null;
-
-        // Remove interpolation delay during viewport changes
-        this.directRenderMode = false;
 
         // Configuration
         this.config = {
@@ -113,7 +103,9 @@ class CanvasOverlayManager {
             enableSoftEdges: false
         };
 
-      
+        // Animation
+        this.animationFrame = null;
+        this.lastUpdateTime = 0;
 
         // Timers
         this.animationFrame = null;
@@ -122,7 +114,7 @@ class CanvasOverlayManager {
 
         // Bind methods
         this.render = this.render.bind(this);
-        this.handleViewportUpdate = this.handleViewportUpdate.bind(this);
+        this.handleViewportChange = this.handleViewportChange.bind(this);
     }
 
     initialize() {
@@ -130,27 +122,37 @@ class CanvasOverlayManager {
 
         // Create canvas element
         this.canvas = document.createElement('canvas');
+        this.canvas.style.position = 'absolute';
+        this.canvas.style.top = '0';
+        this.canvas.style.left = '0';
         this.canvas.style.pointerEvents = 'none';
+        this.canvas.style.zIndex = '8'; // Above tiles but below hotspots (which are at z-index 10)
+        this.canvas.style.willChange = 'transform';
+        this.canvas.style.width = '100%';
+        this.canvas.style.height = '100%';
+
+        // Get the OpenSeadragon container directly
+        const container = this.viewer.container;
+        // Insert canvas as first child to ensure proper layering
+        container.insertBefore(this.canvas, container.firstChild);
+
+        // Get context
         this.ctx = this.canvas.getContext('2d', {
-            alpha: true
-        });
+            alpha: true,
+            desynchronized: true // Better performance
 
-        // Add canvas as OpenSeadragon overlay - this ensures perfect sync
-        this.viewer.addOverlay({
-            element: this.canvas,
-            location: new OpenSeadragon.Rect(0, 0, 1, 1),
-            placement: OpenSeadragon.Placement.TOP_LEFT,
-            checkResize: false
-        });
 
-        // Set up custom redraw handler
-        this.setupRedrawHandler();
+        });
 
         // Set up size
         this.updateCanvasSize();
 
+        // No need for individual handlers - the animation loop handles everything
+        this.viewer.addHandler('viewport-change', this.handleViewportChange);
+        this.viewer.addHandler('resize', () => this.updateCanvasSize());
+
         this.isInitialized = true;
-        console.log('CanvasOverlayManager initialized with native overlay');
+        console.log('CanvasOverlayManager initialized');
 
         // Listen for zoom events for auto-deselect
         this.viewer.addHandler('zoom', () => {
@@ -158,110 +160,36 @@ class CanvasOverlayManager {
                 this.checkAutoDeselect();
             }
         });
-    }
 
-    setupRedrawHandler() {
-        // Hook into OpenSeadragon's update cycle for perfect sync
-        let lastRedrawTime = 0;
-        const minRedrawInterval = 16; // ~60fps
-
-        this.viewer.addHandler('update-viewport', () => {
-            const now = performance.now();
-            if (now - lastRedrawTime < minRedrawInterval) return;
-            lastRedrawTime = now;
-
-            if (this.state.selectedHotspot || this.state.opacity > 0) {
-                this.redrawOverlay();
-            }
-        });
-
-        // Immediate redraw on animation frames
-        this.viewer.addHandler('animation', () => {
+        // Also check on animation finish (catches smooth zoom endings)
+        this.viewer.addHandler('animation-finish', () => {
             if (this.state.selectedHotspot) {
-                this.redrawOverlay();
+                this.checkAutoDeselect();
             }
         });
-    }
-
-    redrawOverlay() {
-        // Get current viewport state
-        const viewport = this.viewer.viewport;
-        const containerSize = viewport.getContainerSize();
-
-        // Update canvas size if needed
-        if (this.canvas.width !== containerSize.x || this.canvas.height !== containerSize.y) {
-            this.canvas.width = containerSize.x;
-            this.canvas.height = containerSize.y;
-        }
-
-        // Clear canvas
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        if (!this.state.selectedHotspot || this.state.opacity < 0.001) {
-            return;
-        }
-
-        // Calculate effective opacity
-        const focusScore = this.calculateFocusScore();
-        const effectiveOpacity = this.state.opacity * focusScore;
-
-        if (effectiveOpacity < 0.001) return;
-
-        // Save context
-        this.ctx.save();
-
-        // Draw darkening overlay
-        this.ctx.globalCompositeOperation = 'source-over';
-        this.ctx.fillStyle = `rgba(0, 0, 0, ${effectiveOpacity})`;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Cut out hotspot area
-        this.ctx.globalCompositeOperation = 'destination-out';
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 1)';
-
-        // Convert hotspot coordinates to screen space
-        this.drawHotspotShapeFromCoords(this.state.selectedHotspot);
-
-        this.ctx.restore();
-    }
-
-    drawHotspotShapeFromCoords(hotspot) {
-        this.ctx.beginPath();
-
-        if (hotspot.shape === 'polygon' || hotspot.shape === 'multipolygon') {
-            const coords = hotspot.shape === 'polygon' ?
-                [hotspot.coordinates] : hotspot.coordinates;
-
-            coords.forEach(polygon => {
-                polygon.forEach((point, index) => {
-                    const screenPoint = this.imageToScreen(point[0], point[1]);
-
-                    if (index === 0) {
-                        this.ctx.moveTo(screenPoint.x, screenPoint.y);
-                    } else {
-                        this.ctx.lineTo(screenPoint.x, screenPoint.y);
-                    }
-                });
-                this.ctx.closePath();
-            });
-        }
-
-        this.ctx.fill();
     }
 
     updateCanvasSize() {
-        // Native overlay handles positioning, we just need to update dimensions
-        const containerSize = this.viewer.viewport.getContainerSize();
+        const container = this.viewer.container;
+        const rect = container.getBoundingClientRect();
 
-        if (this.canvas.width !== containerSize.x || this.canvas.height !== containerSize.y) {
-            this.canvas.width = containerSize.x;
-            this.canvas.height = containerSize.y;
+        // Set canvas size to match container exactly
+        this.canvas.width = rect.width * window.devicePixelRatio;
+        this.canvas.height = rect.height * window.devicePixelRatio;
 
-            // Force redraw after resize
-            if (this.state.selectedHotspot) {
-                this.redrawOverlay();
-            }
-        }
+        // Scale canvas back down using CSS
+        this.canvas.style.width = rect.width + 'px';
+        this.canvas.style.height = rect.height + 'px';
+
+        // Remove any positioning - canvas should fill its parent
+        this.canvas.style.left = '0';
+        this.canvas.style.top = '0';
+
+        // Scale context for retina displays
+        this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+        // Force redraw
+        this.render();
     }
 
     selectHotspot(hotspot) {
@@ -270,15 +198,35 @@ class CanvasOverlayManager {
         this.state.selectedHotspot = hotspot;
         this.state.targetOpacity = hotspot ? this.config.maxOpacity : 0;
 
-        // Disable interpolation completely for immediate response
-        this.interpolation.disabled = true;
-        this.interpolation.current = null;
-        this.interpolation.velocity = { x: 0, y: 0, width: 0, height: 0, centerX: 0, centerY: 0 };
+        // Reset interpolation when selecting new hotspot
+        if (!hotspot || (this.interpolation.current &&
+            (!this.state.selectedHotspot || this.state.selectedHotspot.id !== hotspot.id))) {
+            this.interpolation.current = null;
+            this.interpolation.velocity = { x: 0, y: 0, width: 0, height: 0, centerX: 0, centerY: 0 };
+        }
 
-        // Start opacity animation
+        // After setting targetOpacity
+        if (hotspot) {
+            // Force immediate render to ensure proper cutout
+            setTimeout(() => {
+                this.render();
+            }, 0);
+        }
+
+        // Sync interpolation with current viewer state
+        if (hotspot && this.viewer) {
+            const viewerSpring = this.viewer.viewport.zoomSpring.springStiffness;
+            const viewerTime = this.viewer.animationTime;
+
+            // Adapt interpolation to match viewer
+            this.interpolation.spring = Math.min(0.3, 1 / viewerTime);
+            this.interpolation.damping = 0.7 + (viewerSpring * 0.02);
+        }
+
+        // Always start opacity animation when there's a change
         this.startAnimation();
 
-        // Start render loop if selecting
+        // Also start render loop if selecting a hotspot
         if (hotspot) {
             this.startAnimationLoop();
         }
@@ -474,9 +422,9 @@ class CanvasOverlayManager {
         const currentZoom = this.viewer.viewport.getZoom();
 
         // Absolute thresholds - REDUCED FOR EARLIER DESELECTION
-        const minZoomThreshold = this.isMobile ? 1.5 : 2.0;  
-        const zoomReductionThreshold = 0.6; 
-        const minCoverageThreshold = 0.15; 
+        const minZoomThreshold = this.isMobile ? 1.5 : 2.0;
+        const zoomReductionThreshold = 0.6;
+        const minCoverageThreshold = 0.15;
 
         // Check absolute zoom threshold
         if (currentZoom < minZoomThreshold) {
@@ -512,11 +460,11 @@ class CanvasOverlayManager {
             }
         }
 
-        
+
         // Calculate combined focus score for pan detection
         const focusScore = this.calculateFocusScore();
 
-        if (focusScore < 0.5) { 
+        if (focusScore < 0.5) {
             console.log('Auto-deselecting: low focus score', focusScore);
             this.autoDeselect();
         }
@@ -623,69 +571,21 @@ class CanvasOverlayManager {
             return;
         }
 
-        // Calculate distance between hotspots
-        const distance = this.calculateHotspotDistance(this.state.selectedHotspot, newHotspot);
+        // Start transition
+        this.transition.active = true;
+        this.transition.fromHotspot = this.state.selectedHotspot;
+        this.transition.toHotspot = newHotspot;
+        this.transition.progress = 0;
+        this.transition.duration = duration;
+        this.transition.startTime = performance.now();
 
-        // Use fade transition for close hotspots (less than 20% of viewport)
-        if (distance < 0.2) {
-            this.performFadeTransition(newHotspot, duration * 0.5);
-        } else {
-            // For distant hotspots, maintain current behavior
-            this.transition.active = true;
-            this.transition.fromHotspot = this.state.selectedHotspot;
-            this.transition.toHotspot = newHotspot;
-            this.transition.progress = 0;
-            this.transition.duration = duration;
-            this.transition.startTime = performance.now();
-            this.state.targetOpacity = this.config.maxOpacity;
-            this.startAnimationLoop();
-        }
-    }
+        // Maintain darkening during transition
+        this.state.targetOpacity = this.config.maxOpacity;
 
-    performFadeTransition(newHotspot, duration) {
-        const fadeOutDuration = duration * 0.3;
-        const fadeInDuration = duration * 0.7;
 
-        // Start fade out
-        this.state.targetOpacity = 0;
-        this.startAnimation();
 
-        setTimeout(() => {
-            // Switch to new hotspot at minimum opacity
-            this.state.selectedHotspot = newHotspot;
-            this.state.targetOpacity = this.config.maxOpacity;
-
-            // Reset interpolation for instant position change
-            this.interpolation.current = null;
-            this.interpolation.velocity = { x: 0, y: 0, width: 0, height: 0, centerX: 0, centerY: 0, scale: 0 };
-
-            // Track new focus reference
-            setTimeout(() => {
-                this.trackFocusReference();
-            }, 50);
-
-            this.startAnimation();
-        }, fadeOutDuration);
-    }
-
-    calculateHotspotDistance(hotspot1, hotspot2) {
-        if (!hotspot1 || !hotspot2) return Infinity;
-
-        // Get center points of both hotspots
-        const bounds1 = this.getHotspotScreenBounds(hotspot1);
-        const bounds2 = this.getHotspotScreenBounds(hotspot2);
-
-        if (!bounds1 || !bounds2) return Infinity;
-
-        // Calculate viewport-relative distance
-        const viewport = this.viewer.viewport.getBounds();
-        const dx = (bounds1.centerX - bounds2.centerX) / this.canvas.width;
-        const dy = (bounds1.centerY - bounds2.centerY) / this.canvas.height;
-
-        // Normalize by viewport size
-        const normalizedDistance = Math.sqrt(dx * dx + dy * dy) / Math.max(viewport.width, viewport.height);
-
-        return normalizedDistance;
+        // Keep rendering during transition
+        this.startAnimationLoop();
     }
 
     clearSelection() {
@@ -767,12 +667,6 @@ class CanvasOverlayManager {
     }
 
     render() {
-        // Use direct rendering during animations
-        if (this.state.isViewerAnimating) {
-            this.renderDirect();
-            return;
-        }
-
         // Calculate dimensions once
         const width = this.canvas.width / window.devicePixelRatio;
         const height = this.canvas.height / window.devicePixelRatio;
@@ -836,22 +730,7 @@ class CanvasOverlayManager {
         if (!targetBounds) return;
 
         // Use interpolated bounds for smooth transitions
-        let bounds;
-        if (this.viewer.isAnimating() || Math.abs(this.interpolation.zoomVelocity) > 0.01) {
-            // During animations, use direct bounds to prevent lag
-            bounds = targetBounds;
-        } else {
-            // Only interpolate when static
-            bounds = this.interpolateBounds(targetBounds);
-        }
-
-        // Always use integer coordinates for final rendering
-        bounds.x = Math.floor(bounds.x);
-        bounds.y = Math.floor(bounds.y);
-        bounds.width = Math.ceil(bounds.width);
-        bounds.height = Math.ceil(bounds.height);
-        bounds.centerX = Math.floor(bounds.centerX);
-        bounds.centerY = Math.floor(bounds.centerY);
+        const bounds = this.interpolateBounds(targetBounds);
 
         // ENSURE MINIMUM SIZE FOR VISIBILITY
         const minSize = 20; // Minimum 20px for visibility
@@ -888,6 +767,16 @@ class CanvasOverlayManager {
     }
 
     interpolateBounds(target) {
+        // Skip interpolation if disabled
+        if (this.interpolation.disabled) {
+            this.interpolation.current = { ...target };
+            this.interpolation.target = { ...target };
+            Object.keys(this.interpolation.velocity).forEach(key => {
+                this.interpolation.velocity[key] = 0;
+            });
+            return target;
+        }
+
         // Initialize on first run
         if (!this.interpolation.current) {
             this.interpolation.current = { ...target, scale: 1 };
@@ -897,49 +786,51 @@ class CanvasOverlayManager {
             return this.interpolation.current;
         }
 
-        // Skip interpolation if disabled or during movement
-        if (this.interpolation.disabled) {
-            // Direct update for tight tracking
-            this.interpolation.current = { ...target };
-            this.interpolation.target = { ...target };
-            // Reset velocities
-            Object.keys(this.interpolation.velocity).forEach(key => {
-                this.interpolation.velocity[key] = 0;
-            });
-            return target;
-        }
-
         // Update target
         this.interpolation.target = { ...target };
 
-        // Get viewer's actual spring values for perfect sync
-        const viewportSpring = this.viewer.viewport.centerSpringX;
-        const zoomSpring = this.viewer.viewport.zoomSpring;
+        // Interpolate zoom separately for smooth scaling
+        const zoomDiff = this.interpolation.targetZoom - this.interpolation.currentZoom;
+        this.interpolation.zoomVelocity += zoomDiff * this.interpolation.spring;
+        this.interpolation.zoomVelocity *= this.interpolation.damping;
+        this.interpolation.currentZoom += this.interpolation.zoomVelocity;
 
-        // Use viewer's spring values directly
-        const springStiffness = viewportSpring.springStiffness / 50;
-        const damping = 1 - (1 / (1 + viewportSpring.animationTime * 3));
+        // Calculate scale factor from zoom change
+        const scaleFactor = this.interpolation.currentZoom / this.viewer.viewport.getZoom();
 
-        // Interpolate position and size
+        // Interpolate position and size with zoom-adjusted spring
         const props = ['x', 'y', 'width', 'height', 'centerX', 'centerY'];
+        let hasChanged = false;
 
         props.forEach(prop => {
             const current = this.interpolation.current[prop];
             const target = this.interpolation.target[prop];
             const diff = target - current;
 
+            // Adjust spring based on zoom velocity for tighter tracking
+            const adaptiveSpring = this.interpolation.spring *
+                (1 + Math.abs(this.interpolation.zoomVelocity) * 2);
+
             // Skip if very close
-            if (Math.abs(diff) < 0.1) {
-                this.interpolation.current[prop] = target;
-                this.interpolation.velocity[prop] = 0;
+            if (Math.abs(diff) < 0.5) {
+                if (current !== target) {
+                    this.interpolation.current[prop] = target;
+                    this.interpolation.velocity[prop] = 0;
+                }
                 return;
             }
 
-            // Apply spring physics matching OpenSeadragon
-            this.interpolation.velocity[prop] += diff * springStiffness;
-            this.interpolation.velocity[prop] *= damping;
+            // Apply adaptive spring force
+            this.interpolation.velocity[prop] += diff * adaptiveSpring;
+            this.interpolation.velocity[prop] *= this.interpolation.damping;
+
+            // Update position
             this.interpolation.current[prop] += this.interpolation.velocity[prop];
+            hasChanged = true;
         });
+
+        // Store scale for rendering adjustments
+        this.interpolation.current.scale = scaleFactor;
 
         return this.interpolation.current;
     }
@@ -967,19 +858,18 @@ class CanvasOverlayManager {
 
         this.animationLoop.isRunning = true;
 
-        const animate = (timestamp) => {
+        const animate = () => {
             if (!this.animationLoop.isRunning) return;
 
-            // Sync with OpenSeadragon's render cycle
-            if (this.state.selectedHotspot && this.viewer.isOpen()) {
+            // Always render if we have a selected hotspot
+            if (this.state.selectedHotspot) {
                 this.render();
             }
 
             this.animationLoop.frameId = requestAnimationFrame(animate);
         };
 
-        // Start on next frame
-        this.animationLoop.frameId = requestAnimationFrame(animate);
+        animate();
     }
 
     stopAnimationLoop() {
@@ -1001,10 +891,9 @@ class CanvasOverlayManager {
             coords.forEach(polygon => {
                 const screenCoords = this.imageToScreenCoordinates(polygon);
                 if (screenCoords.length > 0) {
-                    // Use integer coordinates to prevent sub-pixel trembling
-                    this.ctx.moveTo(Math.floor(screenCoords[0].x), Math.floor(screenCoords[0].y));
+                    this.ctx.moveTo(screenCoords[0].x, screenCoords[0].y);
                     for (let i = 1; i < screenCoords.length; i++) {
-                        this.ctx.lineTo(Math.floor(screenCoords[i].x), Math.floor(screenCoords[i].y));
+                        this.ctx.lineTo(screenCoords[i].x, screenCoords[i].y);
                     }
                     this.ctx.closePath();
                 }
@@ -1077,7 +966,6 @@ class CanvasOverlayManager {
     }
 
     imageToScreen(imageX, imageY) {
-        // Use the correct OpenSeadragon method
         const viewportPoint = this.viewer.viewport.imageToViewportCoordinates(
             new OpenSeadragon.Point(imageX, imageY)
         );
@@ -1099,96 +987,28 @@ class CanvasOverlayManager {
         this.interpolation.disabled = false;
     }
 
-    
+    handleViewportChange() {
+        // Update zoom tracking for smooth scale interpolation
+        const currentZoom = this.viewer.viewport.getZoom();
+        this.interpolation.targetZoom = currentZoom;
 
-    handleViewportUpdate() {
-        // Direct update without interpolation during viewport updates
+        // Only render if we have a selection
         if (this.state.selectedHotspot) {
-            // Force immediate render without interpolation
-            this.renderDirect();
-        }
-    }
+            // Don't disable soft edges - maintain quality
+            this.render();
 
-    handleAnimationStart() {
-        this.state.isViewerAnimating = true;
-        // Start predictive updates during animation
-        if (this.state.selectedHotspot) {
-            this.startPredictiveRendering();
-        }
-    }
-
-    handleAnimationFinish() {
-        this.state.isViewerAnimating = false;
-        this.stopPredictiveRendering();
-
-        // Check auto-deselect
-        if (this.state.selectedHotspot) {
+            // CHECK FOR AUTO-DESELECT ON PAN/ZOOM
             this.checkAutoDeselect();
-        }
 
-        // Final render to ensure perfect position
-        if (this.state.selectedHotspot) {
-            this.renderDirect();
-        }
-    }
-
-    startPredictiveRendering() {
-        if (this.predictiveRenderLoop) return;
-
-        const render = () => {
-            if (this.state.isViewerAnimating && this.state.selectedHotspot) {
-                this.renderDirect();
-                this.predictiveRenderLoop = requestAnimationFrame(render);
+            // Force focus score recalculation on significant zoom changes
+            if (this.focusTracking.referenceZoom) {
+                const zoomRatio = currentZoom / this.focusTracking.referenceZoom;
+                if (Math.abs(zoomRatio - 1) > 0.1) {
+                    // Significant zoom change - ensure we're calculating scores
+                    this.calculateFocusScore();
+                }
             }
-        };
-        this.predictiveRenderLoop = requestAnimationFrame(render);
-    }
-
-    stopPredictiveRendering() {
-        if (this.predictiveRenderLoop) {
-            cancelAnimationFrame(this.predictiveRenderLoop);
-            this.predictiveRenderLoop = null;
         }
-    }
-
-    renderDirect() {
-        // Direct render without interpolation for perfect sync
-        const width = this.canvas.width / window.devicePixelRatio;
-        const height = this.canvas.height / window.devicePixelRatio;
-
-        // Clear canvas
-        this.ctx.clearRect(0, 0, width, height);
-
-        if (!this.state.selectedHotspot || this.state.opacity < 0.001) {
-            return;
-        }
-
-        // Get bounds WITHOUT interpolation
-        const bounds = this.getHotspotScreenBounds(this.state.selectedHotspot);
-        if (!bounds) return;
-
-        // Apply focus-based opacity
-        const focusScore = this.calculateFocusScore();
-        const effectiveOpacity = this.state.opacity * focusScore;
-
-        if (effectiveOpacity < 0.001) return;
-
-        // Save context
-        this.ctx.save();
-
-        // Draw darkening overlay
-        this.ctx.globalCompositeOperation = 'source-over';
-        this.ctx.fillStyle = `rgba(0, 0, 0, ${effectiveOpacity})`;
-        this.ctx.fillRect(0, 0, width, height);
-
-        // Cut out hotspot area
-        this.ctx.globalCompositeOperation = 'destination-out';
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 1)';
-
-        // Draw shape
-        this.drawHotspotShape(bounds, this.state.selectedHotspot);
-
-        this.ctx.restore();
     }
 
     updateOpacity(opacity) {
@@ -1213,12 +1033,6 @@ class CanvasOverlayManager {
     }
 
     destroy() {
-        // Clear any pending timeouts
-        if (this.interpolationTimeout) {
-            clearTimeout(this.interpolationTimeout);
-            this.interpolationTimeout = null;
-        }
-
         // Remove ALL handlers for these events
         this.viewer.removeAllHandlers('zoom');
         this.viewer.removeAllHandlers('animation-finish');
@@ -1241,14 +1055,9 @@ class CanvasOverlayManager {
         }
 
         if (this.viewer) {
-            this.viewer.removeHandler('update-viewport', this.handleViewportUpdate);
-            this.viewer.removeHandler('animation-start', this.handleAnimationStart);
-            this.viewer.removeHandler('animation-finish', this.handleAnimationFinish);
+            this.viewer.removeHandler('viewport-change', this.handleViewportChange);
             this.viewer.removeHandler('resize', this.updateCanvasSize);
         }
-
-        // Stop predictive rendering
-        this.stopPredictiveRendering();
 
         this.canvas = null;
         this.ctx = null;
