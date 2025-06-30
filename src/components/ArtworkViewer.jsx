@@ -765,6 +765,8 @@ function ArtworkViewer(props) {
         setComponents(prev => ({ ...prev, darkeningOverlay }));
         console.log('Canvas darkening overlay initialized');
 
+        
+
     };
 
 

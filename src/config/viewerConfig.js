@@ -69,8 +69,9 @@ export const buildViewerConfig = (config, dziUrl, drawerType, isMobileDevice, ti
         gestureSettingsMouse: {
             scrollToZoom: true,
             clickToZoom: false,
-            dblClickToZoom: false,  // DISABLED
-            flickEnabled: config.flickEnabled
+            dblClickToZoom: false,
+            flickEnabled: true,        // CRITICAL: Enables immediate stop
+            flickMomentum: 0          // No momentum for precise control
         },
         gestureSettingsTouch: {
             scrollToZoom: false,
@@ -84,7 +85,6 @@ export const buildViewerConfig = (config, dziUrl, drawerType, isMobileDevice, ti
         },
 
         // Touch handling configuration 
-        // REMOVED zoomPerClick from here as it's already defined above
         dblClickDistThreshold: 20,
         clickDistThreshold: 10,
         clickTimeThreshold: 300,
@@ -93,9 +93,13 @@ export const buildViewerConfig = (config, dziUrl, drawerType, isMobileDevice, ti
         debugMode: config.debugMode,
         crossOriginPolicy: 'Anonymous',
         ajaxWithCredentials: false,
-        preserveViewport: config.preserveViewport,
+        preserveViewport: true,              // Prevent viewport recalculations
         preserveImageSizeOnResize: config.preserveImageSizeOnResize,
         maxTilesPerFrame: config.maxTilesPerFrame,
-        smoothImageZoom: config.smoothImageZoom
+        smoothImageZoom: config.smoothImageZoom,
+
+        // Canvas synchronization optimizations
+        subPixelRendering: false,            // Disable for better performance
+        minimumPixelsPerTile: config.minimumPixelsPerTile || 12  // Use config value
     };
 };
