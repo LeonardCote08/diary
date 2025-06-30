@@ -10,6 +10,10 @@ class CanvasOverlayManager {
         this.ctx = null;
         this.isInitialized = false;
 
+        // Add mobile detection
+        this.isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+            ('ontouchstart' in window);
+
         // State
         this.state = {
             selectedHotspot: null,
@@ -136,6 +140,8 @@ class CanvasOverlayManager {
         this.ctx = this.canvas.getContext('2d', {
             alpha: true,
             desynchronized: true // Better performance
+
+
         });
 
         // Set up size
@@ -147,6 +153,20 @@ class CanvasOverlayManager {
 
         this.isInitialized = true;
         console.log('CanvasOverlayManager initialized');
+
+        // Listen for zoom events for auto-deselect
+        this.viewer.addHandler('zoom', () => {
+            if (this.state.selectedHotspot) {
+                this.checkAutoDeselect();
+            }
+        });
+
+        // Also check on animation finish (catches smooth zoom endings)
+        this.viewer.addHandler('animation-finish', () => {
+            if (this.state.selectedHotspot) {
+                this.checkAutoDeselect();
+            }
+        });
     }
 
     updateCanvasSize() {
@@ -185,7 +205,13 @@ class CanvasOverlayManager {
             this.interpolation.velocity = { x: 0, y: 0, width: 0, height: 0, centerX: 0, centerY: 0 };
         }
 
-        
+        // After setting targetOpacity
+        if (hotspot) {
+            // Force immediate render to ensure proper cutout
+            setTimeout(() => {
+                this.render();
+            }, 0);
+        }
 
         // Sync interpolation with current viewer state
         if (hotspot && this.viewer) {
@@ -207,96 +233,252 @@ class CanvasOverlayManager {
     }
 
     trackFocusReference() {
-        if (!this.viewer || !this.state.selectedHotspot) return;
+        console.log('trackFocusReference called');
+        if (!this.state.selectedHotspot) {
+            console.log('trackFocusReference: no selected hotspot');
+            return;
+        }
 
+        const currentZoom = this.viewer.viewport.getZoom();
         const viewport = this.viewer.viewport;
-        this.focusTracking.referenceZoom = viewport.getZoom();
-        this.focusTracking.referenceCenter = viewport.getCenter();
-        this.focusTracking.selectionTime = Date.now();
-        this.focusTracking.currentScore = 1;
-        this.focusTracking.targetScore = 1;
+        const center = viewport.getCenter();
 
-        // DEBUG - Verify this is called AFTER zoom
-        console.log('Track focus reference AFTER ZOOM:', {
-            zoom: this.focusTracking.referenceZoom,
-            center: this.focusTracking.referenceCenter,
-            hotspot: this.state.selectedHotspot.id
+        // Calculate hotspot center in IMAGE coordinates
+        let hotspotCenterImage = { x: 0, y: 0 };
+
+        if (this.state.selectedHotspot.shape === 'polygon') {
+            // Calculate center of polygon
+            let sumX = 0, sumY = 0;
+            const coords = this.state.selectedHotspot.coordinates;
+            coords.forEach(([x, y]) => {
+                sumX += x;
+                sumY += y;
+            });
+            hotspotCenterImage.x = sumX / coords.length;
+            hotspotCenterImage.y = sumY / coords.length;
+        } else if (this.state.selectedHotspot.shape === 'multipolygon') {
+            // For multipolygon, use center of first polygon
+            const firstPolygon = this.state.selectedHotspot.coordinates[0];
+            let sumX = 0, sumY = 0;
+            firstPolygon.forEach(([x, y]) => {
+                sumX += x;
+                sumY += y;
+            });
+            hotspotCenterImage.x = sumX / firstPolygon.length;
+            hotspotCenterImage.y = sumY / firstPolygon.length;
+        }
+
+        // Calculate hotspot coverage using screen bounds
+        const bounds = this.getHotspotScreenBounds(this.state.selectedHotspot);
+        if (!bounds) return;
+
+        // Get image bounds for coverage calculation
+        const tiledImage = this.viewer.world.getItemAt(0);
+        const imageSize = tiledImage.getContentSize();
+
+        // Calculate bounds in image coordinates
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        if (this.state.selectedHotspot.shape === 'polygon') {
+            this.state.selectedHotspot.coordinates.forEach(([x, y]) => {
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            });
+        } else if (this.state.selectedHotspot.shape === 'multipolygon') {
+            this.state.selectedHotspot.coordinates.forEach(polygon => {
+                polygon.forEach(([x, y]) => {
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                });
+            });
+        }
+
+        // Convert to viewport rectangle for coverage calculation
+        const hotspotViewportBounds = viewport.imageToViewportRectangle(
+            minX, minY, maxX - minX, maxY - minY
+        );
+
+        const viewportBounds = viewport.getBounds();
+        const screenCoverage =
+            (hotspotViewportBounds.width * hotspotViewportBounds.height) /
+            (viewportBounds.width * viewportBounds.height);
+
+        this.focusTracking = {
+            referenceZoom: currentZoom,
+            referenceCenter: { x: center.x, y: center.y },
+            hotspotCenter: hotspotCenterImage, // Store in IMAGE coordinates
+            referenceCoverage: screenCoverage,
+            selectionTime: Date.now()
+        };
+
+        console.log('Focus reference tracked:', {
+            zoom: currentZoom,
+            coverage: (screenCoverage * 100).toFixed(1) + '%',
+            hotspotCenter: hotspotCenterImage
         });
     }
 
     calculateFocusScore() {
-
-        // Skip calculations during cinematic zoom or transitions
-        if (this.state.darkeningPaused || this.transition.active) {
-            return this.focusTracking.currentScore;
-        }
-
         if (!this.state.selectedHotspot || !this.focusTracking.referenceZoom) {
-            console.log('No hotspot or reference zoom');
-            return 1;
+            return 1.0;
         }
 
-        const now = Date.now();
-
-        // Throttle calculations
-        if (now - this.focusTracking.lastCalculation < this.focusTracking.throttleInterval) {
-            return this.focusTracking.currentScore;
-        }
-
-        this.focusTracking.lastCalculation = now;
-
+        const currentZoom = this.viewer.viewport.getZoom();
         const viewport = this.viewer.viewport;
-        const currentZoom = viewport.getZoom();
         const currentCenter = viewport.getCenter();
+        const bounds = this.getHotspotScreenBounds(this.state.selectedHotspot);
 
-        // Calculate individual scores
-        const scores = {
-            zoom: this.calculateZoomScore(currentZoom),
-            distance: this.calculateDistanceScore(currentCenter),
-            visibility: this.calculateVisibilityScore()
-        };
+        if (!bounds) return 0;
 
-        // Apply weights
-        const weights = this.focusConfig.weights;
-        const weightedScore = (
-            scores.zoom * weights.zoom +
-            scores.distance * weights.distance +
-            scores.visibility * weights.visibility
+        // 1. Zoom score (how much we've zoomed out)
+        const zoomRatio = currentZoom / this.focusTracking.referenceZoom;
+        const zoomScore = Math.min(1.0, zoomRatio);
+
+        // 2. Distance score (how far we've panned)
+        const hotspotCenterViewport = viewport.imageToViewportCoordinates(
+            this.focusTracking.hotspotCenter.x,
+            this.focusTracking.hotspotCenter.y
         );
 
-        
+        const distance = Math.sqrt(
+            Math.pow(currentCenter.x - hotspotCenterViewport.x, 2) +
+            Math.pow(currentCenter.y - hotspotCenterViewport.y, 2)
+        );
 
-        // Update target score
-        this.focusTracking.targetScore = weightedScore;
+        // Use exponential decay for smoother transition
+        const normalizedDistance = distance / 0.15;
+        // Exponential curve: faster initial decay, smoother at the end
+        const distanceScore = Math.max(0, Math.pow(1.0 - Math.min(normalizedDistance, 1.0), 2));
 
-        return weightedScore;
+        // 3. Coverage score (how much of the screen the hotspot takes)
+        const hotspotViewportBounds = viewport.imageToViewportRectangle(
+            bounds.x, bounds.y, bounds.width, bounds.height
+        );
+        const viewportBounds = viewport.getBounds();
+        const currentCoverage =
+            (hotspotViewportBounds.width * hotspotViewportBounds.height) /
+            (viewportBounds.width * viewportBounds.height);
+
+        // Use zoom ratio to prevent coverage from increasing during zoom out
+        // If we're zooming out, coverage should only decrease
+        const coverageRatio = currentCoverage / this.focusTracking.referenceCoverage;
+        const adjustedCoverageRatio = zoomRatio < 1 ?
+            Math.min(coverageRatio, zoomRatio) : // Cap by zoom ratio when zooming out
+            coverageRatio;
+
+        const coverageScore = Math.min(1.0, adjustedCoverageRatio);
+
+        // Combined score with smooth transition
+        // Ensure it reaches 0 smoothly
+        const combinedScore = Math.pow(
+            (zoomScore * 0.3) + (distanceScore * 0.5) + (coverageScore * 0.2),
+            1.5  // Power function for smoother fade at the end
+        );
+
+        // LOG ONLY ONCE PER SECOND TO AVOID SPAM
+        const now = Date.now();
+        if (!this._lastScoreLog || now - this._lastScoreLog > 1000) {
+            console.log('Focus scores:', {
+                zoomScore: zoomScore.toFixed(3),
+                distanceScore: distanceScore.toFixed(3),
+                coverageScore: coverageScore.toFixed(3),
+                combinedScore: combinedScore.toFixed(3),
+                distance: distance.toFixed(3),
+                normalizedDistance: normalizedDistance.toFixed(3)
+            });
+            this._lastScoreLog = now;
+        }
+
+        return combinedScore;
     }
 
     checkAutoDeselect() {
         // Only check if we have a selected hotspot
-        if (!this.state.selectedHotspot || !this.focusTracking.referenceZoom) return;
+        if (!this.state.selectedHotspot || !this.focusTracking.referenceZoom) {
+            if (this.state.selectedHotspot && !this.focusTracking.referenceZoom) {
+                console.log('checkAutoDeselect: no reference zoom tracked yet');
+            }
+            return;
+        }
 
-        // Calculate current focus score
-        const focusScore = this.calculateFocusScore();
-
-        // Debug log
-        console.log('Auto-deselect check:', {
-            focusScore,
-            threshold: 0.3,
-            willDeselect: focusScore < 0.3
+        console.log('checkAutoDeselect: checking thresholds', {
+            currentZoom: this.viewer.viewport.getZoom(),
+            referenceZoom: this.focusTracking.referenceZoom,
+            focusScore: this.calculateFocusScore()
         });
 
-        // Auto-deselect if score drops below threshold
-        if (focusScore < 0.3) { // 30% threshold
-            console.log('AUTO-DESELECTING hotspot due to low focus score:', focusScore);
+        // Skip check if selection is very recent (grace period)
+        const timeSinceSelection = Date.now() - this.focusTracking.selectionTime;
+        const gracePeriod = this.isMobile ? 1000 : 1500; // 1-1.5s grace period
 
-            // Clear selection
-            this.clearSelection();
+        if (timeSinceSelection < gracePeriod) {
+            return;
+        }
 
-            // Notify parent component to update UI
-            if (window.artworkViewerHandleHotspotClick) {
-                window.artworkViewerHandleHotspotClick(null);
+        const currentZoom = this.viewer.viewport.getZoom();
+
+        // Absolute thresholds - REDUCED FOR EARLIER DESELECTION
+        const minZoomThreshold = this.isMobile ? 1.5 : 2.0;  
+        const zoomReductionThreshold = 0.6; 
+        const minCoverageThreshold = 0.15; 
+
+        // Check absolute zoom threshold
+        if (currentZoom < minZoomThreshold) {
+            console.log('Auto-deselecting: zoom too low', currentZoom);
+            this.autoDeselect();
+            return;
+        }
+
+        // Check relative zoom reduction
+        const zoomRatio = currentZoom / this.focusTracking.referenceZoom;
+        if (zoomRatio < zoomReductionThreshold) {
+            console.log('Auto-deselecting: zoomed out too much', zoomRatio);
+            this.autoDeselect();
+            return;
+        }
+
+        // Check hotspot screen coverage
+        const bounds = this.getHotspotScreenBounds(this.state.selectedHotspot);
+        if (bounds) {
+            const viewport = this.viewer.viewport;
+            const hotspotViewportBounds = viewport.imageToViewportRectangle(
+                bounds.x, bounds.y, bounds.width, bounds.height
+            );
+            const viewportBounds = viewport.getBounds();
+            const coverage =
+                (hotspotViewportBounds.width * hotspotViewportBounds.height) /
+                (viewportBounds.width * viewportBounds.height);
+
+            if (coverage < minCoverageThreshold) {
+                console.log('Auto-deselecting: hotspot too small on screen', coverage);
+                this.autoDeselect();
+                return;
             }
+        }
+
+        
+        // Calculate combined focus score for pan detection
+        const focusScore = this.calculateFocusScore();
+
+        if (focusScore < 0.5) { 
+            console.log('Auto-deselecting: low focus score', focusScore);
+            this.autoDeselect();
+        }
+    }
+
+    autoDeselect() {
+        console.log('Auto-deselecting hotspot');
+
+        // Clear selection through the standard method
+        this.clearSelection();
+
+        // Notify parent component to update UI
+        if (window.artworkViewerHandleHotspotClick) {
+            window.artworkViewerHandleHotspotClick(null);
         }
     }
 
@@ -550,6 +732,19 @@ class CanvasOverlayManager {
         // Use interpolated bounds for smooth transitions
         const bounds = this.interpolateBounds(targetBounds);
 
+        // ENSURE MINIMUM SIZE FOR VISIBILITY
+        const minSize = 20; // Minimum 20px for visibility
+        if (bounds.width < minSize || bounds.height < minSize) {
+            const expandFactor = minSize / Math.min(bounds.width, bounds.height);
+            const centerX = bounds.x + bounds.width / 2;
+            const centerY = bounds.y + bounds.height / 2;
+
+            bounds.width = Math.max(minSize, bounds.width * expandFactor);
+            bounds.height = Math.max(minSize, bounds.height * expandFactor);
+            bounds.x = centerX - bounds.width / 2;
+            bounds.y = centerY - bounds.height / 2;
+        }
+
         // Save context state
         this.ctx.save();
 
@@ -704,8 +899,14 @@ class CanvasOverlayManager {
                 }
             });
         } else {
-            // Fallback to rectangle
-            this.ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+            // Fallback to rectangle with padding
+            const padding = 5; // Add some padding
+            this.ctx.rect(
+                bounds.x - padding,
+                bounds.y - padding,
+                bounds.width + padding * 2,
+                bounds.height + padding * 2
+            );
         }
 
         this.ctx.fill();
@@ -743,7 +944,7 @@ class CanvasOverlayManager {
             hotspot.coordinates.forEach(polygon => processPoints(polygon));
         }
 
-        return {
+        const bounds = {
             x: minX,
             y: minY,
             width: maxX - minX,
@@ -751,6 +952,17 @@ class CanvasOverlayManager {
             centerX: (minX + maxX) / 2,
             centerY: (minY + maxY) / 2
         };
+
+        // DEBUG: Log problematic bounds
+        if (bounds.width < 10 || bounds.height < 10) {
+            console.warn('Small hotspot bounds detected:', {
+                hotspotId: hotspot.id,
+                bounds,
+                shape: hotspot.shape
+            });
+        }
+
+        return bounds;
     }
 
     imageToScreen(imageX, imageY) {
@@ -785,6 +997,9 @@ class CanvasOverlayManager {
             // Don't disable soft edges - maintain quality
             this.render();
 
+            // CHECK FOR AUTO-DESELECT ON PAN/ZOOM
+            this.checkAutoDeselect();
+
             // Force focus score recalculation on significant zoom changes
             if (this.focusTracking.referenceZoom) {
                 const zoomRatio = currentZoom / this.focusTracking.referenceZoom;
@@ -818,6 +1033,10 @@ class CanvasOverlayManager {
     }
 
     destroy() {
+        // Remove ALL handlers for these events
+        this.viewer.removeAllHandlers('zoom');
+        this.viewer.removeAllHandlers('animation-finish');
+
         // Stop animation loop
         this.stopAnimationLoop();
 
@@ -838,7 +1057,6 @@ class CanvasOverlayManager {
         if (this.viewer) {
             this.viewer.removeHandler('viewport-change', this.handleViewportChange);
             this.viewer.removeHandler('resize', this.updateCanvasSize);
-            // Note: animation, zoom, pan handlers removed since we're using animation loop instead
         }
 
         this.canvas = null;

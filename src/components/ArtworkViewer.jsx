@@ -1030,10 +1030,6 @@ function ArtworkViewer(props) {
      * Handle hotspot click with zoom behavior
      */
     const handleHotspotClick = async (hotspot) => {
-
-        // Make handleHotspotClick globally accessible for auto-deselect
-        window.handleHotspotClick = handleHotspotClick;
-
         console.log('handleHotspotClick called in ArtworkViewer', {
             hotspotId: hotspot ? hotspot.id : 'null (deselecting)',
             isZoomingToHotspot: isZoomingToHotspot(),
@@ -1091,15 +1087,6 @@ function ArtworkViewer(props) {
         // Hide previous media button
         setShowMediaButton(false);
         setSelectedHotspot(hotspot);
-        // Don't update canvas immediately - will be done during zoom
-        // Store the target hotspot for later
-        if (!hotspot) {
-            // Only clear immediately if deselecting
-            if (components().canvasOverlayManager) {
-                components().canvasOverlayManager.selectHotspot(null);
-            }
-        }
-
         setCurrentPlayingHotspot(hotspot);
 
         // Update canvas overlay
@@ -1134,6 +1121,9 @@ function ArtworkViewer(props) {
             }
         }, audioDelay);
     };
+
+    // Make handleHotspotClick globally accessible for auto-deselect
+    window.artworkViewerHandleHotspotClick = handleHotspotClick;
 
     const handleMediaButtonClick = (hotspotId) => {
         console.log('Media button clicked for:', hotspotId);
